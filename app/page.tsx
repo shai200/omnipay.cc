@@ -51,6 +51,19 @@ export default function Home() {
         </main>
 
         <footer className="text-center mt-16 text-gray-500 text-sm">
+          <div className="mb-4 space-x-4">
+            <a href="/BusinessInfo" className="hover:text-gray-300 transition-colors">
+              Business Info
+            </a>
+            <span>•</span>
+            <a href="/PrivacyPolicy" className="hover:text-gray-300 transition-colors">
+              Privacy Policy
+            </a>
+            <span>•</span>
+            <a href="/TermsOfService" className="hover:text-gray-300 transition-colors">
+              Terms of Service
+            </a>
+          </div>
           <p>Powered by Stripe Crypto Onramp</p>
         </footer>
       </div>
