@@ -8,6 +8,11 @@ runConfig:
 
 env:
   - variable: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-    secret: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    value: pk_live_51QcWITLFOCxUQmeXCCHhUbo912tPTt4qMr314Mp6rh9ddD0h76fF3RKatIvqzxZROy5HpZePc58PHtxCcg3tmjAk00M3YyvJz7
+    availability:
+      - BUILD
+      - RUNTIME
   - variable: STRIPE_SECRET_KEY
     secret: STRIPE_SECRET_KEY
+    availability:
+      - RUNTIME
