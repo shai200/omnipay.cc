@@ -1,4 +1,4 @@
-# OmniPay
+# OmniPay.cc
 
 A Fiat to Crypto bridge enabling seamless conversion between traditional currencies and cryptocurrencies.
 
