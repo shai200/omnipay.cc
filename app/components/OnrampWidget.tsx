@@ -54,6 +54,10 @@ export default function OnrampWidget({
 
         const stripeOnramp = await loadStripeOnramp(publishableKey);
 
+        if (!stripeOnramp) {
+          throw new Error('Failed to load Stripe Onramp');
+        }
+
         // Create and mount the onramp session
         const onrampSession = stripeOnramp.createSession({
           clientSecret,
