@@ -29,16 +29,16 @@ const firebaseConfig = {
 
 // Initialize Firebase only if it hasn't been initialized yet and is configured
 let app;
-let db;
-let auth;
+let db: any = undefined;
+let auth: any = undefined;
 
 if (isFirebaseConfigured) {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   db = getFirestore(app);
   auth = getAuth(app);
 } else {
-  // Create mock objects when Firebase is not configured
-  console.warn('Firebase not initialized - using mock objects');
+  // Firebase not configured - exports will be undefined
+  console.warn('Firebase not initialized - auth and db will be undefined until configured');
 }
 
 export { db, auth, isFirebaseConfigured };
