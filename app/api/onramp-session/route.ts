@@ -54,7 +54,9 @@ export async function POST(request: NextRequest) {
         const addr = customerInformation.address;
         if (addr.country) formData.append('customer_information[address][country]', addr.country);
         if (addr.line1) formData.append('customer_information[address][line1]', addr.line1);
-        if (addr.line2) formData.append('customer_information[address][line2]', addr.line2);
+        if (addr.line2 !== undefined && addr.line2 !== null && addr.line2 !== '') {
+          formData.append('customer_information[address][line2]', addr.line2);
+        }
         if (addr.city) formData.append('customer_information[address][city]', addr.city);
         if (addr.state) formData.append('customer_information[address][state]', addr.state);
         if (addr.postalCode) formData.append('customer_information[address][postal_code]', addr.postalCode);

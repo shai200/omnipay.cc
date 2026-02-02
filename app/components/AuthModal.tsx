@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { UserKYCInfo, ReminderPreferences } from '../types/user';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -44,7 +46,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
     try {
       if (isLogin) {
-        // Login flow
+        // Login flow - authenticate with Firebase first
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+        } catch (authError: any) {
+          if (authError.code === 'auth/wrong-password' || authError.code === 'auth/user-not-found') {
+            throw new Error('Invalid email or password');
+          }
+          throw new Error(authError.message || 'Authentication failed');
+        }
+
+        // After successful authentication, fetch user data
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -96,6 +108,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             !country || !line1 || !city || !state || !postalCode) {
           throw new Error('Please fill in all required fields');
         }
+
+        // Note: SSN is optional in storage but may be required by Stripe
+        // We pass it to the widget but don't store it
 
         const kycInfo: UserKYCInfo = {
           email,
@@ -278,7 +293,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  SSN * (Required for Stripe, not stored)
+                  SSN (Required for Stripe, not stored)
                 </label>
                 <input
                   type="text"
@@ -286,7 +301,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   onChange={(e) => setSsn(e.target.value)}
                   placeholder="XXX-XX-XXXX"
                   className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  required
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Required by Stripe for KYC. Not stored in our database.
