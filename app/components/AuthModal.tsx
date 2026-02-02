@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { UserKYCInfo, ReminderPreferences } from '../types/user';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, isFirebaseConfigured } from '../lib/firebase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -47,13 +47,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     try {
       if (isLogin) {
         // Login flow - authenticate with Firebase first
-        try {
-          await signInWithEmailAndPassword(auth, email, password);
-        } catch (authError: any) {
-          if (authError.code === 'auth/wrong-password' || authError.code === 'auth/user-not-found') {
-            throw new Error('Invalid email or password');
+        if (isFirebaseConfigured && auth) {
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+          } catch (authError: any) {
+            if (authError.code === 'auth/wrong-password' || authError.code === 'auth/user-not-found') {
+              throw new Error('Invalid email or password');
+            }
+            throw new Error(authError.message || 'Authentication failed');
           }
-          throw new Error(authError.message || 'Authentication failed');
+        } else {
+          console.warn('Firebase not configured - skipping client-side authentication');
         }
 
         // After successful authentication, fetch user data
