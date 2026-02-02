@@ -8,6 +8,24 @@ interface OnrampWidgetProps {
   sourceAmount?: number;
   destinationCurrency?: string;
   destinationNetwork?: string;
+  customerInformation?: {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    dob?: {
+      year: number;
+      month: number;
+      day: number;
+    };
+    address?: {
+      country: string;
+      line1: string;
+      line2?: string;
+      city: string;
+      state: string;
+      postalCode: string;
+    };
+  };
 }
 
 export default function OnrampWidget({
@@ -15,6 +33,7 @@ export default function OnrampWidget({
   sourceAmount,
   destinationCurrency,
   destinationNetwork,
+  customerInformation,
 }: OnrampWidgetProps) {
   const onrampRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +56,7 @@ export default function OnrampWidget({
             sourceAmount,
             destinationCurrency,
             destinationNetwork,
+            customerInformation,
           }),
         });
 
@@ -91,7 +111,7 @@ export default function OnrampWidget({
     };
 
     initializeOnramp();
-  }, [walletAddress, sourceAmount, destinationCurrency, destinationNetwork]);
+  }, [walletAddress, sourceAmount, destinationCurrency, destinationNetwork, customerInformation]);
 
   if (error) {
     return (

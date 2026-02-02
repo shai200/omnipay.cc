@@ -3,13 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { walletAddress, sourceAmount, destinationCurrency, destinationNetwork } = body;
+    const { walletAddress, sourceAmount, destinationCurrency, destinationNetwork, customerInformation } = body;
 
     console.log('Creating onramp session with params:', {
       walletAddress,
       sourceAmount,
       destinationCurrency,
-      destinationNetwork
+      destinationNetwork,
+      hasCustomerInfo: !!customerInformation
     });
 
     // Build the request body for Stripe API
@@ -31,6 +32,33 @@ export async function POST(request: NextRequest) {
 
     if (destinationNetwork) {
       formData.append('transaction_details[destination_network]', destinationNetwork);
+    }
+
+    // Add customer information for pre-filling KYC data
+    if (customerInformation) {
+      if (customerInformation.email) {
+        formData.append('customer_information[email]', customerInformation.email);
+      }
+      if (customerInformation.firstName) {
+        formData.append('customer_information[first_name]', customerInformation.firstName);
+      }
+      if (customerInformation.lastName) {
+        formData.append('customer_information[last_name]', customerInformation.lastName);
+      }
+      if (customerInformation.dob) {
+        formData.append('customer_information[dob][year]', customerInformation.dob.year.toString());
+        formData.append('customer_information[dob][month]', customerInformation.dob.month.toString());
+        formData.append('customer_information[dob][day]', customerInformation.dob.day.toString());
+      }
+      if (customerInformation.address) {
+        const addr = customerInformation.address;
+        if (addr.country) formData.append('customer_information[address][country]', addr.country);
+        if (addr.line1) formData.append('customer_information[address][line1]', addr.line1);
+        if (addr.line2) formData.append('customer_information[address][line2]', addr.line2);
+        if (addr.city) formData.append('customer_information[address][city]', addr.city);
+        if (addr.state) formData.append('customer_information[address][state]', addr.state);
+        if (addr.postalCode) formData.append('customer_information[address][postal_code]', addr.postalCode);
+      }
     }
 
     console.log('Making request to Stripe API...');
