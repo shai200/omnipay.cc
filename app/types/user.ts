@@ -9,7 +9,6 @@ export interface UserKYCInfo {
     month: number;
     day: number;
   };
-  ssn?: string; // Optional for security reasons - won't be stored
   address: {
     country: string;
     line1: string;
@@ -28,7 +27,7 @@ export interface ReminderPreferences {
 
 export interface UserData {
   email: string;
-  kycInfo: Omit<UserKYCInfo, 'ssn'>; // SSN should never be stored
+  kycInfo: UserKYCInfo;
   reminderPreferences: ReminderPreferences;
   createdAt: number;
   updatedAt: number;

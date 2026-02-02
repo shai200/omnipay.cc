@@ -24,7 +24,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [dobYear, setDobYear] = useState('');
   const [dobMonth, setDobMonth] = useState('');
   const [dobDay, setDobDay] = useState('');
-  const [ssn, setSsn] = useState('');
   const [country, setCountry] = useState('US');
   const [line1, setLine1] = useState('');
   const [line2, setLine2] = useState('');
@@ -101,7 +100,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           firstName: userData.kycInfo.firstName,
           lastName: userData.kycInfo.lastName,
           dob: userData.kycInfo.dob,
-          ssn: '', // SSN never stored/retrieved
           address: userData.kycInfo.address,
         };
 
@@ -113,9 +111,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           throw new Error('Please fill in all required fields');
         }
 
-        // Note: SSN is optional in storage but may be required by Stripe
-        // We pass it to the widget but don't store it
-
         const kycInfo: UserKYCInfo = {
           email,
           firstName,
@@ -125,7 +120,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             month: parseInt(dobMonth),
             day: parseInt(dobDay),
           },
-          ssn, // Passed to Stripe but not stored
           address: {
             country,
             line1,
@@ -149,10 +143,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           body: JSON.stringify({
             email,
             password,
-            kycInfo: {
-              ...kycInfo,
-              ssn: undefined, // Don't send SSN to backend
-            },
+            kycInfo,
             reminderPreferences: reminderPrefs,
           }),
         });
@@ -293,22 +284,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     required
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  SSN (Required for Stripe, not stored)
-                </label>
-                <input
-                  type="text"
-                  value={ssn}
-                  onChange={(e) => setSsn(e.target.value)}
-                  placeholder="XXX-XX-XXXX"
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Required by Stripe for KYC. Not stored in our database.
-                </p>
               </div>
 
               <div className="border-t border-gray-700 pt-4 mt-4">
