@@ -5,11 +5,11 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const getFirebaseConfig = () => {
-  const config = process.env.NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG;
+  const config = process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
   if (config) {
     return JSON.parse(config);
   }
-  throw new Error('NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG is not defined');
+  throw new Error('NEXT_PUBLIC_FIREBASE_CONFIG is not defined');
 };
 
 let app: any;
