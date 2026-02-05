@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { loadStripeOnramp } from '@stripe/crypto';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface OnrampWidgetProps {
   walletAddress?: string;
@@ -16,6 +17,7 @@ export default function OnrampWidget({
   destinationCurrency,
   destinationNetwork,
 }: OnrampWidgetProps) {
+  const { theme } = useTheme();
   const onrampRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,11 +60,11 @@ export default function OnrampWidget({
           throw new Error('Failed to load Stripe Onramp');
         }
 
-        // Create and mount the onramp session
+        // Create and mount the onramp session with dynamic theme
         const onrampSession = stripeOnramp.createSession({
           clientSecret,
           appearance: {
-            theme: 'dark',
+            theme: theme,
           },
         });
 
@@ -91,7 +93,7 @@ export default function OnrampWidget({
     };
 
     initializeOnramp();
-  }, [walletAddress, sourceAmount, destinationCurrency, destinationNetwork]);
+  }, [walletAddress, sourceAmount, destinationCurrency, destinationNetwork, theme]);
 
   if (error) {
     return (
@@ -105,10 +107,17 @@ export default function OnrampWidget({
     <div className="w-full">
       {loading && (
         <div className="flex items-center justify-center p-8">
-          <div className="text-gray-600">Loading onramp widget...</div>
+          <div style={{ color: 'var(--text-secondary)' }}>Loading onramp widget...</div>
         </div>
       )}
-      <div ref={onrampRef} className="min-h-[600px]" />
+      <div 
+        ref={onrampRef} 
+        className="min-h-[600px] rounded-lg p-4"
+        style={{ 
+          backgroundColor: 'var(--card-bg)',
+          border: '1px solid var(--card-border)'
+        }}
+      />
     </div>
   );
 }

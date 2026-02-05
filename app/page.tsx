@@ -1,22 +1,67 @@
+'use client';
+
 import OnrampWidget from './components/OnrampWidget';
+import { useTheme } from './contexts/ThemeContext';
 
 export default function Home() {
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      <div className="container mx-auto px-4 py-8">
-        <header className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4">OmniPay</h1>
-          <p className="text-xl text-gray-400">
-            Your Gateway from Fiat to Crypto
-          </p>
-        </header>
+  const { theme, toggleTheme } = useTheme();
 
-        <main className="max-w-2xl mx-auto">
-          <div className="bg-gray-800 rounded-lg shadow-xl p-6 mb-8">
-            <h2 className="text-2xl font-semibold mb-4">Buy Crypto Instantly</h2>
-            <p className="text-gray-300 mb-6">
-              Convert your fiat currency to cryptocurrency with ease. Powered by Stripe.
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b" style={{ borderColor: 'var(--card-border)', backgroundColor: 'var(--card-bg)' }}>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white" style={{ backgroundColor: 'var(--accent)' }}>
+              Ω
+            </div>
+            <span className="font-bold text-xl" style={{ color: 'var(--foreground)' }}>Omnipay.cc</span>
+          </div>
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg transition-colors"
+            style={{ 
+              backgroundColor: 'var(--card-border)',
+              color: 'var(--foreground)'
+            }}
+            aria-label="Toggle theme"
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-12">
+        {/* Hero Section */}
+        <section className="max-w-3xl mx-auto mb-12">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+              Secure Crypto Gateway
+            </h1>
+            <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
+              Convert fiat to cryptocurrency with institutional-grade security and instant settlement
             </p>
+          </div>
+
+          {/* Main Card - ATM-style */}
+          <div 
+            className="rounded-2xl shadow-lg border p-8 mb-8"
+            style={{ 
+              backgroundColor: 'var(--card-bg)',
+              borderColor: 'var(--card-border)'
+            }}
+          >
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
+                Buy Cryptocurrency
+              </h2>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                Fast, secure transactions powered by Stripe
+              </p>
+            </div>
 
             <OnrampWidget
               sourceAmount={100}
@@ -24,53 +69,176 @@ export default function Home() {
               destinationNetwork="ethereum"
             />
           </div>
+        </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <div className="text-center">
-              <div className="text-3xl mb-2">⚡</div>
-              <h3 className="font-semibold mb-2">Fast & Secure</h3>
-              <p className="text-sm text-gray-400">
-                Instant transactions with bank-grade security
+        {/* Features Grid */}
+        <section className="max-w-5xl mx-auto mb-12">
+          <h2 className="text-3xl font-bold text-center mb-8" style={{ color: 'var(--foreground)' }}>
+            Why Choose Omnipay.cc
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Feature 1 */}
+            <div 
+              className="rounded-xl border p-6"
+              style={{ 
+                backgroundColor: 'var(--card-bg)',
+                borderColor: 'var(--card-border)'
+              }}
+            >
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--accent)' }}>
+                <span className="text-white text-xl">🔒</span>
+              </div>
+              <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--foreground)' }}>
+                Bank-Grade Security
+              </h3>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                Institutional security standards with encrypted transactions
               </p>
             </div>
-            <div className="text-center">
-              <div className="text-3xl mb-2">💳</div>
-              <h3 className="font-semibold mb-2">Multiple Payment Methods</h3>
-              <p className="text-sm text-gray-400">
-                Credit card, debit card, and more
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-2">🌐</div>
-              <h3 className="font-semibold mb-2">Multi-Chain Support</h3>
-              <p className="text-sm text-gray-400">
-                BTC, ETH, SOL, MATIC, USDC, XLM
-              </p>
-            </div>
-          </div>
-        </main>
 
-        <footer className="text-center mt-16 text-gray-500 text-sm border-t border-gray-800 pt-6">
-          <div className="mb-4 space-x-4">
-            <a href="/BusinessInfo" className="hover:text-gray-300 transition-colors">
-              Business Info
-            </a>
-            <span>•</span>
-            <a href="/PrivacyPolicy" className="hover:text-gray-300 transition-colors">
-              Privacy Policy
-            </a>
-            <span>•</span>
-            <a href="/TermsOfService" className="hover:text-gray-300 transition-colors">
-              Terms of Service
-            </a>
+            {/* Feature 2 */}
+            <div 
+              className="rounded-xl border p-6"
+              style={{ 
+                backgroundColor: 'var(--card-bg)',
+                borderColor: 'var(--card-border)'
+              }}
+            >
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--accent)' }}>
+                <span className="text-white text-xl">⚡</span>
+              </div>
+              <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--foreground)' }}>
+                Instant Settlement
+              </h3>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                Real-time processing with immediate confirmations
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div 
+              className="rounded-xl border p-6"
+              style={{ 
+                backgroundColor: 'var(--card-bg)',
+                borderColor: 'var(--card-border)'
+              }}
+            >
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--accent)' }}>
+                <span className="text-white text-xl">🌐</span>
+              </div>
+              <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--foreground)' }}>
+                Multi-Chain Support
+              </h3>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                Support for major blockchains: Ethereum, Bitcoin, Solana, Polygon
+              </p>
+            </div>
           </div>
-          <p className="mb-2">Powered by Stripe Crypto Onramp</p>
-          <div className="text-xs text-gray-600">
-            <p>Version 0.2.1</p>
-            <p>Latest Release: February 5, 2026</p>
+        </section>
+
+        {/* Trust Indicators */}
+        <section className="max-w-5xl mx-auto mb-12">
+          <div 
+            className="rounded-xl border p-8"
+            style={{ 
+              backgroundColor: 'var(--card-bg)',
+              borderColor: 'var(--card-border)'
+            }}
+          >
+            <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--foreground)' }}>
+              Trusted by thousands
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold" style={{ color: 'var(--accent)' }}>100%</p>
+                <p style={{ color: 'var(--text-secondary)' }}>Secure</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold" style={{ color: 'var(--accent)' }}>24/7</p>
+                <p style={{ color: 'var(--text-secondary)' }}>Available</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold" style={{ color: 'var(--accent)' }}>&lt;1min</p>
+                <p style={{ color: 'var(--text-secondary)' }}>Processing</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold" style={{ color: 'var(--accent)' }}>0 Fraud</p>
+                <p style={{ color: 'var(--text-secondary)' }}>Verified</p>
+              </div>
+            </div>
           </div>
-        </footer>
-      </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer 
+        className="border-t mt-16"
+        style={{ 
+          borderColor: 'var(--card-border)',
+          backgroundColor: 'var(--card-bg)'
+        }}
+      >
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+              {/* Brand */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white" style={{ backgroundColor: 'var(--accent)' }}>
+                    Ω
+                  </div>
+                  <span className="font-bold" style={{ color: 'var(--foreground)' }}>Omnipay.cc</span>
+                </div>
+                <p style={{ color: 'var(--text-secondary)' }}>
+                  Your secure gateway to cryptocurrency
+                </p>
+              </div>
+
+              {/* Links */}
+              <div>
+                <h4 className="font-semibold mb-4" style={{ color: 'var(--foreground)' }}>Legal</h4>
+                <div className="space-y-2">
+                  <a href="/PrivacyPolicy" className="block transition-colors" style={{ color: 'var(--text-secondary)' }}>
+                    Privacy Policy
+                  </a>
+                  <a href="/TermsOfService" className="block transition-colors" style={{ color: 'var(--text-secondary)' }}>
+                    Terms of Service
+                  </a>
+                  <a href="/BusinessInfo" className="block transition-colors" style={{ color: 'var(--text-secondary)' }}>
+                    Business Info
+                  </a>
+                </div>
+              </div>
+
+              {/* Security */}
+              <div>
+                <h4 className="font-semibold mb-4" style={{ color: 'var(--foreground)' }}>Security</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  ✓ Bank-grade encryption<br/>
+                  ✓ Verified by Stripe<br/>
+                  ✓ PCI-DSS compliant
+                </p>
+              </div>
+            </div>
+
+            <div 
+              className="border-t pt-8"
+              style={{ borderColor: 'var(--card-border)' }}
+            >
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  © 2026 Omnipay.cc. All rights reserved.
+                </p>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  <p className="mb-1">Version 0.2.1</p>
+                  <p>Latest Release: February 5, 2026</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
