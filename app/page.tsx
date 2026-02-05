@@ -2,9 +2,11 @@
 
 import OnrampWidget from './components/OnrampWidget';
 import { useTheme } from './contexts/ThemeContext';
+import { useAuth } from './contexts/AuthContext';
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
@@ -20,17 +22,26 @@ export default function Home() {
           </div>
 
           {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg transition-colors"
-            style={{ 
-              backgroundColor: 'var(--card-border)',
-              color: 'var(--foreground)'
-            }}
-            aria-label="Toggle theme"
-          >
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
+          <div className="flex items-center gap-3">
+            <a
+              href={user ? '/profile' : '/auth'}
+              className="px-3 py-2 rounded-lg text-sm font-semibold"
+              style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
+            >
+              {user ? 'Profile' : 'Sign in'}
+            </a>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg transition-colors"
+              style={{ 
+                backgroundColor: 'var(--card-border)',
+                color: 'var(--foreground)'
+              }}
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+          </div>
         </div>
       </header>
 
