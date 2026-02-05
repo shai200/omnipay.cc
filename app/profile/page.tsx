@@ -17,11 +17,14 @@ const initialForm = {
   address_city: '',
   address_state: '',
   address_postal_code: '',
+  reminder_monthly: true,
+  reminder_price_drop: true,
+  reminder_weekly: false,
 };
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, profile, loading, updateProfile, signOutUser } = useAuth();
+  const { user, profile, loading, updateProfile, refreshProfile, signOutUser } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
@@ -42,6 +45,9 @@ export default function ProfilePage() {
         address_city: profile.address?.city || '',
         address_state: profile.address?.state || '',
         address_postal_code: profile.address?.postal_code || '',
+        reminder_monthly: profile.reminder_monthly !== false,
+        reminder_price_drop: profile.reminder_price_drop !== false,
+        reminder_weekly: profile.reminder_weekly === true,
       });
       setProfileLoaded(true);
     } else if (user?.email) {
@@ -74,12 +80,18 @@ export default function ProfilePage() {
         state: form.address_state || undefined,
         postal_code: form.address_postal_code || undefined,
       },
+      reminder_monthly: form.reminder_monthly,
+      reminder_price_drop: form.reminder_price_drop,
+      reminder_weekly: form.reminder_weekly,
     };
   }, [form]);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -89,10 +101,13 @@ export default function ProfilePage() {
 
     try {
       await updateProfile(payload);
-      setMessage('Profile updated.');
+      console.log('Profile saved with payload:', payload);
+      // Don't need to refresh - the form already has the correct values
+      setMessage('Profile updated successfully.');
+      setSaving(false);
     } catch (err: any) {
+      console.error('Save error:', err);
       setMessage(err?.message || 'Failed to update.');
-    } finally {
       setSaving(false);
     }
   };
@@ -315,6 +330,57 @@ export default function ProfilePage() {
                   className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
+              </div>
+            </div>
+
+            {/* Email Reminders Section */}
+            <div className="border-t pt-6 mt-6" style={{ borderColor: 'var(--card-border)' }}>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>
+                Email Reminders to Buy Again
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="reminder_monthly"
+                    name="reminder_monthly"
+                    checked={form.reminder_monthly}
+                    onChange={onChange}
+                    disabled={!profileLoaded || saving}
+                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <label htmlFor="reminder_monthly" className="text-sm" style={{ color: 'var(--foreground)' }}>
+                    Once a month <span style={{ color: 'var(--accent)' }}>(popular)</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="reminder_price_drop"
+                    name="reminder_price_drop"
+                    checked={form.reminder_price_drop}
+                    onChange={onChange}
+                    disabled={!profileLoaded || saving}
+                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <label htmlFor="reminder_price_drop" className="text-sm" style={{ color: 'var(--foreground)' }}>
+                    After sharp drops (more than 10%) <span style={{ color: 'var(--accent)' }}>(popular)</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="reminder_weekly"
+                    name="reminder_weekly"
+                    checked={form.reminder_weekly}
+                    onChange={onChange}
+                    disabled={!profileLoaded || saving}
+                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <label htmlFor="reminder_weekly" className="text-sm" style={{ color: 'var(--foreground)' }}>
+                    Once a week <span style={{ color: 'var(--accent)' }}>(hot)</span>
+                  </label>
+                </div>
               </div>
             </div>
 

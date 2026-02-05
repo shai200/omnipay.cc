@@ -38,6 +38,9 @@ type PrefillProfile = {
   last_name?: string;
   dob?: PrefillDob;
   address?: PrefillAddress;
+  reminder_monthly?: boolean;
+  reminder_price_drop?: boolean;
+  reminder_weekly?: boolean;
 };
 
 interface AuthContextType {
@@ -78,6 +81,11 @@ const cleanProfile = (profile: PrefillProfile): PrefillProfile => {
     if (profile.address.postal_code) address.postal_code = profile.address.postal_code;
     if (Object.keys(address).length > 0) cleaned.address = address;
   }
+
+  // Always include reminder settings, even if false
+  if (profile.reminder_monthly !== undefined) cleaned.reminder_monthly = profile.reminder_monthly;
+  if (profile.reminder_price_drop !== undefined) cleaned.reminder_price_drop = profile.reminder_price_drop;
+  if (profile.reminder_weekly !== undefined) cleaned.reminder_weekly = profile.reminder_weekly;
 
   return cleaned;
 };
