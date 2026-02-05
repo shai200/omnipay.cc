@@ -13,7 +13,7 @@ env:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG
-    value: $FIREBASE_WEBAPP_CONFIG
+    value: '{"apiKey":"AIzaSyB4YMGM8BRrT-goRI7Y2FhzHgHD9JQRtNI","appId":"1:548261736586:web:ee720a197790f900f07d73","authDomain":"omnipaycc-9e9cb.firebaseapp.com","databaseURL":"","messagingSenderId":"548261736586","projectId":"omnipaycc-9e9cb","storageBucket":"omnipaycc-9e9cb.firebasestorage.app"}'
     availability:
       - BUILD
       - RUNTIME
