@@ -92,13 +92,14 @@ export default function Home() {
 
           {/* Main Card - ATM-style */}
           <div 
-            className="rounded-2xl shadow-lg border p-8 mb-8"
+            className="rounded-2xl shadow-lg border mb-8 py-6 mx-auto"
             style={{ 
               backgroundColor: 'var(--card-bg)',
-              borderColor: 'var(--card-border)'
+              borderColor: 'var(--card-border)',
+              maxWidth: '536px'
             }}
           >
-            <div className="mb-6">
+            <div className="mb-6 px-8">
               <h2 className="text-2xl font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
                 Buy Cryptocurrency
               </h2>
