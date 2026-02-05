@@ -20,6 +20,11 @@ const initialForm = {
   reminder_monthly: true,
   reminder_price_drop: true,
   reminder_weekly: false,
+  wallet_address_ethereum: '',
+  wallet_address_bitcoin: '',
+  lock_wallet_address: false,
+  source_currency: 'usd',
+  source_amount: '100',
 };
 
 export default function ProfilePage() {
@@ -29,6 +34,8 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [ethAddressError, setEthAddressError] = useState('');
+  const [btcAddressError, setBtcAddressError] = useState('');
 
   useEffect(() => {
     if (profile) {
@@ -48,6 +55,11 @@ export default function ProfilePage() {
         reminder_monthly: profile.reminder_monthly !== false,
         reminder_price_drop: profile.reminder_price_drop !== false,
         reminder_weekly: profile.reminder_weekly === true,
+        wallet_address_ethereum: profile.wallet_addresses?.ethereum || '',
+        wallet_address_bitcoin: profile.wallet_addresses?.bitcoin || '',
+        lock_wallet_address: profile.lock_wallet_address === true,
+        source_currency: profile.source_currency || 'usd',
+        source_amount: profile.source_amount || '100',
       });
       setProfileLoaded(true);
     } else if (user?.email) {
@@ -63,6 +75,10 @@ export default function ProfilePage() {
   }, [loading, user, router]);
 
   const payload = useMemo(() => {
+    const walletAddresses: { [key: string]: string } = {};
+    if (form.wallet_address_ethereum) walletAddresses.ethereum = form.wallet_address_ethereum;
+    if (form.wallet_address_bitcoin) walletAddresses.bitcoin = form.wallet_address_bitcoin;
+
     return {
       email: form.email || undefined,
       first_name: form.first_name || undefined,
@@ -83,11 +99,52 @@ export default function ProfilePage() {
       reminder_monthly: form.reminder_monthly,
       reminder_price_drop: form.reminder_price_drop,
       reminder_weekly: form.reminder_weekly,
+      wallet_addresses: Object.keys(walletAddresses).length > 0 ? walletAddresses : undefined,
+      lock_wallet_address: form.lock_wallet_address,
+      source_currency: form.source_currency || undefined,
+      source_amount: form.source_amount || undefined,
     };
   }, [form]);
 
+  const validateEthAddress = (address: string): boolean => {
+    if (!address) {
+      setEthAddressError('');
+      return true;
+    }
+    const ethRegex = /^0x[a-fA-F0-9]{40}$/;
+    if (!ethRegex.test(address)) {
+      setEthAddressError('Invalid Ethereum address format');
+      return false;
+    }
+    setEthAddressError('');
+    return true;
+  };
+
+  const validateBtcAddress = (address: string): boolean => {
+    if (!address) {
+      setBtcAddressError('');
+      return true;
+    }
+    const btcRegex = /^((bc1[0-9A-Za-z]{32,64})|([13][a-km-zA-HJ-NP-Z1-9]{25,34}))$/;
+    if (!btcRegex.test(address)) {
+      setBtcAddressError('Invalid Bitcoin address format');
+      return false;
+    }
+    setBtcAddressError('');
+    return true;
+  };
+
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
+    
+    if (name === 'wallet_address_ethereum') {
+      validateEthAddress(value);
+    }
+    
+    if (name === 'wallet_address_bitcoin') {
+      validateBtcAddress(value);
+    }
+    
     setForm((prev) => ({ 
       ...prev, 
       [name]: type === 'checkbox' ? checked : value 
@@ -330,6 +387,108 @@ export default function ProfilePage() {
                   className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
+              </div>
+            </div>
+
+            {/* Onramp Settings Section */}
+            <div className="border-t pt-6 mt-6" style={{ borderColor: 'var(--card-border)' }}>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>
+                Onramp Settings
+              </h3>
+              
+              <div className="space-y-4">
+                {/* Wallet Addresses */}
+                <div>
+                  <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    Ethereum Wallet Address
+                  </label>
+                  <input
+                    name="wallet_address_ethereum"
+                    type="text"
+                    value={form.wallet_address_ethereum}
+                    onChange={onChange}
+                    disabled={!profileLoaded || saving}
+                    className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
+                    placeholder="0x..."
+                  />
+                  {ethAddressError && (
+                    <p className="text-sm mt-1" style={{ color: '#ef4444' }}>
+                      {ethAddressError}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    Bitcoin Wallet Address
+                  </label>
+                  <input
+                    name="wallet_address_bitcoin"
+                    type="text"
+                    value={form.wallet_address_bitcoin}
+                    onChange={onChange}
+                    disabled={!profileLoaded || saving}
+                    className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
+                    placeholder="bc1..."
+                  />
+                  {btcAddressError && (
+                    <p className="text-sm mt-1" style={{ color: '#ef4444' }}>
+                      {btcAddressError}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="lock_wallet_address"
+                    name="lock_wallet_address"
+                    checked={form.lock_wallet_address}
+                    onChange={onChange}
+                    disabled={!profileLoaded || saving}
+                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <label htmlFor="lock_wallet_address" className="text-sm" style={{ color: 'var(--foreground)' }}>
+                    Lock this wallet address (this prevents you from being able to change this address when you buy crypto. To make it editable during checkout, uncheck this box)
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      Default Currency
+                    </label>
+                    <select
+                      name="source_currency"
+                      value={form.source_currency}
+                      onChange={(e) => setForm(prev => ({ ...prev, source_currency: e.target.value }))}
+                      disabled={!profileLoaded || saving}
+                      className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
+                    >
+                      <option value="usd">USD</option>
+                      <option value="eur">EUR</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      Default Amount
+                    </label>
+                    <input
+                      name="source_amount"
+                      type="number"
+                      min="1"
+                      value={form.source_amount}
+                      onChange={onChange}
+                      disabled={!profileLoaded || saving}
+                      className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 

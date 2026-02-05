@@ -56,6 +56,10 @@ type PrefillProfile = {
   reminder_monthly?: boolean;
   reminder_price_drop?: boolean;
   reminder_weekly?: boolean;
+  wallet_addresses?: { [key: string]: string };
+  lock_wallet_address?: boolean;
+  source_currency?: string;
+  source_amount?: string;
 };
 
 interface AuthContextType {
@@ -101,6 +105,12 @@ const cleanProfile = (profile: PrefillProfile): PrefillProfile => {
   if (profile.reminder_monthly !== undefined) cleaned.reminder_monthly = profile.reminder_monthly;
   if (profile.reminder_price_drop !== undefined) cleaned.reminder_price_drop = profile.reminder_price_drop;
   if (profile.reminder_weekly !== undefined) cleaned.reminder_weekly = profile.reminder_weekly;
+
+  // Onramp prefill settings
+  if (profile.wallet_addresses) cleaned.wallet_addresses = profile.wallet_addresses;
+  if (profile.lock_wallet_address !== undefined) cleaned.lock_wallet_address = profile.lock_wallet_address;
+  if (profile.source_currency) cleaned.source_currency = profile.source_currency;
+  if (profile.source_amount) cleaned.source_amount = profile.source_amount;
 
   return cleaned;
 };
@@ -192,10 +202,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { db: dbService } = ensureInitialized();
     const cleaned = cleanProfile(profileData);
-    await updateDoc(doc(dbService, 'users', user.uid), {
+    await setDoc(doc(dbService, 'users', user.uid), {
       ...cleaned,
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
 
     setProfile((prev) => ({ ...(prev || {}), ...cleaned }));
   };
