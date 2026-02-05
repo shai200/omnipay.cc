@@ -83,10 +83,10 @@ export default function Home() {
         <section className="max-w-3xl mx-auto mb-12">
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
-              Secure Crypto Gateway
+              Buy Crypto with Smart Reminders
             </h1>
             <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-              Convert fiat to cryptocurrency with institutional-grade security and instant settlement
+              Get notified when it's time to buy. Set reminders for specific intervals or when prices drop. Never miss an opportunity to grow your portfolio.
             </p>
           </div>
 
