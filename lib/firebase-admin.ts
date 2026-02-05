@@ -19,4 +19,4 @@ if (!admin.apps.length) {
 }
 
 export const adminApp = admin.app();
-export const adminDb = admin.firestore();
+export const adminDb = admin.firestore(adminApp, 'omnipay-users');

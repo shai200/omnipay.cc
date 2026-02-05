@@ -25,6 +25,7 @@ export default function ProfilePage() {
   const [form, setForm] = useState(initialForm);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -42,8 +43,10 @@ export default function ProfilePage() {
         address_state: profile.address?.state || '',
         address_postal_code: profile.address?.postal_code || '',
       });
+      setProfileLoaded(true);
     } else if (user?.email) {
       setForm((prev) => ({ ...prev, email: user.email || '' }));
+      setProfileLoaded(true);
     }
   }, [profile, user]);
 
@@ -114,11 +117,16 @@ export default function ProfilePage() {
               Your Profile
             </h1>
             <button
-              onClick={() => signOutUser()}
-              className="text-sm"
-              style={{ color: 'var(--accent)' }}
+              type="button"
+              onClick={() => window.location.href = '/'}
+              className="text-sm px-4 py-2 rounded-lg transition-colors"
+              style={{ 
+                color: 'var(--accent)',
+                backgroundColor: 'transparent',
+                border: '1px solid var(--accent)'
+              }}
             >
-              Sign out
+              ← Back to Home
             </button>
           </div>
 
@@ -132,7 +140,8 @@ export default function ProfilePage() {
                 type="email"
                 value={form.email}
                 onChange={onChange}
-                className="w-full rounded-lg border px-3 py-2"
+                disabled={!profileLoaded || saving}
+                className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
               />
             </div>
@@ -147,7 +156,8 @@ export default function ProfilePage() {
                   type="text"
                   value={form.first_name}
                   onChange={onChange}
-                  className="w-full rounded-lg border px-3 py-2"
+                  disabled={!profileLoaded || saving}
+                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
               </div>
@@ -160,7 +170,8 @@ export default function ProfilePage() {
                   type="text"
                   value={form.last_name}
                   onChange={onChange}
-                  className="w-full rounded-lg border px-3 py-2"
+                  disabled={!profileLoaded || saving}
+                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
               </div>
@@ -178,7 +189,8 @@ export default function ProfilePage() {
                   max="31"
                   value={form.dob_day}
                   onChange={onChange}
-                  className="w-full rounded-lg border px-3 py-2"
+                  disabled={!profileLoaded || saving}
+                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
               </div>
@@ -193,7 +205,8 @@ export default function ProfilePage() {
                   max="12"
                   value={form.dob_month}
                   onChange={onChange}
-                  className="w-full rounded-lg border px-3 py-2"
+                  disabled={!profileLoaded || saving}
+                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
               </div>
@@ -208,7 +221,8 @@ export default function ProfilePage() {
                   max="2100"
                   value={form.dob_year}
                   onChange={onChange}
-                  className="w-full rounded-lg border px-3 py-2"
+                  disabled={!profileLoaded || saving}
+                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
               </div>
@@ -223,7 +237,8 @@ export default function ProfilePage() {
                 type="text"
                 value={form.address_country}
                 onChange={onChange}
-                className="w-full rounded-lg border px-3 py-2"
+                disabled={!profileLoaded || saving}
+                className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
               />
             </div>
@@ -237,7 +252,8 @@ export default function ProfilePage() {
                 type="text"
                 value={form.address_line1}
                 onChange={onChange}
-                className="w-full rounded-lg border px-3 py-2"
+                disabled={!profileLoaded || saving}
+                className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
               />
             </div>
@@ -251,7 +267,8 @@ export default function ProfilePage() {
                 type="text"
                 value={form.address_line2}
                 onChange={onChange}
-                className="w-full rounded-lg border px-3 py-2"
+                disabled={!profileLoaded || saving}
+                className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
               />
             </div>
@@ -266,7 +283,8 @@ export default function ProfilePage() {
                   type="text"
                   value={form.address_city}
                   onChange={onChange}
-                  className="w-full rounded-lg border px-3 py-2"
+                  disabled={!profileLoaded || saving}
+                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
               </div>
@@ -279,7 +297,8 @@ export default function ProfilePage() {
                   type="text"
                   value={form.address_state}
                   onChange={onChange}
-                  className="w-full rounded-lg border px-3 py-2"
+                  disabled={!profileLoaded || saving}
+                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
               </div>
@@ -292,7 +311,8 @@ export default function ProfilePage() {
                   type="text"
                   value={form.address_postal_code}
                   onChange={onChange}
-                  className="w-full rounded-lg border px-3 py-2"
+                  disabled={!profileLoaded || saving}
+                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                 />
               </div>
@@ -306,7 +326,7 @@ export default function ProfilePage() {
 
             <button
               type="submit"
-              disabled={saving}
+              disabled={!profileLoaded || saving}
               className="w-full rounded-lg px-4 py-2 text-white font-semibold disabled:opacity-50"
               style={{ backgroundColor: 'var(--accent)' }}
             >

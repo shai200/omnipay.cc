@@ -28,13 +28,32 @@ export default function Home() {
                 {user.email}
               </span>
             )}
-            <a
-              href={user ? '/profile' : '/auth'}
-              className="px-3 py-2 rounded-lg text-sm font-semibold"
-              style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
-            >
-              {user ? 'Profile' : 'Sign in'}
-            </a>
+            {user ? (
+              <a
+                href="/profile"
+                className="px-3 py-2 rounded-lg text-sm font-semibold"
+                style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
+              >
+                Profile
+              </a>
+            ) : (
+              <div className="flex items-center gap-2">
+                <a
+                  href="/auth/register"
+                  className="px-3 py-2 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
+                >
+                  Register
+                </a>
+                <a
+                  href="/auth/login"
+                  className="px-3 py-2 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: 'var(--card-border)', color: 'var(--foreground)' }}
+                >
+                  Sign in
+                </a>
+              </div>
+            )}
             {user && (
               <button
                 onClick={() => signOutUser()}

@@ -11,6 +11,8 @@ interface OnrampWidgetProps {
   destinationNetwork?: string;
 }
 
+let globalOnrampMounted = false;
+
 export default function OnrampWidget({
   walletAddress,
   sourceAmount,
@@ -20,19 +22,30 @@ export default function OnrampWidget({
   const { theme } = useTheme();
   const onrampRef = useRef<HTMLDivElement>(null);
   const onrampSessionRef = useRef<any>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const initializeOnramp = async () => {
       try {
+        // Prevent duplicate mounts
+        if (globalOnrampMounted) {
+          console.log('Onramp already mounted globally');
+          setLoading(false);
+          return;
+        }
+
         setLoading(true);
         setError(null);
 
-        // Clean up previous widget if it exists
-        if (onrampRef.current) {
-          onrampRef.current.innerHTML = '';
+        if (!onrampRef.current) {
+          setLoading(false);
+          return;
         }
+
+        // Clear container
+        onrampRef.current.innerHTML = '';
 
         // Create onramp session on the server
         const response = await fetch('/api/onramp-session', {
@@ -90,6 +103,8 @@ export default function OnrampWidget({
         // Mount the widget
         if (onrampRef.current) {
           onrampSession.mount(onrampRef.current);
+          globalOnrampMounted = true;
+          console.log('Onramp widget mounted');
         }
 
         setLoading(false);
@@ -101,7 +116,23 @@ export default function OnrampWidget({
     };
 
     initializeOnramp();
-  }, [walletAddress, sourceAmount, destinationCurrency, destinationNetwork]);
+
+    // Cleanup function
+    return () => {
+      console.log('Onramp component unmounting');
+      if (onrampSessionRef.current) {
+        try {
+          onrampSessionRef.current.unmount();
+        } catch (e) {
+          console.log('Error unmounting onramp session:', e);
+        }
+      }
+      if (onrampRef.current) {
+        onrampRef.current.innerHTML = '';
+      }
+      globalOnrampMounted = false;
+    };
+  }, []);
 
   if (error) {
     return (
@@ -125,6 +156,7 @@ export default function OnrampWidget({
           backgroundColor: 'var(--card-bg)',
           border: '1px solid var(--card-border)'
         }}
+        data-onramp-container
       />
     </div>
   );

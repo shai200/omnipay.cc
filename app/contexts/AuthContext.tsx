@@ -88,11 +88,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (uid: string) => {
-    const ref = doc(db, 'users', uid);
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      setProfile(snap.data() as PrefillProfile);
-    } else {
+    try {
+      const ref = doc(db, 'users', uid);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        setProfile(snap.data() as PrefillProfile);
+      } else {
+        setProfile(null);
+      }
+    } catch (error: any) {
+      console.log('Profile does not exist or insufficient permissions:', error.code);
       setProfile(null);
     }
   };
@@ -112,21 +117,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, profileData: PrefillProfile) => {
-    const credential = await createUserWithEmailAndPassword(auth, email, password);
-    const uid = credential.user.uid;
+    try {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = credential.user.uid;
+      console.log('User created with UID:', uid);
 
-    const cleaned = cleanProfile({ ...profileData, email });
-    await setDoc(
-      doc(db, 'users', uid),
-      {
-        ...cleaned,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+      // Wait for auth token to be ready
+      const token = await credential.user.getIdToken();
+      console.log('Token obtained, length:', token.length);
 
-    setProfile(cleaned);
+      const cleaned = cleanProfile({ ...profileData, email });
+      console.log('Attempting to write profile to Firestore:', cleaned);
+      
+      await setDoc(
+        doc(db, 'users', uid),
+        {
+          ...cleaned,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      console.log('Profile saved successfully');
+      setProfile(cleaned);
+    } catch (error: any) {
+      console.error('SignUp error details:', {
+        code: error.code,
+        message: error.message,
+        fullError: error
+      });
+      throw error;
+    }
   };
 
   const signIn = async (email: string, password: string) => {
