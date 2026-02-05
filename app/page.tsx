@@ -66,7 +66,7 @@ export default function Home() {
           </div>
           <p className="mb-2">Powered by Stripe Crypto Onramp</p>
           <div className="text-xs text-gray-600">
-            <p>Version 0.2.0</p>
+            <p>Version 0.2.1</p>
             <p>Latest Release: February 5, 2026</p>
           </div>
         </footer>
