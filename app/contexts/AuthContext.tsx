@@ -15,7 +15,10 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseServices } from '@/lib/firebase';
+
+// Get Firebase services - this is lazy loaded and only called in browser
+const { auth, db } = getFirebaseServices();
 
 type PrefillDob = {
   day?: number;
