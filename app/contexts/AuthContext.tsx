@@ -7,6 +7,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
+  Auth,
 } from 'firebase/auth';
 import {
   doc,
@@ -14,11 +15,22 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  Firestore,
 } from 'firebase/firestore';
 import { getFirebaseServices } from '@/lib/firebase';
 
-// Get Firebase services - this is lazy loaded and only called in browser
-const { auth, db } = getFirebaseServices();
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+
+// Initialize on first access
+const ensureInitialized = () => {
+  if (!auth || !db) {
+    const { auth: authService, db: dbService } = getFirebaseServices();
+    auth = authService;
+    db = dbService;
+  }
+  return { auth: auth!, db: db! };
+};
 
 type PrefillDob = {
   day?: number;
@@ -100,7 +112,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (uid: string) => {
     try {
-      const ref = doc(db, 'users', uid);
+      const { db: dbService } = ensureInitialized();
+      const ref = doc(dbService, 'users', uid);
       const snap = await getDoc(ref);
       if (snap.exists()) {
         setProfile(snap.data() as PrefillProfile);
@@ -114,7 +127,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const { auth: authService } = ensureInitialized();
+    const unsubscribe = onAuthStateChanged(authService, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         await fetchProfile(currentUser.uid);
@@ -129,7 +143,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, profileData: PrefillProfile) => {
     try {
-      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      const { auth: authService, db: dbService } = ensureInitialized();
+      const credential = await createUserWithEmailAndPassword(authService, email, password);
       const uid = credential.user.uid;
       console.log('User created with UID:', uid);
 
@@ -141,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Attempting to write profile to Firestore:', cleaned);
       
       await setDoc(
-        doc(db, 'users', uid),
+        doc(dbService, 'users', uid),
         {
           ...cleaned,
           createdAt: serverTimestamp(),
@@ -163,18 +178,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const { auth: authService } = ensureInitialized();
+    await signInWithEmailAndPassword(authService, email, password);
   };
 
   const signOutUser = async () => {
-    await signOut(auth);
+    const { auth: authService } = ensureInitialized();
+    await signOut(authService);
   };
 
   const updateProfile = async (profileData: PrefillProfile) => {
     if (!user) return;
 
+    const { db: dbService } = ensureInitialized();
     const cleaned = cleanProfile(profileData);
-    await updateDoc(doc(db, 'users', user.uid), {
+    await updateDoc(doc(dbService, 'users', user.uid), {
       ...cleaned,
       updatedAt: serverTimestamp(),
     });
