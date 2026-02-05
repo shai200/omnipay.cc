@@ -50,7 +50,7 @@ export default function Home() {
           </div>
         </main>
 
-        <footer className="text-center mt-16 text-gray-500 text-sm">
+        <footer className="text-center mt-16 text-gray-500 text-sm border-t border-gray-800 pt-6">
           <div className="mb-4 space-x-4">
             <a href="/BusinessInfo" className="hover:text-gray-300 transition-colors">
               Business Info
@@ -64,7 +64,11 @@ export default function Home() {
               Terms of Service
             </a>
           </div>
-          <p>Powered by Stripe Crypto Onramp</p>
+          <p className="mb-2">Powered by Stripe Crypto Onramp</p>
+          <div className="text-xs text-gray-600">
+            <p>Version 0.2.0</p>
+            <p>Latest Release: February 5, 2026</p>
+          </div>
         </footer>
       </div>
     </div>
