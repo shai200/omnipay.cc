@@ -19,6 +19,7 @@ export default function OnrampWidget({
 }: OnrampWidgetProps) {
   const { theme } = useTheme();
   const onrampRef = useRef<HTMLDivElement>(null);
+  const onrampSessionRef = useRef<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +28,11 @@ export default function OnrampWidget({
       try {
         setLoading(true);
         setError(null);
+
+        // Clean up previous widget if it exists
+        if (onrampRef.current) {
+          onrampRef.current.innerHTML = '';
+        }
 
         // Create onramp session on the server
         const response = await fetch('/api/onramp-session', {
@@ -68,6 +74,8 @@ export default function OnrampWidget({
           },
         });
 
+        onrampSessionRef.current = onrampSession;
+
         // Listen to session updates
         onrampSession.addEventListener('onramp_session_updated', (event) => {
           console.log('Onramp session updated:', event.payload);
@@ -93,7 +101,7 @@ export default function OnrampWidget({
     };
 
     initializeOnramp();
-  }, [walletAddress, sourceAmount, destinationCurrency, destinationNetwork, theme]);
+  }, [walletAddress, sourceAmount, destinationCurrency, destinationNetwork]);
 
   if (error) {
     return (
