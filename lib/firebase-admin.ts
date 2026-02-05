@@ -19,4 +19,4 @@ if (!admin.apps.length) {
 }
 
 export const adminApp = admin.app();
-export const adminDb = admin.firestore(adminApp, { databaseId: 'omnipay-users' });
+export const adminDb = admin.firestore({ databaseId: 'omnipay-users' });
