@@ -69,7 +69,7 @@ export async function GET(request: Request) {
       .limit(limit)
       .get();
 
-    const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const users = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
 
     return NextResponse.json({
       ok: true,
