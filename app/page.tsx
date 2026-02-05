@@ -231,7 +231,7 @@ export default function Home() {
                   © 2026 Omnipay.cc. All rights reserved.
                 </p>
                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                  <p className="mb-1">Version 0.2.1</p>
+                  <p className="mb-1">Version 0.2.2</p>
                   <p>Latest Release: February 5, 2026</p>
                 </div>
               </div>
