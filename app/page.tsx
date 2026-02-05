@@ -6,7 +6,7 @@ import { useAuth } from './contexts/AuthContext';
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, signOutUser } = useAuth();
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
@@ -23,6 +23,11 @@ export default function Home() {
 
           {/* Theme Toggle */}
           <div className="flex items-center gap-3">
+            {user?.email && (
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {user.email}
+              </span>
+            )}
             <a
               href={user ? '/profile' : '/auth'}
               className="px-3 py-2 rounded-lg text-sm font-semibold"
@@ -30,6 +35,15 @@ export default function Home() {
             >
               {user ? 'Profile' : 'Sign in'}
             </a>
+            {user && (
+              <button
+                onClick={() => signOutUser()}
+                className="px-3 py-2 rounded-lg text-sm font-semibold"
+                style={{ backgroundColor: 'var(--card-border)', color: 'var(--foreground)' }}
+              >
+                Sign out
+              </button>
+            )}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg transition-colors"
