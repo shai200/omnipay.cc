@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadStripeOnramp } from '@stripe/crypto';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface OnrampWidgetProps {
   walletAddress?: string;
@@ -22,6 +23,7 @@ export default function OnrampWidget({
   destinationNetwork,
 }: OnrampWidgetProps) {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const onrampRef = useRef<HTMLDivElement>(null);
   const onrampSessionRef = useRef<any>(null);
 
@@ -89,13 +91,47 @@ export default function OnrampWidget({
         onrampSessionRef.current = onrampSession;
 
         // Listen to session updates
-        onrampSession.addEventListener('onramp_session_updated', (event) => {
+        onrampSession.addEventListener('onramp_session_updated', async (event) => {
+          const status = event.payload.session.status;
+          const sessionId = event.payload.session.id;
+          
           console.log('Onramp session updated:', event.payload);
 
-          if (event.payload.session.status === 'fulfillment_complete') {
+          // Track session state changes in DB for email campaigns
+          try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            
+            // Add auth token if user is logged in
+            if (user) {
+              const token = await user.getIdToken();
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            await fetch('/api/track-onramp-event', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                sessionId,
+                status,
+                transactionDetails: event.payload.session.transaction_details,
+                timestamp: new Date().toISOString(),
+              }),
+            });
+          } catch (error) {
+            console.error('Failed to track onramp event:', error);
+          }
+
+          // Handle specific states
+          if (status === 'fulfillment_complete') {
             console.log('Crypto purchase completed!');
-          } else if (event.payload.session.status === 'rejected') {
+          } else if (status === 'rejected') {
             console.log('Transaction rejected');
+          } else if (status === 'requires_payment') {
+            console.log('Customer ready to pay - cart active');
+          } else if (status === 'fulfillment_processing') {
+            console.log('Payment successful, processing crypto delivery');
+          } else if (status === 'initialized') {
+            console.log('Session initialized');
           }
         });
 

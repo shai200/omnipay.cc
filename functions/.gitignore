@@ -1,0 +1,15 @@
+# Compiled JavaScript files
+lib/
+*.js
+*.js.map
+
+# Node modules
+node_modules/
+
+# Log files
+*.log
+
+# Environment variables
+.env
+.env.local
+
