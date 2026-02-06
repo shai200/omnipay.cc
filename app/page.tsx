@@ -14,28 +14,11 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b" style={{ borderColor: 'var(--card-border)', backgroundColor: 'var(--card-bg)' }}>
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 1040 240"
-              role="img"
-              aria-label="OmniPay logo"
-              className="h-8 w-auto"
-            >
-              <defs>
-                <style>
-                  {`.s{fill:none;stroke:#0B0F1A;stroke-width:20;stroke-linecap:round;stroke-linejoin:round}
-                  .t{fill:#0B0F1A;font:700 116px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}`}
-                </style>
-              </defs>
-
-              <g transform="translate(80,40)">
-                <circle className="s" cx="80" cy="80" r="72" />
-                <rect className="s" x="48" y="48" width="64" height="64" rx="20.8" />
-              </g>
-
-              <text className="t" x="262" y="160">MNIPAY</text>
-            </svg>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white" style={{ backgroundColor: 'var(--accent)' }}>
+              Ω
+            </div>
+            <span className="font-bold text-xl" style={{ color: 'var(--foreground)' }}>Omnipay.cc</span>
           </div>
 
           {/* Theme Toggle */}

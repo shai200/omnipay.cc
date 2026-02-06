@@ -31,12 +31,8 @@ export default function OnrampWidget({
   useEffect(() => {
     const initializeOnramp = async () => {
       try {
-        // Prevent duplicate mounts
-        if (globalOnrampMounted) {
-          console.log('Onramp already mounted globally');
-          setLoading(false);
-          return;
-        }
+        // Reset for new prop values
+        globalOnrampMounted = false;
 
         setLoading(true);
         setError(null);
@@ -135,7 +131,7 @@ export default function OnrampWidget({
       }
       globalOnrampMounted = false;
     };
-  }, []);
+  }, [walletAddress, sourceAmount, sourceCurrency, destinationCurrency, destinationNetwork]);
 
   if (error) {
     return (
