@@ -39,6 +39,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profile) {
+      const hasWeekly = profile.reminder_weekly === true;
+      const hasMonthly = profile.reminder_monthly === true;
+      const defaultMonthly = profile.reminder_monthly === undefined && !hasWeekly;
+
       setForm({
         email: profile.email || user?.email || '',
         first_name: profile.first_name || '',
@@ -52,9 +56,9 @@ export default function ProfilePage() {
         address_city: profile.address?.city || '',
         address_state: profile.address?.state || '',
         address_postal_code: profile.address?.postal_code || '',
-        reminder_monthly: profile.reminder_monthly !== false,
+        reminder_monthly: hasWeekly ? false : hasMonthly || defaultMonthly,
         reminder_price_drop: profile.reminder_price_drop !== false,
-        reminder_weekly: profile.reminder_weekly === true,
+        reminder_weekly: hasWeekly,
         wallet_address_ethereum: profile.wallet_addresses?.ethereum || '',
         wallet_address_bitcoin: profile.wallet_addresses?.bitcoin || '',
         lock_wallet_address: profile.lock_wallet_address === true,
@@ -149,6 +153,22 @@ export default function ProfilePage() {
       ...prev, 
       [name]: type === 'checkbox' ? checked : value 
     }));
+  };
+
+  const onReminderFrequencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      reminder_weekly: value === 'weekly',
+      reminder_monthly: value === 'monthly',
+    }));
+    if (value === 'never') {
+      setForm((prev) => ({
+        ...prev,
+        reminder_weekly: false,
+        reminder_monthly: false,
+      }));
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -500,11 +520,42 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <input
-                    type="checkbox"
+                    type="radio"
+                    id="reminder_never"
+                    name="reminder_frequency"
+                    value="never"
+                    checked={!form.reminder_weekly && !form.reminder_monthly}
+                    onChange={onReminderFrequencyChange}
+                    disabled={!profileLoaded || saving}
+                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <label htmlFor="reminder_never" className="text-sm" style={{ color: 'var(--foreground)' }}>
+                    Never <span style={{ color: 'var(--accent)' }}>(not recommended)</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    id="reminder_weekly"
+                    name="reminder_frequency"
+                    value="weekly"
+                    checked={form.reminder_weekly}
+                    onChange={onReminderFrequencyChange}
+                    disabled={!profileLoaded || saving}
+                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <label htmlFor="reminder_weekly" className="text-sm" style={{ color: 'var(--foreground)' }}>
+                    Once a week <span style={{ color: 'var(--accent)' }}>(hot)</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
                     id="reminder_monthly"
-                    name="reminder_monthly"
+                    name="reminder_frequency"
+                    value="monthly"
                     checked={form.reminder_monthly}
-                    onChange={onChange}
+                    onChange={onReminderFrequencyChange}
                     disabled={!profileLoaded || saving}
                     className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                   />
@@ -524,20 +575,6 @@ export default function ProfilePage() {
                   />
                   <label htmlFor="reminder_price_drop" className="text-sm" style={{ color: 'var(--foreground)' }}>
                     After sharp drops (more than 10%) <span style={{ color: 'var(--accent)' }}>(popular)</span>
-                  </label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="reminder_weekly"
-                    name="reminder_weekly"
-                    checked={form.reminder_weekly}
-                    onChange={onChange}
-                    disabled={!profileLoaded || saving}
-                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <label htmlFor="reminder_weekly" className="text-sm" style={{ color: 'var(--foreground)' }}>
-                    Once a week <span style={{ color: 'var(--accent)' }}>(hot)</span>
                   </label>
                 </div>
               </div>
