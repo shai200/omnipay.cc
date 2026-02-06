@@ -1,16 +1,16 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
-import * as sgMail from '@sendgrid/mail';
+import sgMail from '@sendgrid/mail';
 
 admin.initializeApp();
 const db = admin.firestore();
 
 // Initialize SendGrid with environment variable
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'support@omnipay.cc';
 const REGISTRATION_WELCOME_TEMPLATE_ID = process.env.REGISTRATION_WELCOME_TEMPLATE_ID || 'd-7f75ffd28cd34cb59edcff9a2e1b3696';
 const FIRST_PURCHASE_TEMPLATE_ID = process.env.FIRST_PURCHASE_TEMPLATE_ID || 'd-02a60455a53a443a9634b1fec7bf252f';
-const CART_ABANDONMENT_TEMPLATE_ID = process.env.CART_ABANDONMENT_TEMPLATE_ID || 'd-yyyyyyyyyyyyyy';
+const CART_ABANDONMENT_TEMPLATE_ID = process.env.CART_ABANDONMENT_TEMPLATE_ID || 'd-36e585dbda1240678e91e61c6eeab0c8';
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
@@ -104,9 +104,32 @@ export const checkAbandonedCarts = functions.pubsub
     const emailPromises = abandonedSessions.docs.map(async (doc) => {
       const session = doc.data();
       
-      // Check if we already sent an abandonment email
-      if (session.abandonmentEmailSent) {
+      // Initialize email count if not set
+      const emailCount = session.abandonmentEmailCount || 0;
+      const sessionLastUpdated = session.lastUpdated?.toDate();
+      
+      // Stop if we've sent 3 emails already
+      if (emailCount >= 3) {
         return;
+      }
+
+      // Determine when to send based on email count
+      if (emailCount === 0) {
+        // First email: 1 hour after abandonment (already filtered by query)
+      } else if (emailCount === 1) {
+        // Second email: 3 days after abandonment
+        if (!sessionLastUpdated) return;
+        const daysSinceAbandonment = (Date.now() - sessionLastUpdated.getTime()) / (24 * 60 * 60 * 1000);
+        if (daysSinceAbandonment < 3) {
+          return;
+        }
+      } else if (emailCount === 2) {
+        // Third email: 1 month (30 days) after abandonment
+        if (!sessionLastUpdated) return;
+        const daysSinceAbandonment = (Date.now() - sessionLastUpdated.getTime()) / (24 * 60 * 60 * 1000);
+        if (daysSinceAbandonment < 30) {
+          return;
+        }
       }
 
       if (!session.userId) {
@@ -122,13 +145,14 @@ export const checkAbandonedCarts = functions.pubsub
 
       await sendCartAbandonmentEmail(userData.email, userData.first_name, session);
 
-      // Mark as sent
+      // Update email count and timestamp
       await doc.ref.update({
-        abandonmentEmailSent: true,
-        abandonmentEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+        abandonmentEmailCount: emailCount + 1,
+        lastAbandonmentEmailSent: admin.firestore.FieldValue.serverTimestamp(),
+        abandonmentEmailSent: true, // Keep for backward compatibility
       });
 
-      console.log(`Sent cart abandonment email to ${userData.email}`);
+      console.log(`Sent cart abandonment email #${emailCount + 1} to ${userData.email}`);
     });
 
     await Promise.all(emailPromises);
