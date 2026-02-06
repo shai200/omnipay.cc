@@ -3,44 +3,55 @@
 import OnrampWidget from './components/OnrampWidget';
 import { useTheme } from './contexts/ThemeContext';
 import { useAuth } from './contexts/AuthContext';
+import { useState } from 'react';
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
   const { user, profile, signOutUser } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
       <header className="sticky top-0 z-50 border-b" style={{ borderColor: 'var(--card-border)', backgroundColor: 'var(--card-bg)' }}>
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-2">
           {/* Logo */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white" style={{ backgroundColor: 'var(--accent)' }}>
               Ω
             </div>
-            <span className="font-bold text-xl" style={{ color: 'var(--foreground)' }}>Omnipay.cc</span>
+            <span className="font-bold text-xl hidden sm:inline" style={{ color: 'var(--foreground)' }}>Omnipay.cc</span>
           </div>
 
-          {/* Theme Toggle */}
-          <div className="flex items-center gap-3">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-2">
             {user?.email && (
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <span className="text-sm truncate max-w-[150px]" style={{ color: 'var(--text-secondary)' }}>
                 {user.email}
               </span>
             )}
             {user ? (
-              <a
-                href="/profile"
-                className="px-3 py-2 rounded-lg text-sm font-semibold"
-                style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
-              >
-                Profile
-              </a>
+              <>
+                <a
+                  href="/profile"
+                  className="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
+                  style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
+                >
+                  Profile
+                </a>
+                <button
+                  onClick={() => signOutUser()}
+                  className="px-3 py-2 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: 'var(--card-border)', color: 'var(--foreground)' }}
+                >
+                  Sign out
+                </button>
+              </>
             ) : (
-              <div className="flex items-center gap-2">
+              <>
                 <a
                   href="/auth/register"
-                  className="px-3 py-2 rounded-lg text-sm font-semibold"
+                  className="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
                   style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
                 >
                   Register
@@ -52,16 +63,7 @@ export default function Home() {
                 >
                   Sign in
                 </a>
-              </div>
-            )}
-            {user && (
-              <button
-                onClick={() => signOutUser()}
-                className="px-3 py-2 rounded-lg text-sm font-semibold"
-                style={{ backgroundColor: 'var(--card-border)', color: 'var(--foreground)' }}
-              >
-                Sign out
-              </button>
+              </>
             )}
             <button
               onClick={toggleTheme}
@@ -75,7 +77,81 @@ export default function Home() {
               {theme === 'light' ? '🌙' : '☀️'}
             </button>
           </div>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg transition-colors"
+              style={{ 
+                backgroundColor: 'var(--card-border)',
+                color: 'var(--foreground)'
+              }}
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg transition-colors"
+              style={{ 
+                backgroundColor: 'var(--card-border)',
+                color: 'var(--foreground)'
+              }}
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? '✕' : '☰'}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t" style={{ borderColor: 'var(--card-border)', backgroundColor: 'var(--card-bg)' }}>
+            <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
+              {user?.email && (
+                <div className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
+                  {user.email}
+                </div>
+              )}
+              {user ? (
+                <>
+                  <a
+                    href="/profile"
+                    className="px-3 py-2 rounded-lg text-sm font-semibold text-center"
+                    style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
+                  >
+                    Profile
+                  </a>
+                  <button
+                    onClick={() => signOutUser()}
+                    className="px-3 py-2 rounded-lg text-sm font-semibold"
+                    style={{ backgroundColor: 'var(--card-border)', color: 'var(--foreground)' }}
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <a
+                    href="/auth/register"
+                    className="px-3 py-2 rounded-lg text-sm font-semibold text-center"
+                    style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
+                  >
+                    Register
+                  </a>
+                  <a
+                    href="/auth/login"
+                    className="px-3 py-2 rounded-lg text-sm font-semibold text-center"
+                    style={{ backgroundColor: 'var(--card-border)', color: 'var(--foreground)' }}
+                  >
+                    Sign in
+                  </a>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="container mx-auto px-4 py-12">
