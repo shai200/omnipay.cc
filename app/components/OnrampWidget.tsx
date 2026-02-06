@@ -7,6 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 interface OnrampWidgetProps {
   walletAddress?: string;
   sourceAmount?: number;
+  sourceCurrency?: string;
   destinationCurrency?: string;
   destinationNetwork?: string;
 }
@@ -16,6 +17,7 @@ let globalOnrampMounted = false;
 export default function OnrampWidget({
   walletAddress,
   sourceAmount,
+  sourceCurrency,
   destinationCurrency,
   destinationNetwork,
 }: OnrampWidgetProps) {
@@ -56,6 +58,7 @@ export default function OnrampWidget({
           body: JSON.stringify({
             walletAddress,
             sourceAmount,
+            sourceCurrency,
             destinationCurrency,
             destinationNetwork,
           }),

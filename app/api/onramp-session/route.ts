@@ -3,11 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { walletAddress, sourceAmount, destinationCurrency, destinationNetwork } = body;
+    const { walletAddress, sourceAmount, destinationCurrency, destinationNetwork, sourceCurrency } = body;
 
     console.log('Creating onramp session with params:', {
       walletAddress,
       sourceAmount,
+      sourceCurrency,
       destinationCurrency,
       destinationNetwork
     });
@@ -21,16 +22,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (sourceAmount) {
-      formData.append('transaction_details[source_exchange_amount]', sourceAmount.toString());
-      formData.append('transaction_details[source_currency]', 'usd');
+      formData.append('source_amount', sourceAmount.toString());
+    }
+
+    if (sourceCurrency) {
+      formData.append('source_currency', sourceCurrency);
     }
 
     if (destinationCurrency) {
-      formData.append('transaction_details[destination_currency]', destinationCurrency);
+      formData.append('destination_currency', destinationCurrency);
     }
 
     if (destinationNetwork) {
-      formData.append('transaction_details[destination_network]', destinationNetwork);
+      formData.append('destination_network', destinationNetwork);
     }
 
     console.log('Making request to Stripe API...');

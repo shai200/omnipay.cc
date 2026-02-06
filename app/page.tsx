@@ -6,7 +6,7 @@ import { useAuth } from './contexts/AuthContext';
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
-  const { user, signOutUser } = useAuth();
+  const { user, profile, signOutUser } = useAuth();
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
@@ -109,9 +109,12 @@ export default function Home() {
             </div>
 
             <OnrampWidget
-              sourceAmount={100}
-              destinationCurrency="eth"
-              destinationNetwork="ethereum"
+              key={`${profile?.source_amount}-${profile?.source_currency}`}
+              walletAddress={profile?.wallet_addresses?.ethereum || profile?.wallet_addresses?.bitcoin}
+              sourceAmount={profile?.source_amount ? Number(profile.source_amount) : 100}
+              sourceCurrency={profile?.source_currency || 'usd'}
+              destinationCurrency="btc"
+              destinationNetwork="bitcoin"
             />
           </div>
         </section>
