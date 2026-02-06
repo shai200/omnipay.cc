@@ -113,7 +113,7 @@ export default function OnrampWidget({
               body: JSON.stringify({
                 sessionId,
                 status,
-                transactionDetails: event.payload.session.transaction_details,
+                transactionDetails: (event.payload.session as any).transaction_details,
                 timestamp: new Date().toISOString(),
               }),
             });
