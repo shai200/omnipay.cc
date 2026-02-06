@@ -59,6 +59,7 @@ export default function OnrampWidget({
             sourceCurrency,
             destinationCurrency,
             destinationNetwork,
+            userId: user?.uid || undefined,
           }),
         });
 
