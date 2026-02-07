@@ -40,11 +40,11 @@ export default function Home() {
                   🔔 Reminders
                 </a>
                 <a
-                  href="/profile"
+                  href="/checkout-settings"
                   className="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
                   style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
                 >
-                  Profile
+                  Checkout Settings
                 </a>
                 <button
                   onClick={() => signOutUser()}
@@ -131,11 +131,11 @@ export default function Home() {
                     🔔 Reminders
                   </a>
                   <a
-                    href="/profile"
+                    href="/checkout-settings"
                     className="px-3 py-2 rounded-lg text-sm font-semibold text-center"
                     style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
                   >
-                    Profile
+                    Checkout Settings
                   </a>
                   <button
                     onClick={() => signOutUser()}

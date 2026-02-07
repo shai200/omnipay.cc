@@ -8,6 +8,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   Auth,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import {
   doc,
@@ -68,6 +70,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, profile: PrefillProfile) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOutUser: () => Promise<void>;
   updateProfile: (profile: PrefillProfile) => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -192,6 +195,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(authService, email, password);
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const { auth: authService, db: dbService } = ensureInitialized();
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(authService, provider);
+      const user = result.user;
+
+      // Check if user profile exists, if not create one
+      const userDocRef = doc(dbService, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        // Create profile for new Google user
+        const firstName = user.displayName?.split(' ')[0] || '';
+        const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
+
+        await setDoc(userDocRef, {
+          email: user.email,
+          first_name: firstName,
+          last_name: lastName,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      }
+
+      // Refresh profile data
+      await fetchProfile(user.uid);
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+      throw error;
+    }
+  };
+
   const signOutUser = async () => {
     const { auth: authService } = ensureInitialized();
     await signOut(authService);
@@ -216,7 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({ user, profile, loading, signUp, signIn, signOutUser, updateProfile, refreshProfile }),
+    () => ({ user, profile, loading, signUp, signIn, signInWithGoogle, signOutUser, updateProfile, refreshProfile }),
     [user, profile, loading]
   );
 

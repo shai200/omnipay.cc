@@ -24,7 +24,7 @@ const initialForm = {
   source_amount: '100',
 };
 
-export default function ProfilePage() {
+export default function CheckoutSettingsPage() {
   const router = useRouter();
   const { user, profile, loading, updateProfile, refreshProfile, signOutUser } = useAuth();
   const [form, setForm] = useState(initialForm);
@@ -151,7 +151,7 @@ export default function ProfilePage() {
       await updateProfile(payload);
       console.log('Profile saved with payload:', payload);
       // Don't need to refresh - the form already has the correct values
-      setMessage('Profile updated successfully.');
+      setMessage('Checkout settings updated successfully.');
       setSaving(false);
     } catch (err: any) {
       console.error('Save error:', err);
