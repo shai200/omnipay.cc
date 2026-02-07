@@ -17,9 +17,6 @@ const initialForm = {
   address_city: '',
   address_state: '',
   address_postal_code: '',
-  reminder_monthly: true,
-  reminder_price_drop: true,
-  reminder_weekly: false,
   wallet_address_ethereum: '',
   wallet_address_bitcoin: '',
   lock_wallet_address: false,
@@ -39,10 +36,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profile) {
-      const hasWeekly = profile.reminder_weekly === true;
-      const hasMonthly = profile.reminder_monthly === true;
-      const defaultMonthly = profile.reminder_monthly === undefined && !hasWeekly;
-
       setForm({
         email: profile.email || user?.email || '',
         first_name: profile.first_name || '',
@@ -56,9 +49,6 @@ export default function ProfilePage() {
         address_city: profile.address?.city || '',
         address_state: profile.address?.state || '',
         address_postal_code: profile.address?.postal_code || '',
-        reminder_monthly: hasWeekly ? false : hasMonthly || defaultMonthly,
-        reminder_price_drop: profile.reminder_price_drop !== false,
-        reminder_weekly: hasWeekly,
         wallet_address_ethereum: profile.wallet_addresses?.ethereum || '',
         wallet_address_bitcoin: profile.wallet_addresses?.bitcoin || '',
         lock_wallet_address: profile.lock_wallet_address === true,
@@ -100,9 +90,6 @@ export default function ProfilePage() {
         state: form.address_state || undefined,
         postal_code: form.address_postal_code || undefined,
       },
-      reminder_monthly: form.reminder_monthly,
-      reminder_price_drop: form.reminder_price_drop,
-      reminder_weekly: form.reminder_weekly,
       wallet_addresses: Object.keys(walletAddresses).length > 0 ? walletAddresses : undefined,
       lock_wallet_address: form.lock_wallet_address,
       source_currency: form.source_currency || undefined,
@@ -153,22 +140,6 @@ export default function ProfilePage() {
       ...prev, 
       [name]: type === 'checkbox' ? checked : value 
     }));
-  };
-
-  const onReminderFrequencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      reminder_weekly: value === 'weekly',
-      reminder_monthly: value === 'monthly',
-    }));
-    if (value === 'never') {
-      setForm((prev) => ({
-        ...prev,
-        reminder_weekly: false,
-        reminder_monthly: false,
-      }));
-    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -512,79 +483,26 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Email Reminders Section */}
-            <div className="border-t pt-6 mt-6" style={{ borderColor: 'var(--card-border)' }}>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>
-                Email Reminders to Buy Again
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    id="reminder_never"
-                    name="reminder_frequency"
-                    value="never"
-                    checked={!form.reminder_weekly && !form.reminder_monthly}
-                    onChange={onReminderFrequencyChange}
-                    disabled={!profileLoaded || saving}
-                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <label htmlFor="reminder_never" className="text-sm" style={{ color: 'var(--foreground)' }}>
-                    Never <span style={{ color: 'var(--accent)' }}>(not recommended)</span>
-                  </label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    id="reminder_weekly"
-                    name="reminder_frequency"
-                    value="weekly"
-                    checked={form.reminder_weekly}
-                    onChange={onReminderFrequencyChange}
-                    disabled={!profileLoaded || saving}
-                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <label htmlFor="reminder_weekly" className="text-sm" style={{ color: 'var(--foreground)' }}>
-                    Once a week <span style={{ color: 'var(--accent)' }}>(hot)</span>
-                  </label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    id="reminder_monthly"
-                    name="reminder_frequency"
-                    value="monthly"
-                    checked={form.reminder_monthly}
-                    onChange={onReminderFrequencyChange}
-                    disabled={!profileLoaded || saving}
-                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <label htmlFor="reminder_monthly" className="text-sm" style={{ color: 'var(--foreground)' }}>
-                    Once a month <span style={{ color: 'var(--accent)' }}>(popular)</span>
-                  </label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="reminder_price_drop"
-                    name="reminder_price_drop"
-                    checked={form.reminder_price_drop}
-                    onChange={onChange}
-                    disabled={!profileLoaded || saving}
-                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <label htmlFor="reminder_price_drop" className="text-sm" style={{ color: 'var(--foreground)' }}>
-                    After sharp drops (more than 10%) <span style={{ color: 'var(--accent)' }}>(popular)</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
             {message && (
               <div className="rounded-lg border p-3 text-sm" style={{ borderColor: 'var(--card-border)', color: 'var(--text-secondary)' }}>
                 {message}
               </div>
             )}
+
+            {/* Crypto Purchase Reminders Button */}
+            <div className="border-t pt-6 mt-6" style={{ borderColor: 'var(--card-border)' }}>
+              <button
+                type="button"
+                onClick={() => router.push('/reminders')}
+                className="w-full rounded-lg px-4 py-3 text-white font-bold transition-all hover:scale-105 flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#dc2626' }}
+              >
+                🔔 Crypto Purchase Reminders (IMPORTANT)
+              </button>
+              <p className="text-xs text-center mt-2" style={{ color: 'var(--text-secondary)' }}>
+                Set up regular reminders to build your wealth habit — this is the most critical step!
+              </p>
+            </div>
 
             <button
               type="submit"

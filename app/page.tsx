@@ -33,6 +33,13 @@ export default function Home() {
             {user ? (
               <>
                 <a
+                  href="/reminders"
+                  className="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                >
+                  🔔 Reminders
+                </a>
+                <a
                   href="/profile"
                   className="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
                   style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
@@ -116,6 +123,13 @@ export default function Home() {
               )}
               {user ? (
                 <>
+                  <a
+                    href="/reminders"
+                    className="px-3 py-2 rounded-lg text-sm font-semibold text-center"
+                    style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                  >
+                    🔔 Reminders
+                  </a>
                   <a
                     href="/profile"
                     className="px-3 py-2 rounded-lg text-sm font-semibold text-center"
