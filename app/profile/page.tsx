@@ -147,6 +147,27 @@ export default function ProfilePage() {
     setMessage('');
     setSaving(true);
 
+    // Validate age if DOB is provided
+    if (form.dob_year && form.dob_month && form.dob_day) {
+      const birthDate = new Date(
+        parseInt(form.dob_year),
+        parseInt(form.dob_month) - 1,
+        parseInt(form.dob_day)
+      );
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      if (age < 13) {
+        setMessage('You must be at least 13 years old to use this service.');
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       await updateProfile(payload);
       console.log('Profile saved with payload:', payload);

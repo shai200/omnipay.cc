@@ -88,20 +88,33 @@ export async function POST(request: NextRequest) {
             console.log('ℹ No last_name in user profile');
           }
           
-          // Add date of birth
+          // Add date of birth with age validation
           if (userData?.dob) {
             console.log('📅 Processing DOB:', userData.dob);
-            if (userData.dob.year) {
-              formData.append('customer_information[dob][year]', userData.dob.year.toString());
-              console.log('✓ Added dob.year:', userData.dob.year);
-            }
-            if (userData.dob.month) {
-              formData.append('customer_information[dob][month]', userData.dob.month.toString());
-              console.log('✓ Added dob.month:', userData.dob.month);
-            }
-            if (userData.dob.day) {
-              formData.append('customer_information[dob][day]', userData.dob.day.toString());
-              console.log('✓ Added dob.day:', userData.dob.day);
+            
+            // Validate that all DOB fields are present
+            if (userData.dob.year && userData.dob.month && userData.dob.day) {
+              // Calculate age - Stripe requires at least 13 years old
+              const birthDate = new Date(userData.dob.year, userData.dob.month - 1, userData.dob.day);
+              const today = new Date();
+              let age = today.getFullYear() - birthDate.getFullYear();
+              const monthDiff = today.getMonth() - birthDate.getMonth();
+              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+              }
+              
+              console.log('🎂 Calculated age:', age);
+              
+              if (age >= 13) {
+                formData.append('customer_information[dob][year]', userData.dob.year.toString());
+                formData.append('customer_information[dob][month]', userData.dob.month.toString());
+                formData.append('customer_information[dob][day]', userData.dob.day.toString());
+                console.log('✓ Added DOB (age verified):', `${userData.dob.year}-${userData.dob.month}-${userData.dob.day}`);
+              } else {
+                console.log('⚠ User is under 13 years old - skipping DOB to avoid Stripe rejection');
+              }
+            } else {
+              console.log('⚠ Incomplete DOB data - skipping:', userData.dob);
             }
           } else {
             console.log('ℹ No DOB in user profile');

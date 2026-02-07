@@ -64,7 +64,17 @@ export default function OnrampWidget({
         });
 
         if (!response.ok) {
-          throw new Error('Failed to create onramp session');
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error || 'Failed to create onramp session';
+          
+          // Provide user-friendly error messages
+          if (errorMessage.includes('at least 13 years of age')) {
+            throw new Error('You must be at least 13 years old to use this service. Please update your profile with a valid date of birth.');
+          } else if (errorMessage.includes('Crypto onramp is not enabled')) {
+            throw new Error('Crypto purchases are currently unavailable. Please try again later.');
+          }
+          
+          throw new Error(errorMessage);
         }
 
         const { clientSecret } = await response.json();
