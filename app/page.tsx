@@ -176,7 +176,7 @@ export default function Home() {
               Your Crypto, Your Wallet, Your Control
             </h1>
             <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-              Buy crypto with any credit or debit card and receive it directly into your personal wallet. Join the select few who are building wealth through smart, consistent accumulation—a proven strategy that most investors never master.
+              Buy crypto with any credit or debit card and receive it directly into your personal wallet. Set up smart reminders to never miss an opportunity—join the select few who are building wealth through disciplined, consistent accumulation.
             </p>
           </div>
 
@@ -209,7 +209,68 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features Grid */}
+        {/* Reminders CTA Section */}
+        <section className="max-w-3xl mx-auto mb-12">
+          <div 
+            className="rounded-2xl border p-8 md:p-10"
+            style={{ 
+              backgroundColor: 'var(--card-bg)',
+              borderColor: '#dc2626',
+              borderWidth: '2px'
+            }}
+          >
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ backgroundColor: '#dc2626' }}>
+                <span className="text-3xl">🔔</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>
+                Never Forget to Accumulate Again
+              </h2>
+              <p className="text-lg mb-6" style={{ color: 'var(--text-secondary)' }}>
+                The secret to wealth building isn't just buying once—it's buying <strong style={{ color: 'var(--foreground)' }}>consistently</strong>. Set up smart reminders to build the habit that separates winners from wishers.
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6 text-left">
+              <div className="flex gap-3">
+                <span className="text-xl flex-shrink-0">📅</span>
+                <div>
+                  <p className="font-semibold" style={{ color: 'var(--foreground)' }}>Schedule Recurring Reminders</p>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Set weekly, bi-weekly, or monthly alerts to accumulate at your own pace</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-xl flex-shrink-0">📉</span>
+                <div>
+                  <p className="font-semibold" style={{ color: 'var(--foreground)' }}>Get Crypto Drop Alerts</p>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Receive notifications after major price drops—buy cheap when Mr. Market is giving away specials</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-xl flex-shrink-0">⭐</span>
+                <div>
+                  <p className="font-semibold" style={{ color: 'var(--foreground)' }}>Prioritize These Emails</p>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Mark our reminders as important in your inbox so you never miss an opportunity to act</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <a
+                href="/reminders"
+                className="inline-block px-8 py-4 rounded-lg text-lg font-bold transition-transform hover:scale-105"
+                style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+              >
+                🔔 Set Up Your Reminders Now
+              </a>
+              <p className="text-sm mt-3" style={{ color: 'var(--text-secondary)' }}>
+                {user ? 'Configure your reminder preferences' : 'Sign in to customize your alerts'}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Grid */
         <section className="max-w-5xl mx-auto mb-12">
           <h2 className="text-3xl font-bold text-center mb-8" style={{ color: 'var(--foreground)' }}>
             The Smart Way to Build Crypto Wealth
