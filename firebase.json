@@ -3,7 +3,7 @@
     "rules": "firestore.rules"
   },
   "hosting": {
-    "public": "out",
+    "public": "public",
     "cleanUrls": true,
     "headers": [
       {

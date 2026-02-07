@@ -173,10 +173,10 @@ export default function Home() {
         <section className="max-w-3xl mx-auto mb-12">
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
-              Buy Crypto with Smart Reminders
+              Your Crypto, Your Wallet, Your Control
             </h1>
             <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-              Get notified when it's time to buy. Set reminders for specific intervals or when prices drop. Never miss an opportunity to grow your portfolio.
+              Buy crypto with any credit or debit card and receive it directly into your personal wallet. Join the select few who are building wealth through smart, consistent accumulation—a proven strategy that most investors never master.
             </p>
           </div>
 
@@ -191,10 +191,10 @@ export default function Home() {
           >
             <div className="mb-6 px-8">
               <h2 className="text-2xl font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
-                Buy Cryptocurrency
+                Buy Crypto, Sent Directly to Your Wallet
               </h2>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Fast, secure transactions powered by Stripe
+                Use any credit or debit card. Keep full control—crypto goes straight to your wallet.
               </p>
             </div>
 
@@ -212,7 +212,7 @@ export default function Home() {
         {/* Features Grid */}
         <section className="max-w-5xl mx-auto mb-12">
           <h2 className="text-3xl font-bold text-center mb-8" style={{ color: 'var(--foreground)' }}>
-            Why Choose Omnipay.cc
+            The Smart Way to Build Crypto Wealth
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -225,13 +225,13 @@ export default function Home() {
               }}
             >
               <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--accent)' }}>
-                <span className="text-white text-xl">🔒</span>
+                <span className="text-white text-xl">🔑</span>
               </div>
               <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--foreground)' }}>
-                Bank-Grade Security
+                Your Wallet, Your Control
               </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Institutional security standards with encrypted transactions
+                Crypto is sent directly to your personal wallet—no custody, no middlemen. Use any credit or debit card for instant purchases.
               </p>
             </div>
 
@@ -244,13 +244,13 @@ export default function Home() {
               }}
             >
               <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--accent)' }}>
-                <span className="text-white text-xl">⚡</span>
+                <span className="text-white text-xl">📈</span>
               </div>
               <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--foreground)' }}>
-                Instant Settlement
+                Accumulate Safely Over Time
               </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Real-time processing with immediate confirmations
+                Buying crypto in small, regular chunks is one of the safest ways to grow your portfolio. Reduce risk and build wealth steadily.
               </p>
             </div>
 
@@ -263,13 +263,13 @@ export default function Home() {
               }}
             >
               <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: 'var(--accent)' }}>
-                <span className="text-white text-xl">🌐</span>
+                <span className="text-white text-xl">⚡</span>
               </div>
               <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--foreground)' }}>
-                Multi-Chain Support
+                Join the Elite Few
               </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Support for major blockchains: Ethereum, Bitcoin, Solana, Polygon
+                Most investors don't have this discipline. Be part of the select group of smart accumulators who are positioned to dominate in the future.
               </p>
             </div>
           </div>
