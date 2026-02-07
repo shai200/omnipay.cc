@@ -173,10 +173,10 @@ export default function Home() {
         <section className="max-w-3xl mx-auto mb-12">
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
-              Your Crypto, Your Wallet, Your Control
+              Build Wealth with Recurring Crypto Buys
             </h1>
             <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-              Buy crypto with any credit or debit card and receive it directly into your personal wallet. Set up smart reminders to never miss an opportunity - join the select few who are building wealth through disciplined, consistent accumulation.
+              Buy crypto regularly with any credit or debit card - sent directly to your wallet. Set up smart reminders to build the disciplined habit that turns small, consistent purchases into lasting wealth.
             </p>
           </div>
 
