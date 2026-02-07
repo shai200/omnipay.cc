@@ -1,17 +1,13 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
-import sgMail from '@sendgrid/mail';
 
 // Initialize Firebase Admin at module level (required for Cloud Functions)
-try {
-  if (!admin.apps.length) {
-    admin.initializeApp();
-  }
-} catch (error: any) {
-  console.warn('Firebase already initialized or init error:', error.message);
+if (!admin.apps.length) {
+  admin.initializeApp();
 }
 
 let db: admin.firestore.Firestore | null = null;
+let sgMail: any = null;
 let isInitialized = false;
 
 function initializeServices() {
@@ -25,7 +21,11 @@ function initializeServices() {
     
     const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
     if (SENDGRID_API_KEY) {
-      sgMail.setApiKey(SENDGRID_API_KEY);
+      // Lazy load SendGrid only when needed
+      if (!sgMail) {
+        sgMail = require('@sendgrid/mail');
+        sgMail.setApiKey(SENDGRID_API_KEY);
+      }
       console.log('  ✓ SendGrid initialized');
     } else {
       console.warn('  ⚠ SendGrid API key not found');
