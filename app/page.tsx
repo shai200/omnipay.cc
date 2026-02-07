@@ -176,7 +176,7 @@ export default function Home() {
               Your Crypto, Your Wallet, Your Control
             </h1>
             <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-              Buy crypto with any credit or debit card and receive it directly into your personal wallet. Set up smart reminders to never miss an opportunity—join the select few who are building wealth through disciplined, consistent accumulation.
+              Buy crypto with any credit or debit card and receive it directly into your personal wallet. Set up smart reminders to never miss an opportunity - join the select few who are building wealth through disciplined, consistent accumulation.
             </p>
           </div>
 
@@ -194,7 +194,7 @@ export default function Home() {
                 Buy Crypto, Sent Directly to Your Wallet
               </h2>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Use any credit or debit card. Keep full control—crypto goes straight to your wallet.
+                Use any credit or debit card. Keep full control - crypto goes straight to your wallet.
               </p>
             </div>
 
@@ -227,7 +227,7 @@ export default function Home() {
                 Never Forget to Accumulate Again
               </h2>
               <p className="text-lg mb-6" style={{ color: 'var(--text-secondary)' }}>
-                The secret to wealth building isn't just buying once—it's buying <strong style={{ color: 'var(--foreground)' }}>consistently</strong>. Set up smart reminders to build the habit that separates winners from wishers.
+                The secret to wealth building isn&apos;t just buying once - it&apos;s buying <strong style={{ color: 'var(--foreground)' }}>consistently</strong>. Set up smart reminders to build the habit that separates winners from wishers.
               </p>
             </div>
 
@@ -243,7 +243,7 @@ export default function Home() {
                 <span className="text-xl flex-shrink-0">📉</span>
                 <div>
                   <p className="font-semibold" style={{ color: 'var(--foreground)' }}>Get Crypto Drop Alerts</p>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Receive notifications after major price drops—buy cheap when Mr. Market is giving away specials</p>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Receive notifications after major price drops - buy cheap when Mr. Market is giving away specials</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -264,13 +264,13 @@ export default function Home() {
                 🔔 Set Up Your Reminders Now
               </a>
               <p className="text-sm mt-3" style={{ color: 'var(--text-secondary)' }}>
-                {user ? 'Configure your reminder preferences' : 'Sign in to customize your alerts'}
+                {user ? "Configure your reminder preferences" : "Sign in to customize your alerts"}
               </p>
             </div>
           </div>
         </section>
 
-        {/* Features Grid */
+        {/* Features Grid */}
         <section className="max-w-5xl mx-auto mb-12">
           <h2 className="text-3xl font-bold text-center mb-8" style={{ color: 'var(--foreground)' }}>
             The Smart Way to Build Crypto Wealth
@@ -292,7 +292,7 @@ export default function Home() {
                 Your Wallet, Your Control
               </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Crypto is sent directly to your personal wallet—no custody, no middlemen. Use any credit or debit card for instant purchases.
+                Crypto is sent directly to your personal wallet - no custody, no middlemen. Use any credit or debit card for instant purchases.
               </p>
             </div>
 
@@ -330,7 +330,7 @@ export default function Home() {
                 Join the Elite Few
               </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Most investors don't have this discipline. Be part of the select group of smart accumulators who are positioned to dominate in the future.
+                Most investors don&apos;t have this discipline. Be part of the select group of smart accumulators who are positioned to dominate in the future.
               </p>
             </div>
           </div>
