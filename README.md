@@ -22,6 +22,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## iOS Wrapper
+
+See [IOS_WRAP.md](IOS_WRAP.md) for steps to wrap the PWA as an iOS App Store submission using Capacitor.
+
 ## Tech Stack
 
 - [Next.js](https://nextjs.org) - React framework
