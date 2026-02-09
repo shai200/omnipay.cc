@@ -1,0 +1,19 @@
+{
+  "/BusinessInfo/page": "app/BusinessInfo/page.js",
+  "/PrivacyPolicy/page": "app/PrivacyPolicy/page.js",
+  "/TermsOfService/page": "app/TermsOfService/page.js",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/onramp-session/route": "app/api/onramp-session/route.js",
+  "/api/test-users/route": "app/api/test-users/route.js",
+  "/api/track-onramp-event/route": "app/api/track-onramp-event/route.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/auth/page": "app/auth/page.js",
+  "/auth/register/page": "app/auth/register/page.js",
+  "/checkout-settings/page": "app/checkout-settings/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/firestore-test/page": "app/firestore-test/page.js",
+  "/page": "app/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/reminders/page": "app/reminders/page.js"
+}

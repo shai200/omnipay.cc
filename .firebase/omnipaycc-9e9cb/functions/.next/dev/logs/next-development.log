@@ -1,0 +1,302 @@
+[00:00:01.682] Server  LOG     ✓ Ready in 1188ms
+[00:00:27.690] Server  LOG     ○ Compiling / ...
+[00:00:37.955] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:40.787] Server  LOG     === ONRAMP SESSION REQUEST ===
+[00:00:40.791] Server  LOG     Timestamp: "2026-02-07T19:32:00.695Z"
+[00:00:40.807] Server  LOG     Request body: {}
+[00:00:40.819] Server  LOG     Building form data for Stripe API...
+[00:00:40.841] Server  LOG     ℹ No wallet address provided
+[00:00:40.864] Server  LOG     ✓ Added source amount: 100
+[00:00:40.880] Server  LOG     ✓ Added source currency: "usd"
+[00:00:40.893] Server  LOG     ✓ Added destination currency: "btc"
+[00:00:40.906] Server  LOG     ✓ Added destination network: "bitcoin"
+[00:00:40.913] Server  LOG     ℹ No userId provided - skipping profile lookup
+[00:00:40.922] Server  LOG     🔗 Making request to Stripe API...
+[00:00:40.933] Server  LOG     Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions
+[00:00:40.947] Server  LOG     Form data keys: ["source_amount","source_currency","destination_currency","destination_network"]
+[00:00:40.961] Browser LOG     Onramp component unmounting
+[00:00:40.961] Browser LOG     Onramp component unmounting
+[00:00:40.989] Server  LOG     === ONRAMP SESSION REQUEST ===
+[00:00:40.990] Server  LOG     Timestamp: "2026-02-07T19:32:00.897Z"
+[00:00:40.997] Server  LOG     Request body: {}
+[00:00:41.000] Server  LOG     Building form data for Stripe API...
+[00:00:41.001] Server  LOG     ✓ Added wallet address: "0xc0ffee254729296a45a3885639AC7E10F9d54979"
+[00:00:41.003] Server  LOG     ✓ Added source amount: 144
+[00:00:41.006] Server  LOG     ✓ Added source currency: "usd"
+[00:00:41.007] Server  LOG     ✓ Added destination currency: "btc"
+[00:00:41.008] Server  LOG     ✓ Added destination network: "bitcoin"
+[00:00:41.010] Server  LOG     📋 Fetching user profile for userId: "buyhAtacE7cErLBkHNeFL2uqXxB2"
+[00:00:41.680] Server  LOG     === ONRAMP SESSION REQUEST ===
+[00:00:41.687] Server  LOG     Timestamp: "2026-02-07T19:32:01.589Z"
+[00:00:41.689] Server  LOG     Request body: {}
+[00:00:41.690] Server  LOG     Building form data for Stripe API...
+[00:00:41.691] Server  LOG     ✓ Added wallet address: "0xc0ffee254729296a45a3885639AC7E10F9d54979"
+[00:00:41.693] Server  LOG     ✓ Added source amount: 144
+[00:00:41.696] Server  LOG     ✓ Added source currency: "usd"
+[00:00:41.697] Server  LOG     ✓ Added destination currency: "btc"
+[00:00:41.698] Server  LOG     ✓ Added destination network: "bitcoin"
+[00:00:41.702] Server  LOG     📋 Fetching user profile for userId: "buyhAtacE7cErLBkHNeFL2uqXxB2"
+[00:00:42.246] Server  LOG     📡 Stripe API response status: 200 "OK"
+[00:00:42.248] Server  LOG     ✅ Session created successfully!
+[00:00:42.249] Server  LOG     Session ID: "cos_1SyHEbLFOCxUQmeXrrRMJGZA"
+[00:00:42.249] Server  LOG     Session status: "initialized"
+[00:00:42.250] Server  LOG     === END ONRAMP SESSION REQUEST ===
+[00:00:42.996] Server  LOG     ✓ User profile found
+[00:00:42.998] Server  LOG     User data fields: ["source_currency","lock_wallet_address","email","reminder_price_drop","dob","last_name","first_name","wallet_addresses","reminder_weekly","reminder_monthly","source_amount","updatedAt"]
+[00:00:42.998] Server  LOG     ✓ Added email: "shai200+8@gmail.com"
+[00:00:42.999] Server  LOG     ✓ Added first_name: "sd"
+[00:00:42.999] Server  LOG     ✓ Added last_name: "dss"
+[00:00:43.000] Server  LOG     📅 Processing DOB: {}
+[00:00:43.000] Server  LOG     🎂 Calculated age: 6
+[00:00:43.001] Server  LOG     ⚠ User is under 13 years old - skipping DOB to avoid Stripe rejection
+[00:00:43.001] Server  LOG     ℹ No address in user profile
+[00:00:43.002] Server  LOG     🔗 Making request to Stripe API...
+[00:00:43.002] Server  LOG     Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions
+[00:00:43.003] Server  LOG     Form data keys: ["wallet_addresses[ethereum]","source_amount","source_currency","destination_currency","destination_network","customer_information[email]","customer_information[first_name]","customer_information[last_name]"]
+[00:00:43.061] Server  LOG     ✓ User profile found
+[00:00:43.063] Server  LOG     User data fields: ["source_currency","lock_wallet_address","email","reminder_price_drop","dob","last_name","first_name","wallet_addresses","reminder_weekly","reminder_monthly","source_amount","updatedAt"]
+[00:00:43.063] Server  LOG     ✓ Added email: "shai200+8@gmail.com"
+[00:00:43.064] Server  LOG     ✓ Added first_name: "sd"
+[00:00:43.064] Server  LOG     ✓ Added last_name: "dss"
+[00:00:43.065] Server  LOG     📅 Processing DOB: {}
+[00:00:43.066] Server  LOG     🎂 Calculated age: 6
+[00:00:43.067] Server  LOG     ⚠ User is under 13 years old - skipping DOB to avoid Stripe rejection
+[00:00:43.067] Server  LOG     ℹ No address in user profile
+[00:00:43.068] Server  LOG     🔗 Making request to Stripe API...
+[00:00:43.068] Server  LOG     Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions
+[00:00:43.069] Server  LOG     Form data keys: ["wallet_addresses[ethereum]","source_amount","source_currency","destination_currency","destination_network","customer_information[email]","customer_information[first_name]","customer_information[last_name]"]
+[00:00:43.110] Browser WARN    You may test your Stripe.js integration over HTTP. However, live Stripe.js integrations must use HTTPS.
+[00:00:43.365] Server  LOG     📡 Stripe API response status: 200 "OK"
+[00:00:43.367] Server  LOG     ✅ Session created successfully!
+[00:00:43.368] Server  LOG     Session ID: "cos_1SyHEdLFOCxUQmeXBowx8zct"
+[00:00:43.369] Server  LOG     Session status: "initialized"
+[00:00:43.369] Server  LOG     === END ONRAMP SESSION REQUEST ===
+[00:00:43.556] Server  LOG     📡 Stripe API response status: 200 "OK"
+[00:00:43.559] Server  LOG     ✅ Session created successfully!
+[00:00:43.560] Server  LOG     Session ID: "cos_1SyHEdLFOCxUQmeX9hF9qebO"
+[00:00:43.560] Server  LOG     Session status: "initialized"
+[00:00:43.561] Server  LOG     === END ONRAMP SESSION REQUEST ===
+[00:00:44.109] Browser WARN    You may test your Stripe.js integration over HTTP. However, live Stripe.js integrations must use HTTPS.
+[00:00:44.109] Browser LOG     Onramp widget mounted
+[00:00:44.109] Browser WARN    You may test your Stripe.js integration over HTTP. However, live Stripe.js integrations must use HTTPS.
+[00:00:44.109] Browser LOG     Onramp widget mounted
+[00:00:49.973] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHEdLFOCxUQmeXBowx8zct_secret_75REi6TAKtV6p27Jvjnd77d91003AmgPjmy","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHEdLFOCxUQmeXBowx8zct","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:00:49.973] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHEdLFOCxUQmeXBowx8zct_secret_75REi6TAKtV6p27Jvjnd77d91003AmgPjmy","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHEdLFOCxUQmeXBowx8zct","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:00:49.973] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHEdLFOCxUQmeXBowx8zct_secret_75REi6TAKtV6p27Jvjnd77d91003AmgPjmy","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHEdLFOCxUQmeXBowx8zct","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:00:58.885] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHEdLFOCxUQmeX9hF9qebO_secret_my4hynPPEFMLnBDeVHDyHEkql0063ADuBMo","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHEdLFOCxUQmeX9hF9qebO","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:00:58.885] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHEdLFOCxUQmeX9hF9qebO_secret_my4hynPPEFMLnBDeVHDyHEkql0063ADuBMo","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHEdLFOCxUQmeX9hF9qebO","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:00:58.885] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHEdLFOCxUQmeX9hF9qebO_secret_my4hynPPEFMLnBDeVHDyHEkql0063ADuBMo","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHEdLFOCxUQmeX9hF9qebO","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:01:00.820] Server  LOG     Tracked onramp event: cos_1SyHEdLFOCxUQmeXBowx8zct -> initialized
+[00:01:00.940] Browser LOG     Session initialized
+[00:01:01.031] Server  LOG     Tracked onramp event: cos_1SyHEdLFOCxUQmeX9hF9qebO -> initialized
+[00:01:01.058] Server  LOG     Tracked onramp event: cos_1SyHEdLFOCxUQmeX9hF9qebO -> initialized
+[00:01:01.172] Browser LOG     Session initialized
+[00:01:01.172] Browser LOG     Session initialized
+[00:01:01.729] Server  LOG     Tracked onramp event: cos_1SyHEdLFOCxUQmeXBowx8zct -> initialized
+[00:01:01.837] Browser LOG     Session initialized
+[00:01:01.972] Server  LOG     Tracked onramp event: cos_1SyHEdLFOCxUQmeX9hF9qebO -> initialized
+[00:01:01.982] Server  LOG     Tracked onramp event: cos_1SyHEdLFOCxUQmeXBowx8zct -> initialized
+[00:01:02.089] Browser LOG     Session initialized
+[00:01:02.089] Browser LOG     Session initialized
+[00:03:51.273] Server  LOG     ✓ Compiled in 312ms
+[00:04:00.914] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:04:01.030] Server  LOG     === ONRAMP SESSION REQUEST ===
+[00:04:01.031] Server  LOG     Timestamp: "2026-02-07T19:35:20.937Z"
+[00:04:01.032] Server  LOG     Request body: {}
+[00:04:01.033] Server  LOG     Building form data for Stripe API...
+[00:04:01.035] Server  LOG     ℹ No wallet address provided
+[00:04:01.036] Server  LOG     ✓ Added source amount: 100
+[00:04:01.036] Server  LOG     ✓ Added source currency: "usd"
+[00:04:01.038] Server  LOG     ✓ Added destination currency: "btc"
+[00:04:01.040] Server  LOG     ✓ Added destination network: "bitcoin"
+[00:04:01.040] Server  LOG     ℹ No userId provided - skipping profile lookup
+[00:04:01.041] Server  LOG     🔗 Making request to Stripe API...
+[00:04:01.042] Server  LOG     Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions
+[00:04:01.043] Server  LOG     Form data keys: ["source_amount","source_currency","destination_currency","destination_network"]
+[00:04:01.524] Server  LOG     📡 Stripe API response status: 200 "OK"
+[00:04:01.526] Server  LOG     ✅ Session created successfully!
+[00:04:01.526] Server  LOG     Session ID: "cos_1SyHHpLFOCxUQmeXdetwAsGo"
+[00:04:01.527] Server  LOG     Session status: "initialized"
+[00:04:01.528] Server  LOG     === END ONRAMP SESSION REQUEST ===
+[00:04:01.642] Browser WARN    You may test your Stripe.js integration over HTTP. However, live Stripe.js integrations must use HTTPS.
+[00:04:01.642] Browser LOG     Onramp widget mounted
+[00:04:01.758] Server  LOG     === ONRAMP SESSION REQUEST ===
+[00:04:01.759] Server  LOG     Timestamp: "2026-02-07T19:35:21.666Z"
+[00:04:01.760] Server  LOG     Request body: {}
+[00:04:01.760] Server  LOG     Building form data for Stripe API...
+[00:04:01.761] Server  LOG     ✓ Added wallet address: "0xc0ffee254729296a45a3885639AC7E10F9d54979"
+[00:04:01.762] Server  LOG     ✓ Added source amount: 144
+[00:04:01.763] Server  LOG     ✓ Added source currency: "usd"
+[00:04:01.766] Server  LOG     ✓ Added destination currency: "btc"
+[00:04:01.767] Server  LOG     ✓ Added destination network: "bitcoin"
+[00:04:01.768] Server  LOG     📋 Fetching user profile for userId: "buyhAtacE7cErLBkHNeFL2uqXxB2"
+[00:04:01.787] Server  LOG     === ONRAMP SESSION REQUEST ===
+[00:04:01.789] Server  LOG     Timestamp: "2026-02-07T19:35:21.696Z"
+[00:04:01.791] Server  LOG     Request body: {}
+[00:04:01.792] Server  LOG     Building form data for Stripe API...
+[00:04:01.793] Server  LOG     ✓ Added wallet address: "0xc0ffee254729296a45a3885639AC7E10F9d54979"
+[00:04:01.794] Server  LOG     ✓ Added source amount: 144
+[00:04:01.795] Server  LOG     ✓ Added source currency: "usd"
+[00:04:01.795] Server  LOG     ✓ Added destination currency: "btc"
+[00:04:01.796] Server  LOG     ✓ Added destination network: "bitcoin"
+[00:04:01.797] Server  LOG     📋 Fetching user profile for userId: "buyhAtacE7cErLBkHNeFL2uqXxB2"
+[00:04:01.835] Browser LOG     Onramp component unmounting
+[00:04:01.835] Browser LOG     Error unmounting onramp session: {}
+[00:04:01.835] Browser LOG     Onramp component unmounting
+[00:04:02.014] Server  LOG     ✓ User profile found
+[00:04:02.015] Server  LOG     User data fields: ["source_currency","lock_wallet_address","email","reminder_price_drop","dob","last_name","first_name","wallet_addresses","reminder_weekly","reminder_monthly","source_amount","updatedAt"]
+[00:04:02.016] Server  LOG     ✓ Added email: "shai200+8@gmail.com"
+[00:04:02.017] Server  LOG     ✓ Added first_name: "sd"
+[00:04:02.018] Server  LOG     ✓ Added last_name: "dss"
+[00:04:02.019] Server  LOG     📅 Processing DOB: {}
+[00:04:02.021] Server  LOG     🎂 Calculated age: 6
+[00:04:02.021] Server  LOG     ⚠ User is under 13 years old - skipping DOB to avoid Stripe rejection
+[00:04:02.022] Server  LOG     ℹ No address in user profile
+[00:04:02.022] Server  LOG     🔗 Making request to Stripe API...
+[00:04:02.023] Server  LOG     Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions
+[00:04:02.024] Server  LOG     Form data keys: ["wallet_addresses[ethereum]","source_amount","source_currency","destination_currency","destination_network","customer_information[email]","customer_information[first_name]","customer_information[last_name]"]
+[00:04:02.395] Server  LOG     📡 Stripe API response status: 200 "OK"
+[00:04:02.397] Server  LOG     ✅ Session created successfully!
+[00:04:02.399] Server  LOG     Session ID: "cos_1SyHHqLFOCxUQmeXD1njT6Ho"
+[00:04:02.400] Server  LOG     Session status: "initialized"
+[00:04:02.401] Server  LOG     === END ONRAMP SESSION REQUEST ===
+[00:04:02.521] Browser WARN    You may test your Stripe.js integration over HTTP. However, live Stripe.js integrations must use HTTPS.
+[00:04:02.521] Browser LOG     Onramp widget mounted
+[00:04:02.729] Server  LOG     ✓ User profile found
+[00:04:02.731] Server  LOG     User data fields: ["source_currency","lock_wallet_address","email","reminder_price_drop","dob","last_name","first_name","wallet_addresses","reminder_weekly","reminder_monthly","source_amount","updatedAt"]
+[00:04:02.732] Server  LOG     ✓ Added email: "shai200+8@gmail.com"
+[00:04:02.732] Server  LOG     ✓ Added first_name: "sd"
+[00:04:02.733] Server  LOG     ✓ Added last_name: "dss"
+[00:04:02.734] Server  LOG     📅 Processing DOB: {}
+[00:04:02.735] Server  LOG     🎂 Calculated age: 6
+[00:04:02.736] Server  LOG     ⚠ User is under 13 years old - skipping DOB to avoid Stripe rejection
+[00:04:02.738] Server  LOG     ℹ No address in user profile
+[00:04:02.739] Server  LOG     🔗 Making request to Stripe API...
+[00:04:02.743] Server  LOG     Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions
+[00:04:02.744] Server  LOG     Form data keys: ["wallet_addresses[ethereum]","source_amount","source_currency","destination_currency","destination_network","customer_information[email]","customer_information[first_name]","customer_information[last_name]"]
+[00:04:03.096] Server  LOG     📡 Stripe API response status: 200 "OK"
+[00:04:03.098] Server  LOG     ✅ Session created successfully!
+[00:04:03.099] Server  LOG     Session ID: "cos_1SyHHqLFOCxUQmeXlLqYKSPh"
+[00:04:03.099] Server  LOG     Session status: "initialized"
+[00:04:03.100] Server  LOG     === END ONRAMP SESSION REQUEST ===
+[00:04:03.219] Browser WARN    You may test your Stripe.js integration over HTTP. However, live Stripe.js integrations must use HTTPS.
+[00:04:03.219] Browser LOG     Onramp widget mounted
+[00:04:04.917] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHHqLFOCxUQmeXD1njT6Ho_secret_9OlkixCHDkMsH6FI9lsyLrE5w00MZNi4NtH","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHHqLFOCxUQmeXD1njT6Ho","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:04.918] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHHqLFOCxUQmeXD1njT6Ho_secret_9OlkixCHDkMsH6FI9lsyLrE5w00MZNi4NtH","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHHqLFOCxUQmeXD1njT6Ho","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:04.918] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHHqLFOCxUQmeXD1njT6Ho_secret_9OlkixCHDkMsH6FI9lsyLrE5w00MZNi4NtH","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHHqLFOCxUQmeXD1njT6Ho","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:05.316] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHHqLFOCxUQmeXlLqYKSPh_secret_SZskRoBK8DfhTTCqOqylI7RbG00mIneGcir","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHHqLFOCxUQmeXlLqYKSPh","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:05.316] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHHqLFOCxUQmeXlLqYKSPh_secret_SZskRoBK8DfhTTCqOqylI7RbG00mIneGcir","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHHqLFOCxUQmeXlLqYKSPh","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:05.316] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHHqLFOCxUQmeXlLqYKSPh_secret_SZskRoBK8DfhTTCqOqylI7RbG00mIneGcir","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHHqLFOCxUQmeXlLqYKSPh","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:06.202] Server  LOG     Tracked onramp event: cos_1SyHHqLFOCxUQmeXD1njT6Ho -> initialized
+[00:04:06.318] Browser LOG     Session initialized
+[00:04:07.170] Server  LOG     Tracked onramp event: cos_1SyHHqLFOCxUQmeXD1njT6Ho -> initialized
+[00:04:07.282] Browser LOG     Session initialized
+[00:04:07.692] Server  LOG     Tracked onramp event: cos_1SyHHqLFOCxUQmeXD1njT6Ho -> initialized
+[00:04:07.703] Server  LOG     Tracked onramp event: cos_1SyHHqLFOCxUQmeXlLqYKSPh -> initialized
+[00:04:07.723] Server  LOG     Tracked onramp event: cos_1SyHHqLFOCxUQmeXlLqYKSPh -> initialized
+[00:04:07.833] Browser LOG     Session initialized
+[00:04:07.833] Browser LOG     Session initialized
+[00:04:07.833] Browser LOG     Session initialized
+[00:04:07.915] Server  LOG     Tracked onramp event: cos_1SyHHqLFOCxUQmeXlLqYKSPh -> initialized
+[00:04:08.030] Browser LOG     Session initialized
+[00:04:28.272] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:04:28.353] Server  LOG     === ONRAMP SESSION REQUEST ===
+[00:04:28.354] Server  LOG     Timestamp: "2026-02-07T19:35:48.260Z"
+[00:04:28.356] Server  LOG     Request body: {}
+[00:04:28.357] Server  LOG     Building form data for Stripe API...
+[00:04:28.358] Server  LOG     ℹ No wallet address provided
+[00:04:28.359] Server  LOG     ✓ Added source amount: 100
+[00:04:28.361] Server  LOG     ✓ Added source currency: "usd"
+[00:04:28.366] Server  LOG     ✓ Added destination currency: "btc"
+[00:04:28.368] Server  LOG     ✓ Added destination network: "bitcoin"
+[00:04:28.369] Server  LOG     ℹ No userId provided - skipping profile lookup
+[00:04:28.370] Server  LOG     🔗 Making request to Stripe API...
+[00:04:28.370] Server  LOG     Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions
+[00:04:28.371] Server  LOG     Form data keys: ["source_amount","source_currency","destination_currency","destination_network"]
+[00:04:28.945] Server  LOG     📡 Stripe API response status: 200 "OK"
+[00:04:28.949] Server  LOG     ✅ Session created successfully!
+[00:04:28.950] Server  LOG     Session ID: "cos_1SyHIGLFOCxUQmeX28bGBJGr"
+[00:04:28.950] Server  LOG     Session status: "initialized"
+[00:04:28.951] Server  LOG     === END ONRAMP SESSION REQUEST ===
+[00:04:29.064] Browser WARN    You may test your Stripe.js integration over HTTP. However, live Stripe.js integrations must use HTTPS.
+[00:04:29.064] Browser LOG     Onramp widget mounted
+[00:04:29.128] Server  LOG     === ONRAMP SESSION REQUEST ===
+[00:04:29.130] Server  LOG     Timestamp: "2026-02-07T19:35:49.036Z"
+[00:04:29.131] Server  LOG     Request body: {}
+[00:04:29.131] Server  LOG     Building form data for Stripe API...
+[00:04:29.132] Server  LOG     ✓ Added wallet address: "0xc0ffee254729296a45a3885639AC7E10F9d54979"
+[00:04:29.133] Server  LOG     ✓ Added source amount: 144
+[00:04:29.133] Server  LOG     ✓ Added source currency: "usd"
+[00:04:29.134] Server  LOG     ✓ Added destination currency: "btc"
+[00:04:29.135] Server  LOG     ✓ Added destination network: "bitcoin"
+[00:04:29.136] Server  LOG     📋 Fetching user profile for userId: "buyhAtacE7cErLBkHNeFL2uqXxB2"
+[00:04:29.148] Server  LOG     === ONRAMP SESSION REQUEST ===
+[00:04:29.149] Server  LOG     Timestamp: "2026-02-07T19:35:49.055Z"
+[00:04:29.150] Server  LOG     Request body: {}
+[00:04:29.151] Server  LOG     Building form data for Stripe API...
+[00:04:29.152] Server  LOG     ✓ Added wallet address: "0xc0ffee254729296a45a3885639AC7E10F9d54979"
+[00:04:29.152] Server  LOG     ✓ Added source amount: 144
+[00:04:29.154] Server  LOG     ✓ Added source currency: "usd"
+[00:04:29.154] Server  LOG     ✓ Added destination currency: "btc"
+[00:04:29.156] Server  LOG     ✓ Added destination network: "bitcoin"
+[00:04:29.156] Server  LOG     📋 Fetching user profile for userId: "buyhAtacE7cErLBkHNeFL2uqXxB2"
+[00:04:29.212] Browser LOG     Onramp component unmounting
+[00:04:29.212] Browser LOG     Error unmounting onramp session: {}
+[00:04:29.212] Browser LOG     Onramp component unmounting
+[00:04:29.368] Server  LOG     ✓ User profile found
+[00:04:29.369] Server  LOG     User data fields: ["source_currency","lock_wallet_address","email","reminder_price_drop","dob","last_name","first_name","wallet_addresses","reminder_weekly","reminder_monthly","source_amount","updatedAt"]
+[00:04:29.370] Server  LOG     ✓ Added email: "shai200+8@gmail.com"
+[00:04:29.371] Server  LOG     ✓ Added first_name: "sd"
+[00:04:29.372] Server  LOG     ✓ Added last_name: "dss"
+[00:04:29.373] Server  LOG     📅 Processing DOB: {}
+[00:04:29.374] Server  LOG     🎂 Calculated age: 6
+[00:04:29.374] Server  LOG     ⚠ User is under 13 years old - skipping DOB to avoid Stripe rejection
+[00:04:29.375] Server  LOG     ℹ No address in user profile
+[00:04:29.376] Server  LOG     🔗 Making request to Stripe API...
+[00:04:29.377] Server  LOG     Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions
+[00:04:29.378] Server  LOG     Form data keys: ["wallet_addresses[ethereum]","source_amount","source_currency","destination_currency","destination_network","customer_information[email]","customer_information[first_name]","customer_information[last_name]"]
+[00:04:29.716] Server  LOG     📡 Stripe API response status: 200 "OK"
+[00:04:29.718] Server  LOG     ✅ Session created successfully!
+[00:04:29.719] Server  LOG     Session ID: "cos_1SyHIHLFOCxUQmeXjuy6XvJW"
+[00:04:29.720] Server  LOG     Session status: "initialized"
+[00:04:29.720] Server  LOG     === END ONRAMP SESSION REQUEST ===
+[00:04:29.830] Browser WARN    You may test your Stripe.js integration over HTTP. However, live Stripe.js integrations must use HTTPS.
+[00:04:29.830] Browser LOG     Onramp widget mounted
+[00:04:30.099] Server  LOG     ✓ User profile found
+[00:04:30.100] Server  LOG     User data fields: ["source_currency","lock_wallet_address","email","reminder_price_drop","dob","last_name","first_name","wallet_addresses","reminder_weekly","reminder_monthly","source_amount","updatedAt"]
+[00:04:30.101] Server  LOG     ✓ Added email: "shai200+8@gmail.com"
+[00:04:30.101] Server  LOG     ✓ Added first_name: "sd"
+[00:04:30.101] Server  LOG     ✓ Added last_name: "dss"
+[00:04:30.102] Server  LOG     📅 Processing DOB: {}
+[00:04:30.102] Server  LOG     🎂 Calculated age: 6
+[00:04:30.103] Server  LOG     ⚠ User is under 13 years old - skipping DOB to avoid Stripe rejection
+[00:04:30.103] Server  LOG     ℹ No address in user profile
+[00:04:30.103] Server  LOG     🔗 Making request to Stripe API...
+[00:04:30.104] Server  LOG     Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions
+[00:04:30.105] Server  LOG     Form data keys: ["wallet_addresses[ethereum]","source_amount","source_currency","destination_currency","destination_network","customer_information[email]","customer_information[first_name]","customer_information[last_name]"]
+[00:04:30.485] Server  LOG     📡 Stripe API response status: 200 "OK"
+[00:04:30.487] Server  LOG     ✅ Session created successfully!
+[00:04:30.488] Server  LOG     Session ID: "cos_1SyHIILFOCxUQmeXFzcZBTKy"
+[00:04:30.489] Server  LOG     Session status: "initialized"
+[00:04:30.490] Server  LOG     === END ONRAMP SESSION REQUEST ===
+[00:04:30.608] Browser WARN    You may test your Stripe.js integration over HTTP. However, live Stripe.js integrations must use HTTPS.
+[00:04:30.608] Browser LOG     Onramp widget mounted
+[00:04:31.828] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHIHLFOCxUQmeXjuy6XvJW_secret_0RPMftnAz3yrC7nEnN2IRoggo002QrYZHe6","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHIHLFOCxUQmeXjuy6XvJW","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:31.828] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHIHLFOCxUQmeXjuy6XvJW_secret_0RPMftnAz3yrC7nEnN2IRoggo002QrYZHe6","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHIHLFOCxUQmeXjuy6XvJW","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:31.828] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHIHLFOCxUQmeXjuy6XvJW_secret_0RPMftnAz3yrC7nEnN2IRoggo002QrYZHe6","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHIHLFOCxUQmeXjuy6XvJW","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:32.673] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHIILFOCxUQmeXFzcZBTKy_secret_BxOOnPX5uQhTLZUyxgkrofADR00VZ2F2QZ8","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHIILFOCxUQmeXFzcZBTKy","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:32.673] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHIILFOCxUQmeXFzcZBTKy_secret_BxOOnPX5uQhTLZUyxgkrofADR00VZ2F2QZ8","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHIILFOCxUQmeXFzcZBTKy","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:32.673] Browser LOG     Onramp session updated: {"session":{"client_secret":"cos_1SyHIILFOCxUQmeXFzcZBTKy_secret_BxOOnPX5uQhTLZUyxgkrofADR00VZ2F2QZ8","fixed_transaction_details":{"destination_amount":null,"destination_crypto_amount":null,"destination_currency":"btc","destination_network":"bitcoin","lock_wallet_address":false,"settlement_speed":"instant","source_amount":null,"source_currency":"usd","source_monetary_amount":"144.00","supported_destination_currencies":["btc","eth","matic","sol","xlm","avax","wld","usdc"],"supported_destination_networks":["bitcoin","ethereum","base","optimism","polygon","solana","stellar","avalanche","worldchain"],"wallet_address":null,"wallet_addresses":{"avalanche":null,"base_network":null,"bitcoin":null,"destination_tags":null,"ethereum":"0xc0ffee254729296a45a3885639AC7E10F9d54979","optimism":null,"polygon":null,"solana":null,"stellar":null,"worldchain":null}},"id":"cos_1SyHIILFOCxUQmeXFzcZBTKy","livemode":true,"object":"crypto.onramp_session","quote":{"blockchain_tx_id":null,"destination_amount":null,"destination_crypto_amount":null,"destination_currency":null,"expiration":null,"fees":null,"fixed_currency_side":"source","provider":"zero_hash","source_amount":"144.00","source_currency":null,"source_monetary_amount":"144.00","time_to_expiration":null,"total_amount":null},"status":"initialized","wallet_address":null}}
+[00:04:33.709] Server  LOG     Tracked onramp event: cos_1SyHIHLFOCxUQmeXjuy6XvJW -> initialized
+[00:04:33.821] Browser LOG     Session initialized
+[00:04:33.948] Server  LOG     Tracked onramp event: cos_1SyHIHLFOCxUQmeXjuy6XvJW -> initialized
+[00:04:34.061] Browser LOG     Session initialized
+[00:04:34.530] Server  LOG     Tracked onramp event: cos_1SyHIHLFOCxUQmeXjuy6XvJW -> initialized
+[00:04:34.637] Server  LOG     Tracked onramp event: cos_1SyHIILFOCxUQmeXFzcZBTKy -> initialized
+[00:04:34.650] Browser LOG     Session initialized
+[00:04:34.702] Server  LOG     Tracked onramp event: cos_1SyHIILFOCxUQmeXFzcZBTKy -> initialized
+[00:04:34.807] Browser LOG     Session initialized
+[00:04:34.807] Browser LOG     Session initialized
+[00:04:35.460] Server  LOG     Tracked onramp event: cos_1SyHIILFOCxUQmeXFzcZBTKy -> initialized
+[00:04:35.573] Browser LOG     Session initialized
+[00:11:06.293] Server  LOG     ✓ Compiled in 4s

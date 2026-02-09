@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Omnipay.cc - Fiat to Crypto Gateway",
+  title: "OmniPurchase by Omnipay.cc - Fiat to Crypto Gateway",
   description: "Your secure gateway from Fiat to Crypto. Buy cryptocurrency instantly with Stripe.",
   other: {
     'Content-Security-Policy': 'upgrade-insecure-requests',

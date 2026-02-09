@@ -20,7 +20,7 @@ export default function Home() {
             <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white" style={{ backgroundColor: 'var(--accent)' }}>
               Ω
             </div>
-            <span className="font-bold text-xl hidden sm:inline" style={{ color: 'var(--foreground)' }}>Omnipay.cc</span>
+            <span className="font-bold text-xl hidden sm:inline" style={{ color: 'var(--foreground)' }}>OmniPurchase</span>
           </div>
 
           {/* Desktop Navigation */}
@@ -387,10 +387,10 @@ export default function Home() {
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white" style={{ backgroundColor: 'var(--accent)' }}>
                     Ω
                   </div>
-                  <span className="font-bold" style={{ color: 'var(--foreground)' }}>Omnipay.cc</span>
+                  <span className="font-bold" style={{ color: 'var(--foreground)' }}>OmniPurchase</span>
                 </div>
                 <p style={{ color: 'var(--text-secondary)' }}>
-                  Your secure gateway to cryptocurrency
+                  by Omnipay.cc - Your secure gateway to cryptocurrency
                 </p>
               </div>
 

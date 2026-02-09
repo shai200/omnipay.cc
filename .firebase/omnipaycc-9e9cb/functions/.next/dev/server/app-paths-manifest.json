@@ -1,0 +1,5 @@
+{
+  "/api/onramp-session/route": "app/api/onramp-session/route.js",
+  "/api/track-onramp-event/route": "app/api/track-onramp-event/route.js",
+  "/page": "app/page.js"
+}
