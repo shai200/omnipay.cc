@@ -33,6 +33,7 @@
     "source": "functions",
     "predeploy": [
       "npm --prefix functions run build"
-    ]
+    ],
+    "runtime": "nodejs20"
   }
 }

@@ -1,0 +1,39 @@
+steps:
+  # Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/omnipay:latest'
+      - '.'
+
+  # Push to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/omnipay:latest'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/gke-deploy'
+    args:
+      - run
+      - --filename=.
+      - --image=gcr.io/$PROJECT_ID/omnipay:latest
+      - --location=$_RUN_REGION
+      - --config=.cloudrun.yaml
+
+  # Connect to Firebase Hosting
+  - name: 'gcr.io/cloud-builders/firebase'
+    args:
+      - 'deploy'
+      - '--only=hosting'
+      - '--project=$PROJECT_ID'
+
+images:
+  - 'gcr.io/$PROJECT_ID/omnipay:latest'
+
+substitutions:
+  _RUN_REGION: 'us-central1'
+
+options:
+  machineType: 'N1_HIGHCPU_8'

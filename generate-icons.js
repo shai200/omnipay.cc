@@ -20,7 +20,7 @@ const svgIcon = `
   </defs>
   <rect width="512" height="512" fill="url(#grad)"/>
   <circle cx="256" cy="256" r="180" fill="#ffffff" opacity="0.1"/>
-  <text x="256" y="300" font-size="120" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">OC</text>
+  <text x="256" y="300" font-size="120" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">OP</text>
 </svg>
 `;
 
@@ -34,7 +34,7 @@ const svgMaskable = `
   </defs>
   <rect width="512" height="512" fill="url(#grad)"/>
   <circle cx="256" cy="256" r="150" fill="white"/>
-  <text x="256" y="300" font-size="90" font-weight="bold" fill="#3b82f6" text-anchor="middle" font-family="Arial">OC</text>
+  <text x="256" y="300" font-size="90" font-weight="bold" fill="#3b82f6" text-anchor="middle" font-family="Arial">OP</text>
 </svg>
 `;
 
