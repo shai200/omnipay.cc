@@ -161,6 +161,10 @@ const faqItems = [
     q: "Can I download the order summary?",
     a: "Yes — Download summary saves a plain-text .txt (OMN-######-preview.txt) with the tease line. Share summary still copies to clipboard. Neither is a live Stripe receipt.",
   },
+  {
+    q: "Can I export or import a draft?",
+    a: "Yes — Export draft downloads a preview draft v1 .json you can move between browsers. Import draft validates the file, applies fields, and optionally writes localStorage. Export/import never hits Omnipay servers.",
+  },
 ] as const;
 
 export default function Home() {

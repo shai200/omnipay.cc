@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChangeEvent,
   FormEvent,
   useEffect,
   useMemo,
@@ -219,13 +220,61 @@ type PreviewDraftV1 = {
   smsPhone: string;
 };
 
+function isDraftEnum<T extends string>(
+  value: unknown,
+  allowed: readonly { id: T }[],
+): value is T {
+  return (
+    typeof value === "string" &&
+    allowed.some((option) => option.id === value)
+  );
+}
+
+/** Preview-only: accept localStorage or imported .json drafts. */
+function parseDraftPayload(raw: unknown): PreviewDraftV1 | null {
+  if (!raw || typeof raw !== "object") return null;
+  const parsed = raw as Partial<PreviewDraftV1>;
+  if (parsed.v !== 1 || typeof parsed.amount !== "string") return null;
+  if (
+    !isDraftEnum(parsed.asset, assets) ||
+    !isDraftEnum(parsed.network, networks) ||
+    !isDraftEnum(parsed.paymentMethod, paymentMethods) ||
+    !isDraftEnum(parsed.buyCadence, buyCadences) ||
+    !isDraftEnum(parsed.slippage, slippageOptions) ||
+    !isDraftEnum(parsed.networkSpeed, networkSpeeds) ||
+    !isDraftEnum(parsed.billingCountry, billingCountries) ||
+    !isDraftEnum(parsed.fundSource, fundSources) ||
+    !isDraftEnum(parsed.purchasePurpose, purchasePurposes) ||
+    !isDraftEnum(parsed.fiatCurrency, fiatCurrencies) ||
+    !isDraftEnum(parsed.taxResidency, taxResidencies)
+  ) {
+    return null;
+  }
+  if (
+    typeof parsed.wallet !== "string" ||
+    typeof parsed.confirmWallet !== "boolean" ||
+    typeof parsed.orderMemo !== "string" ||
+    typeof parsed.riskAccepted !== "boolean" ||
+    typeof parsed.tosAccepted !== "boolean" ||
+    typeof parsed.privacyAccepted !== "boolean" ||
+    typeof parsed.selfCustodyAccepted !== "boolean" ||
+    typeof parsed.ageConfirmed !== "boolean" ||
+    typeof parsed.receiptEmail !== "string" ||
+    typeof parsed.receiptConfirm !== "string" ||
+    typeof parsed.promoCode !== "string" ||
+    typeof parsed.smsPhone !== "string" ||
+    typeof parsed.savedAt !== "string"
+  ) {
+    return null;
+  }
+  return parsed as PreviewDraftV1;
+}
+
 function readDraftFromStorage(): PreviewDraftV1 | null {
   try {
     const raw = window.localStorage.getItem(draftStorageKey);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as PreviewDraftV1;
-    if (parsed?.v !== 1 || typeof parsed.amount !== "string") return null;
-    return parsed;
+    return parseDraftPayload(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -349,8 +398,11 @@ export function OnrampTease() {
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [autosaveOn, setAutosaveOn] = useState(false);
   const [summaryDownloaded, setSummaryDownloaded] = useState(false);
+  const [draftExported, setDraftExported] = useState(false);
+  const [draftImported, setDraftImported] = useState(false);
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
+  const importDraftInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedAsset = useMemo(
     () => assets.find((option) => option.id === asset) ?? assets[0],
@@ -745,6 +797,8 @@ export function OnrampTease() {
     setRefCopied(false);
     setSummaryCopied(false);
     setSummaryDownloaded(false);
+    setDraftExported(false);
+    setDraftImported(false);
     setFiatCurrency("usd");
     setPrivacyAccepted(false);
     setTaxResidency("us");
@@ -872,7 +926,85 @@ export function OnrampTease() {
     setRefCopied(false);
     setSummaryCopied(false);
     setSummaryDownloaded(false);
+    setDraftExported(false);
+    setDraftImported(false);
     setSubmitHint(null);
+  }
+
+  function exportDraftJson() {
+    const payload = buildDraftPayload();
+    const body = `${JSON.stringify(payload, null, 2)}\n`;
+    try {
+      const blob = new Blob([body], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${orderRef.toLowerCase()}-draft.json`;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setDraftExported(true);
+      window.setTimeout(() => setDraftExported(false), 2000);
+      setDraftHint(
+        "Draft JSON exported — Import draft on another browser to restore.",
+      );
+      setSubmitHint(null);
+    } catch {
+      setDraftHint(
+        "Export draft failed — use Save draft (localStorage) instead.",
+      );
+    }
+  }
+
+  function openImportDraftPicker() {
+    importDraftInputRef.current?.click();
+  }
+
+  function onImportDraftFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text =
+          typeof reader.result === "string" ? reader.result : "";
+        const draft = parseDraftPayload(JSON.parse(text));
+        if (!draft) {
+          setDraftHint(
+            "Import draft failed — file is not a valid Omnipay preview draft v1.",
+          );
+          return;
+        }
+        applyDraft(draft);
+        try {
+          window.localStorage.setItem(
+            draftStorageKey,
+            JSON.stringify(draft),
+          );
+          setDraftAvailable(true);
+          setDraftSavedAt(draft.savedAt);
+        } catch {
+          /* imported into form even if storage blocked */
+        }
+        setDraftBanner(false);
+        setDraftImported(true);
+        window.setTimeout(() => setDraftImported(false), 2000);
+        setDraftHint(
+          "Draft imported — refresh quote if the tease looks stale.",
+        );
+      } catch {
+        setDraftHint(
+          "Import draft failed — choose a .json exported from this preview.",
+        );
+      }
+    };
+    reader.onerror = () => {
+      setDraftHint("Import draft failed — could not read that file.");
+    };
+    reader.readAsText(file);
   }
 
   function restoreDraft() {
@@ -2074,6 +2206,29 @@ export function OnrampTease() {
           >
             {summaryDownloaded ? "Downloaded" : "Download summary"}
           </button>
+          <button
+            type="button"
+            onClick={exportDraftJson}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {draftExported ? "Exported" : "Export draft"}
+          </button>
+          <button
+            type="button"
+            onClick={openImportDraftPicker}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {draftImported ? "Imported" : "Import draft"}
+          </button>
+          <input
+            ref={importDraftInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            aria-hidden
+            tabIndex={-1}
+            onChange={onImportDraftFile}
+          />
           <button
             type="button"
             onClick={saveDraft}
