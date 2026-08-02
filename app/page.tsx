@@ -101,6 +101,27 @@ const stewards = [
   },
 ] as const;
 
+const fieldDays = [
+  {
+    name: "Soil walk",
+    when: "First Saturday, April",
+    detail:
+      "Dig a spadeful with Mara — cover crops, worms, and why we rest paddocks.",
+  },
+  {
+    name: "Pasture morning",
+    when: "Midsummer Saturday",
+    detail:
+      "Follow Jonah’s rotation: move the flock, read the grass, leave the fence quiet.",
+  },
+  {
+    name: "Harvest kitchen",
+    when: "Autumn Sunday",
+    detail:
+      "Leah packs a CSA demo box and cooks what the week actually gave.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -130,6 +151,9 @@ export default function Home() {
             </a>
             <a href="#stewards" className="transition hover:text-[var(--foreground)]">
               Stewards
+            </a>
+            <a href="#field-days" className="transition hover:text-[var(--foreground)]">
+              Field days
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -402,6 +426,50 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+
+        {/* Field days — one job: community learning on the land */}
+        <section
+          id="field-days"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -right-20 top-16 h-72 w-72 rounded-full bg-[var(--sky)]/14 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Learn on the land
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              Field days for neighbors who want to farm with us, not just buy from us.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Small groups, muddy boots, no slides. We open the gates a few times
+              a year so the season teaches itself.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {fieldDays.map((day, i) => (
+                <li
+                  key={day.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {day.when}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {day.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {day.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20field%20day"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the next field day
+            </a>
           </div>
         </section>
 

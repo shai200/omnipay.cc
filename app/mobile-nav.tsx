@@ -9,6 +9,7 @@ const links = [
   { href: "#seasons", label: "Seasons" },
   { href: "#csa", label: "CSA" },
   { href: "#stewards", label: "Stewards" },
+  { href: "#field-days", label: "Field days" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
