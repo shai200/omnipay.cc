@@ -263,7 +263,11 @@ const faqItems = [
   },
   {
     q: "What is Clear form / Reminder FP?",
-    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. Reminder FP chips show the live form fingerprint and the Save reminder slot fingerprint (ignores savedAt). Copy form FP puts the form fingerprint on the clipboard. Fingerprints never leave your browser.",
+    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. When the form differs from defaults, Clear form arms a Confirm reset to defaults step (second click applies). Reminder FP chips show Form FP, Defaults FP, and Slot FP (ignores savedAt). Copy form FP / Copy defaults FP put fingerprints on the clipboard. Fingerprints never leave your browser.",
+  },
+  {
+    q: "What is Defaults FP / Confirm reset to defaults?",
+    a: "Defaults FP is the stable fingerprint of Clear form targets (weekly / morning / drop alerts on / ≥10 / local / empty email). Confirm reset to defaults is the armed Clear form state when the live form diverged — first click arms, second click applies defaults; if Form FP already equals Defaults FP, Clear form is a no-op. Save reminder slot stays untouched. Fingerprints never leave your browser.",
   },
   {
     q: "What is Verify form vs defaults / Diff form vs defaults?",
