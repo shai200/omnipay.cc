@@ -11,14 +11,34 @@ const assets = [
 ] as const;
 
 const networks = [
-  { id: "bitcoin", label: "Bitcoin", assets: ["btc"] },
-  { id: "ethereum", label: "Ethereum", assets: ["eth", "usdc"] },
-  { id: "solana", label: "Solana", assets: ["sol"] },
+  {
+    id: "bitcoin",
+    label: "Bitcoin",
+    assets: ["btc"],
+    placeholder: "bc1… or 1… / 3…",
+    pattern: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/,
+  },
+  {
+    id: "ethereum",
+    label: "Ethereum",
+    assets: ["eth", "usdc"],
+    placeholder: "0x… Ethereum address",
+    pattern: /^0x[a-fA-F0-9]{40}$/,
+  },
+  {
+    id: "solana",
+    label: "Solana",
+    assets: ["sol"],
+    placeholder: "Base58 Solana address",
+    pattern: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
+  },
 ] as const;
 
 export function OnrampTease() {
   const [amount, setAmount] = useState("50");
   const [asset, setAsset] = useState<(typeof assets)[number]["id"]>("btc");
+  const [wallet, setWallet] = useState("");
+  const [walletTouched, setWalletTouched] = useState(false);
 
   const selectedAsset = useMemo(
     () => assets.find((option) => option.id === asset) ?? assets[0],
@@ -42,10 +62,24 @@ export function OnrampTease() {
     availableNetworks[0];
 
   const parsedAmount = Number(amount);
-  const amountLabel =
-    Number.isFinite(parsedAmount) && parsedAmount > 0
-      ? `$${parsedAmount.toLocaleString("en-US")}`
-      : "your amount";
+  const amountValid = Number.isFinite(parsedAmount) && parsedAmount > 0;
+  const amountLabel = amountValid
+    ? `$${parsedAmount.toLocaleString("en-US")}`
+    : "your amount";
+
+  const feeEstimate = amountValid
+    ? `~$${(parsedAmount * 0.015).toFixed(2)}`
+    : "—";
+  const totalEstimate = amountValid
+    ? `~$${(parsedAmount * 1.015).toFixed(2)}`
+    : "—";
+
+  const trimmedWallet = wallet.trim();
+  const walletStatus = !trimmedWallet
+    ? "empty"
+    : activeNetwork?.pattern.test(trimmedWallet)
+      ? "valid"
+      : "invalid";
 
   return (
     <form
@@ -77,6 +111,7 @@ export function OnrampTease() {
                       ),
                     )?.id ?? "ethereum";
                   setNetwork(nextNetwork);
+                  setWalletTouched(false);
                 }}
                 aria-pressed={selected}
                 title={option.name}
@@ -102,7 +137,10 @@ export function OnrampTease() {
               <button
                 key={option.id}
                 type="button"
-                onClick={() => setNetwork(option.id)}
+                onClick={() => {
+                  setNetwork(option.id);
+                  setWalletTouched(false);
+                }}
                 aria-pressed={selected}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                   selected
@@ -122,10 +160,27 @@ export function OnrampTease() {
         <input
           name="wallet"
           type="text"
-          placeholder="0x… or your chain address"
+          value={wallet}
+          onChange={(event) => setWallet(event.target.value)}
+          onBlur={() => setWalletTouched(true)}
+          placeholder={activeNetwork?.placeholder ?? "Your chain address"}
+          autoComplete="off"
+          spellCheck={false}
+          aria-invalid={walletTouched && walletStatus === "invalid"}
           className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
         />
       </label>
+      {walletTouched && walletStatus === "invalid" ? (
+        <p className="mt-2 text-xs text-amber-200/90" role="status">
+          Address doesn&apos;t match {activeNetwork?.label ?? "selected"} format
+          yet — checkout will re-check.
+        </p>
+      ) : null}
+      {walletStatus === "valid" ? (
+        <p className="mt-2 text-xs text-emerald-200/90" role="status">
+          Looks like a valid {activeNetwork?.label} address for preview.
+        </p>
+      ) : null}
       <fieldset className="mt-4">
         <legend className="text-sm text-sky-100/80">Buy amount (USD)</legend>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -159,10 +214,22 @@ export function OnrampTease() {
           className="mt-3 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
         />
       </fieldset>
-      <p className="mt-4 rounded-xl border border-sky-300/25 bg-sky-400/10 px-4 py-3 text-sm leading-6 text-sky-50">
-        Order preview: {amountLabel} → {selectedAsset.label} on{" "}
-        {activeNetwork?.label ?? selectedAsset.network}. Final quote locks in
-        checkout.
+      <div className="mt-4 rounded-xl border border-sky-300/25 bg-sky-400/10 px-4 py-3 text-sm leading-6 text-sky-50">
+        <p>
+          Order preview: {amountLabel} → {selectedAsset.label} on{" "}
+          {activeNetwork?.label ?? selectedAsset.network}
+          {trimmedWallet
+            ? ` → ${trimmedWallet.slice(0, 6)}…${trimmedWallet.slice(-4)}`
+            : " → your wallet"}
+          .
+        </p>
+        <p className="mt-2 text-sky-100/80">
+          Est. network + processing {feeEstimate} · card total {totalEstimate} ·
+          ETA under 1 min after payment. Final quote locks in checkout.
+        </p>
+      </div>
+      <p className="mt-3 text-xs leading-5 text-sky-100/65">
+        Pay with Visa, Mastercard, Amex, or debit — Stripe Crypto Onramp.
       </p>
       <button
         type="submit"

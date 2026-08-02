@@ -81,6 +81,15 @@ export function ReminderTease() {
           </span>
         </span>
       </label>
+      <p className="mt-5 rounded-xl border border-[var(--line)] bg-[#f7f9fc] px-4 py-3 text-sm leading-6 text-[var(--foreground)]">
+        Reminder preview:{" "}
+        <span className="font-semibold">
+          {cadences.find((option) => option.id === cadence)?.label ?? "Weekly"}
+        </span>{" "}
+        cadence
+        {dropAlerts ? " + drop alerts" : ""} — confirm on Omnipay.cc after
+        sign-in.
+      </p>
       <div className="mt-6 flex flex-wrap items-center gap-4">
         <button
           type="submit"
