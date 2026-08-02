@@ -581,9 +581,12 @@ export function OnrampTease() {
   const [pinApplied, setPinApplied] = useState(false);
   const [pinLinkCopied, setPinLinkCopied] = useState(false);
   const [pinExported, setPinExported] = useState(false);
+  const [pinLinkPasted, setPinLinkPasted] = useState(false);
+  const [pinImported, setPinImported] = useState(false);
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
+  const importPinInputRef = useRef<HTMLInputElement | null>(null);
   const pasteDraftInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedAsset = useMemo(
@@ -1493,7 +1496,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy pin link / Export pin. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import pin. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -1655,7 +1658,7 @@ export function OnrampTease() {
       setPinLinkCopied(false);
       window.setTimeout(() => setPinExported(false), 2000);
       setDraftHint(
-        `Pin JSON exported (FP ${pinFp}) — Import draft on another browser to restore. Form and pin slot unchanged.`,
+        `Pin JSON exported (FP ${pinFp}) — Import pin on another browser to restore the pin slot. Form and pin slot unchanged.`,
       );
       setSubmitHint(null);
     } catch {
@@ -1663,6 +1666,131 @@ export function OnrampTease() {
         "Export pin failed — use Copy pin link instead.",
       );
     }
+  }
+
+  /** Preview-only: write pin slot from a #omn-draft= paste (form / Save draft untouched). */
+  function applyPastedToPin(raw: string): boolean {
+    const draft = extractDraftFromPaste(raw);
+    if (!draft) {
+      setDraftHint(
+        "Paste pin link failed — need a #omn-draft= URL or Export pin .json.",
+      );
+      return false;
+    }
+    const fp = fingerprintDraft(draft);
+    try {
+      window.localStorage.setItem(pinStorageKey, JSON.stringify(draft));
+    } catch {
+      setDraftHint(
+        "Paste pin link failed — browser storage may be blocked in this preview.",
+      );
+      return false;
+    }
+    setPinAvailable(true);
+    setPinFingerprint(fp);
+    setPinSwapped(false);
+    setPinApplied(false);
+    setPinLinkCopied(false);
+    setPinExported(false);
+    setPinLinkPasted(true);
+    setPinImported(false);
+    window.setTimeout(() => setPinLinkPasted(false), 2000);
+    setDraftVerifyStatus("idle");
+    setVerifiedFormFp(null);
+    setDraftDiffLines([]);
+    setDraftHint(
+      `Pin pasted from link (FP ${fp}) — form and Save draft unchanged. Apply pin to load into the form.`,
+    );
+    setSubmitHint(null);
+    return true;
+  }
+
+  async function pastePinLinkFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        const field = pasteDraftInputRef.current?.value ?? "";
+        if (field.trim() && applyPastedToPin(field)) {
+          if (pasteDraftInputRef.current) pasteDraftInputRef.current.value = "";
+          return;
+        }
+        setDraftHint(
+          "Clipboard is empty — paste a #omn-draft= link into the field, then Paste pin link.",
+        );
+        pasteDraftInputRef.current?.focus();
+        return;
+      }
+      if (!applyPastedToPin(text)) {
+        pasteDraftInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteDraftInputRef.current?.value ?? "";
+      if (field.trim() && applyPastedToPin(field)) {
+        if (pasteDraftInputRef.current) pasteDraftInputRef.current.value = "";
+        return;
+      }
+      setDraftHint(
+        "Clipboard read blocked — paste the #omn-draft= link into the field, then Paste pin link.",
+      );
+      pasteDraftInputRef.current?.focus();
+    }
+  }
+
+  function openImportPinPicker() {
+    importPinInputRef.current?.click();
+  }
+
+  function onImportPinFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text =
+          typeof reader.result === "string" ? reader.result : "";
+        const draft = parseDraftPayload(JSON.parse(text));
+        if (!draft) {
+          setDraftHint(
+            "Import pin failed — file is not a valid Omnipay preview draft v1.",
+          );
+          return;
+        }
+        const fp = fingerprintDraft(draft);
+        try {
+          window.localStorage.setItem(pinStorageKey, JSON.stringify(draft));
+        } catch {
+          setDraftHint(
+            "Import pin failed — browser storage may be blocked in this preview.",
+          );
+          return;
+        }
+        setPinAvailable(true);
+        setPinFingerprint(fp);
+        setPinSwapped(false);
+        setPinApplied(false);
+        setPinLinkCopied(false);
+        setPinExported(false);
+        setPinLinkPasted(false);
+        setPinImported(true);
+        window.setTimeout(() => setPinImported(false), 2000);
+        setDraftVerifyStatus("idle");
+        setVerifiedFormFp(null);
+        setDraftDiffLines([]);
+        setDraftHint(
+          `Pin imported (FP ${fp}) — form and Save draft unchanged. Apply pin to load into the form.`,
+        );
+        setSubmitHint(null);
+      } catch {
+        setDraftHint(
+          "Import pin failed — choose a .json exported from Export pin / Export draft.",
+        );
+      }
+    };
+    reader.onerror = () => {
+      setDraftHint("Import pin failed — could not read that file.");
+    };
+    reader.readAsText(file);
   }
 
   function clearPin() {
@@ -1677,6 +1805,8 @@ export function OnrampTease() {
     setPinApplied(false);
     setPinLinkCopied(false);
     setPinExported(false);
+    setPinLinkPasted(false);
+    setPinImported(false);
     setDraftHint("Pin cleared from this browser (Save draft untouched).");
   }
 
@@ -2121,7 +2251,12 @@ export function OnrampTease() {
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
-            pinSwapped || pinApplied || pinLinkCopied || pinExported
+            pinSwapped ||
+            pinApplied ||
+            pinLinkCopied ||
+            pinExported ||
+            pinLinkPasted ||
+            pinImported
               ? "bg-emerald-400/15 text-emerald-100"
               : pinAvailable
                 ? "bg-sky-400/15 text-sky-100"
@@ -2137,11 +2272,15 @@ export function OnrampTease() {
                 ? "link copied"
                 : pinExported
                   ? "exported"
-                  : pinAvailable
-                    ? pinFingerprint
-                      ? `FP ${pinFingerprint}`
-                      : "ready"
-                    : "none"}
+                  : pinLinkPasted
+                    ? "link pasted"
+                    : pinImported
+                      ? "imported"
+                      : pinAvailable
+                        ? pinFingerprint
+                          ? `FP ${pinFingerprint}`
+                          : "ready"
+                        : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -3036,6 +3175,22 @@ export function OnrampTease() {
               {pinExported ? "Pin exported" : "Export pin"}
             </button>
           ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              void pastePinLinkFromClipboard();
+            }}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {pinLinkPasted ? "Pin link pasted" : "Paste pin link"}
+          </button>
+          <button
+            type="button"
+            onClick={openImportPinPicker}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {pinImported ? "Pin imported" : "Import pin"}
+          </button>
           {pinAvailable ? (
             <button
               type="button"
@@ -3076,6 +3231,15 @@ export function OnrampTease() {
             aria-hidden
             tabIndex={-1}
             onChange={onImportDraftFile}
+          />
+          <input
+            ref={importPinInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            aria-hidden
+            tabIndex={-1}
+            onChange={onImportPinFile}
           />
           <button
             type="button"

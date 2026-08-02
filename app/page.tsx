@@ -191,7 +191,11 @@ const faqItems = [
   },
   {
     q: "What is Copy pin link / Export pin?",
-    a: "Copy pin link puts the pinned tease on the clipboard as a #omn-draft= URL (same format as Copy draft link) without changing the form or pin slot. Export pin downloads the pin as .json for Import draft elsewhere. Neither uploads to Omnipay servers.",
+    a: "Copy pin link puts the pinned tease on the clipboard as a #omn-draft= URL (same format as Copy draft link) without changing the form or pin slot. Export pin downloads the pin as .json for Import pin elsewhere. Neither uploads to Omnipay servers.",
+  },
+  {
+    q: "What is Paste pin link / Import pin?",
+    a: "Paste pin link reads a #omn-draft= URL (clipboard or paste field) into the pin slot only — form and Save draft stay unchanged. Import pin loads Export pin / Export draft .json into the pin slot the same way. Use Apply pin to load the pin into the form. Nothing uploads to Omnipay servers.",
   },
 ] as const;
 
