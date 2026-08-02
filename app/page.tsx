@@ -896,6 +896,27 @@ const wheatFieldWork = [
   },
 ] as const;
 
+const ryeFieldWork = [
+  {
+    name: "Culm rows",
+    rhythm: "After the wheat field",
+    detail:
+      "A winter belt of rye on the warm gravel edge past the wheat — culms catch the same late light the heads finish on, and the roots knit the clay without crowding the orchard windbreak into damp.",
+  },
+  {
+    name: "Shock mornings",
+    rhythm: "Quiet dawn binds",
+    detail:
+      "Hand shocks when the awns dry and frost still holds. Mara ties ripe shocks before the stand opens — the rye field is a finish lane, not a cover-crop parade that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "Bake weeks",
+    rhythm: "Deep autumn board",
+    detail:
+      "A few stone-mill sacks for the farm table after the pack shed has done its quiet work — Leah chalks rye flour when the grind is honest. No anonymous commodity bin; just what the culm finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -1039,6 +1060,9 @@ export default function Home() {
             </a>
             <a href="#wheat-field" className="transition hover:text-[var(--foreground)]">
               Wheat field
+            </a>
+            <a href="#rye-field" className="transition hover:text-[var(--foreground)]">
+              Rye field
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2966,6 +2990,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the wheat field
+            </a>
+          </div>
+        </section>
+
+        {/* Rye field — one job: culm rows after the wheat field, shock mornings + bake weeks */}
+        <section
+          id="rye-field"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Culm and winter gold
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A rye field that finishes the wheat belt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Culm rows, shock mornings, and bake weeks — a winter belt of gold
+              after the wheat field, then stone-mill sacks that find the farm table once
+              the pack-shed lane has done its quiet deep-autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {ryeFieldWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20rye%20field"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the rye field
             </a>
           </div>
         </section>
