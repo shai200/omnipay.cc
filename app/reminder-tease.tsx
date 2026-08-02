@@ -177,6 +177,67 @@ function readReminderFromStorage(): ReminderDraftV1 | null {
   }
 }
 
+/** Preview-only: stable fingerprint ignores savedAt so copy/verify compares fields. */
+function canonicalReminderForFingerprint(draft: ReminderDraftV1): string {
+  const { savedAt: _savedAt, ...rest } = draft;
+  return JSON.stringify(rest);
+}
+
+/** Preview-only FNV-1a 32-bit hex — not a cryptographic hash. */
+function fingerprintReminder(draft: ReminderDraftV1): string {
+  const s = canonicalReminderForFingerprint(draft);
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0").toUpperCase();
+}
+
+/** Human labels for preview reminder field diffs (ignores savedAt). */
+const reminderFieldLabels: Record<
+  Exclude<keyof ReminderDraftV1, "v" | "savedAt">,
+  string
+> = {
+  cadence: "Cadence",
+  sendWindow: "Send window",
+  dropAlerts: "Drop alerts",
+  dropThreshold: "Drop threshold",
+  timezone: "Timezone",
+  email: "Email",
+};
+
+function formatReminderDiffValue(value: unknown): string {
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return "(empty)";
+    if (trimmed.length > 28) return `${trimmed.slice(0, 24)}…`;
+    return trimmed;
+  }
+  return String(value);
+}
+
+/** Preview-only: field-level diff, ignores v + savedAt. */
+function diffReminderFields(
+  current: ReminderDraftV1,
+  other: ReminderDraftV1,
+  otherLabel: "link" = "link",
+  currentLabel: "slot" = "slot",
+): string[] {
+  const keys = Object.keys(reminderFieldLabels) as Array<
+    keyof typeof reminderFieldLabels
+  >;
+  const lines: string[] = [];
+  for (const key of keys) {
+    if (current[key] === other[key]) continue;
+    lines.push(
+      `${reminderFieldLabels[key]}: ${currentLabel} ${formatReminderDiffValue(current[key])} → ${otherLabel} ${formatReminderDiffValue(other[key])}`,
+    );
+  }
+  return lines;
+}
+
 export function ReminderTease() {
   const [cadence, setCadence] =
     useState<(typeof cadences)[number]["id"]>("weekly");
@@ -198,6 +259,10 @@ export function ReminderTease() {
   const [reminderExported, setReminderExported] = useState(false);
   const [reminderLinkPasted, setReminderLinkPasted] = useState(false);
   const [reminderImported, setReminderImported] = useState(false);
+  const [reminderVerifyStatus, setReminderVerifyStatus] = useState<
+    "idle" | "match" | "mismatch" | "invalid"
+  >("idle");
+  const [reminderDiffLines, setReminderDiffLines] = useState<string[]>([]);
   const pasteReminderInputRef = useRef<HTMLInputElement>(null);
   const importReminderInputRef = useRef<HTMLInputElement>(null);
 
@@ -260,6 +325,8 @@ export function ReminderTease() {
       setReminderAvailable(true);
       setReminderBanner(false);
       setReminderSavedAt(payload.savedAt);
+      setReminderVerifyStatus("idle");
+      setReminderDiffLines([]);
       setReminderHint(
         "Reminder prefs saved in this browser — Restore reminder reloads them. Nothing uploads to Omnipay servers.",
       );
@@ -302,6 +369,8 @@ export function ReminderTease() {
     setReminderExported(false);
     setReminderLinkPasted(false);
     setReminderImported(false);
+    setReminderVerifyStatus("idle");
+    setReminderDiffLines([]);
     setReminderHint("Reminder prefs cleared from this browser.");
   }
 
@@ -325,6 +394,8 @@ export function ReminderTease() {
       setReminderExported(false);
       setReminderLinkPasted(false);
       setReminderImported(false);
+      setReminderVerifyStatus("idle");
+      setReminderDiffLines([]);
       window.setTimeout(() => setReminderLinkCopied(false), 2000);
       setReminderHint(
         "Reminder link copied — open / Paste reminder link on another browser. Form unchanged. Nothing uploads to Omnipay servers.",
@@ -365,6 +436,8 @@ export function ReminderTease() {
       setReminderLinkCopied(false);
       setReminderLinkPasted(false);
       setReminderImported(false);
+      setReminderVerifyStatus("idle");
+      setReminderDiffLines([]);
       window.setTimeout(() => setReminderExported(false), 2000);
       setReminderHint(
         "Reminder JSON exported — Import reminder on another browser to restore the slot. Form unchanged.",
@@ -401,6 +474,8 @@ export function ReminderTease() {
     setReminderExported(false);
     setReminderLinkPasted(true);
     setReminderImported(false);
+    setReminderVerifyStatus("idle");
+    setReminderDiffLines([]);
     window.setTimeout(() => setReminderLinkPasted(false), 2000);
     setReminderHint(
       "Reminder prefs pasted from link — form unchanged. Restore reminder to load into the form.",
@@ -448,6 +523,176 @@ export function ReminderTease() {
     importReminderInputRef.current?.click();
   }
 
+  /** Preview-only: compare a #omn-reminder= link to the Save reminder slot without applying. */
+  function verifyReminderAgainstLink(raw: string): boolean {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderVerifyStatus("invalid");
+      setReminderDiffLines([]);
+      setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
+      return false;
+    }
+    const link = extractReminderFromPaste(raw);
+    if (!link) {
+      setReminderVerifyStatus("invalid");
+      setReminderDiffLines([]);
+      setReminderHint(
+        "Verify reminder vs link failed — need a #omn-reminder= URL/token (or paste into the field).",
+      );
+      return false;
+    }
+    const slotFp = fingerprintReminder(slot);
+    const linkFp = fingerprintReminder(link);
+    setReminderAvailable(true);
+    setReminderSavedAt(slot.savedAt);
+    if (slotFp === linkFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `Reminder link matches Save reminder (FP ${slotFp}) — form unchanged.`,
+      );
+    } else {
+      const diffs = diffReminderFields(slot, link, "link", "slot");
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Reminder link FP ${linkFp} ≠ Save reminder FP ${slotFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Paste reminder link would change the slot.`,
+      );
+    }
+    setSubmitHint(null);
+    return true;
+  }
+
+  /** Preview-only: list field diffs between Save reminder slot and a #omn-reminder= link. */
+  function diffReminderAgainstLink(raw: string): boolean {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderVerifyStatus("invalid");
+      setReminderDiffLines([]);
+      setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
+      return false;
+    }
+    const link = extractReminderFromPaste(raw);
+    if (!link) {
+      setReminderVerifyStatus("invalid");
+      setReminderDiffLines([]);
+      setReminderHint(
+        "Diff reminder vs link failed — need a #omn-reminder= URL/token (or paste into the field).",
+      );
+      return false;
+    }
+    const slotFp = fingerprintReminder(slot);
+    const linkFp = fingerprintReminder(link);
+    setReminderAvailable(true);
+    setReminderSavedAt(slot.savedAt);
+    if (slotFp === linkFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `No field diffs — reminder link matches Save reminder (FP ${slotFp}).`,
+      );
+    } else {
+      const diffs = diffReminderFields(slot, link, "link", "slot");
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Diff reminder vs link: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (link FP ${linkFp} ≠ Save reminder FP ${slotFp}). Form untouched.`,
+      );
+    }
+    setSubmitHint(null);
+    return true;
+  }
+
+  async function verifyReminderVsLinkFromClipboard() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        const field = pasteReminderInputRef.current?.value ?? "";
+        if (field.trim() && verifyReminderAgainstLink(field)) {
+          return;
+        }
+        setReminderVerifyStatus("invalid");
+        setReminderDiffLines([]);
+        setReminderHint(
+          "Clipboard is empty — paste a #omn-reminder= link into the field, then Verify reminder vs link.",
+        );
+        pasteReminderInputRef.current?.focus();
+        return;
+      }
+      if (!verifyReminderAgainstLink(text)) {
+        pasteReminderInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteReminderInputRef.current?.value ?? "";
+      if (field.trim()) {
+        verifyReminderAgainstLink(field);
+        return;
+      }
+      setReminderVerifyStatus("invalid");
+      setReminderDiffLines([]);
+      setReminderHint(
+        "Clipboard read blocked — paste the #omn-reminder= link into the field, then Verify reminder vs link.",
+      );
+      pasteReminderInputRef.current?.focus();
+    }
+  }
+
+  async function diffReminderVsLinkFromClipboard() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        const field = pasteReminderInputRef.current?.value ?? "";
+        if (field.trim() && diffReminderAgainstLink(field)) {
+          return;
+        }
+        setReminderVerifyStatus("invalid");
+        setReminderDiffLines([]);
+        setReminderHint(
+          "Clipboard is empty — paste a #omn-reminder= link into the field, then Diff reminder vs link.",
+        );
+        pasteReminderInputRef.current?.focus();
+        return;
+      }
+      if (!diffReminderAgainstLink(text)) {
+        pasteReminderInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteReminderInputRef.current?.value ?? "";
+      if (field.trim()) {
+        diffReminderAgainstLink(field);
+        return;
+      }
+      setReminderVerifyStatus("invalid");
+      setReminderDiffLines([]);
+      setReminderHint(
+        "Clipboard read blocked — paste the #omn-reminder= link into the field, then Diff reminder vs link.",
+      );
+      pasteReminderInputRef.current?.focus();
+    }
+  }
+
   function onImportReminderFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -482,6 +727,8 @@ export function ReminderTease() {
         setReminderExported(false);
         setReminderLinkPasted(false);
         setReminderImported(true);
+        setReminderVerifyStatus("idle");
+        setReminderDiffLines([]);
         window.setTimeout(() => setReminderImported(false), 2000);
         setReminderHint(
           "Reminder prefs imported — form unchanged. Restore reminder to load into the form.",
@@ -783,6 +1030,34 @@ export function ReminderTease() {
         >
           {reminderImported ? "Reminder imported" : "Import reminder"}
         </button>
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={() => {
+              void verifyReminderVsLinkFromClipboard();
+            }}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderVerifyStatus === "match"
+              ? "Reminder=link match"
+              : reminderVerifyStatus === "mismatch"
+                ? "Reminder≠link"
+                : "Verify reminder vs link"}
+          </button>
+        ) : null}
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={() => {
+              void diffReminderVsLinkFromClipboard();
+            }}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderDiffLines.length > 0 && reminderVerifyStatus === "mismatch"
+              ? `Diff reminder/link (${reminderDiffLines.length})`
+              : "Diff reminder vs link"}
+          </button>
+        ) : null}
         <input
           ref={pasteReminderInputRef}
           type="text"
@@ -819,6 +1094,19 @@ export function ReminderTease() {
           onChange={onImportReminderFile}
         />
       </p>
+      {reminderDiffLines.length > 0 && reminderVerifyStatus === "mismatch" ? (
+        <ul
+          className="mt-2 max-h-40 list-disc space-y-1 overflow-y-auto rounded-lg border border-amber-300/50 bg-amber-50 px-4 py-2 text-xs text-amber-900"
+          aria-label="Reminder field diffs"
+        >
+          {reminderDiffLines.slice(0, 12).map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+          {reminderDiffLines.length > 12 ? (
+            <li>+{reminderDiffLines.length - 12} more fields</li>
+          ) : null}
+        </ul>
+      ) : null}
       {reminderHint ? (
         <p className="mt-2 text-xs text-[var(--muted)]" role="status">
           {reminderHint}

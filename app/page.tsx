@@ -249,6 +249,10 @@ const faqItems = [
     q: "What is Paste reminder link / Import reminder?",
     a: "Paste reminder link writes a #omn-reminder= URL into the Save reminder localStorage slot only — the form stays untouched. Import reminder loads Export reminder .json into that same slot. Restore reminder still loads into the form. Nothing uploads to Omnipay servers; live schedules still confirm after sign-in on Omnipay.cc.",
   },
+  {
+    q: "What is Verify reminder vs link / Diff reminder vs link?",
+    a: "Verify reminder vs link compares a #omn-reminder= URL to the Save reminder localStorage slot without writing anything — match means the link equals the saved prefs; mismatch means Paste reminder link would change the slot (form stays untouched). Diff reminder vs link lists which fields differ (slot → link). Fingerprints never leave your browser.",
+  },
 ] as const;
 
 export default function Home() {
