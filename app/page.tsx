@@ -185,6 +185,10 @@ const faqItems = [
     q: "What is Pin draft / Swap pin?",
     a: "Pin draft stashes the current tease in a second localStorage slot (independent of Save draft). Swap pin exchanges the form with the pin so you can A/B two configurations. Clear pin removes only the pin — drafts and #omn-draft= hashes stay until you Clear draft.",
   },
+  {
+    q: "What is Apply pin / Diff vs pin?",
+    a: "Apply pin loads the pinned tease into the form without changing the pin slot (unlike Swap pin). Diff vs pin lists which fields differ between the form and the pin without applying anything. Both stay in your browser — never uploaded to Omnipay servers.",
+  },
 ] as const;
 
 export default function Home() {

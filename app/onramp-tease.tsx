@@ -286,16 +286,17 @@ function formatDraftDiffValue(value: unknown): string {
 /** Preview-only: field-level diff, ignores v + savedAt. */
 function diffDraftFields(
   current: PreviewDraftV1,
-  link: PreviewDraftV1,
+  other: PreviewDraftV1,
+  otherLabel: "link" | "pin" = "link",
 ): string[] {
   const keys = Object.keys(draftFieldLabels) as Array<
     keyof typeof draftFieldLabels
   >;
   const lines: string[] = [];
   for (const key of keys) {
-    if (current[key] === link[key]) continue;
+    if (current[key] === other[key]) continue;
     lines.push(
-      `${draftFieldLabels[key]}: form ${formatDraftDiffValue(current[key])} → link ${formatDraftDiffValue(link[key])}`,
+      `${draftFieldLabels[key]}: form ${formatDraftDiffValue(current[key])} → ${otherLabel} ${formatDraftDiffValue(other[key])}`,
     );
   }
   return lines;
@@ -577,6 +578,7 @@ export function OnrampTease() {
   const [pinAvailable, setPinAvailable] = useState(false);
   const [pinFingerprint, setPinFingerprint] = useState<string | null>(null);
   const [pinSwapped, setPinSwapped] = useState(false);
+  const [pinApplied, setPinApplied] = useState(false);
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
@@ -1487,8 +1489,9 @@ export function OnrampTease() {
       setPinAvailable(true);
       setPinFingerprint(fp);
       setPinSwapped(false);
+      setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Swap pin to A/B against another tease. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply pin / Swap pin / Diff vs pin. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -1522,6 +1525,7 @@ export function OnrampTease() {
     }
     applyDraft(pinned);
     setPinSwapped(true);
+    setPinApplied(false);
     window.setTimeout(() => setPinSwapped(false), 2000);
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
@@ -1529,6 +1533,69 @@ export function OnrampTease() {
     setDraftHint(
       `Swapped with pin (form was FP ${currentFp} → now FP ${pinFp}; pin holds previous). Refresh quote if stale.`,
     );
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: load pin into form without changing the pin slot. */
+  function applyPin() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
+    const pinFp = fingerprintDraft(pinned);
+    if (currentFp === pinFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `Form already matches pin (FP ${pinFp}) — nothing to apply.`,
+      );
+      setSubmitHint(null);
+      return;
+    }
+    applyDraft(pinned);
+    setPinApplied(true);
+    setPinSwapped(false);
+    window.setTimeout(() => setPinApplied(false), 2000);
+    setDraftVerifyStatus("idle");
+    setVerifiedFormFp(null);
+    setDraftDiffLines([]);
+    setDraftHint(
+      `Applied pin (FP ${pinFp}) — pin slot unchanged. Form was FP ${currentFp}. Refresh quote if stale.`,
+    );
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: list field diffs vs pin without applying. */
+  function diffVsPin() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftDiffLines([]);
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
+    const pinFp = fingerprintDraft(pinned);
+    setVerifiedFormFp(currentFp);
+    if (currentFp === pinFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(`No field diffs — form matches pin (FP ${pinFp}).`);
+    } else {
+      const diffs = diffDraftFields(current, pinned, "pin");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Diff vs pin: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (pin FP ${pinFp} ≠ form FP ${currentFp}). Apply pin to load pin values.`,
+      );
+    }
     setSubmitHint(null);
   }
 
@@ -1541,6 +1608,7 @@ export function OnrampTease() {
     setPinAvailable(false);
     setPinFingerprint(null);
     setPinSwapped(false);
+    setPinApplied(false);
     setDraftHint("Pin cleared from this browser (Save draft untouched).");
   }
 
@@ -1985,7 +2053,7 @@ export function OnrampTease() {
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
-            pinSwapped
+            pinSwapped || pinApplied
               ? "bg-emerald-400/15 text-emerald-100"
               : pinAvailable
                 ? "bg-sky-400/15 text-sky-100"
@@ -1995,11 +2063,13 @@ export function OnrampTease() {
           Pin{" "}
           {pinSwapped
             ? "swapped"
-            : pinAvailable
-              ? pinFingerprint
-                ? `FP ${pinFingerprint}`
-                : "ready"
-              : "none"}
+            : pinApplied
+              ? "applied"
+              : pinAvailable
+                ? pinFingerprint
+                  ? `FP ${pinFingerprint}`
+                  : "ready"
+                : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -2857,6 +2927,26 @@ export function OnrampTease() {
           {pinAvailable ? (
             <button
               type="button"
+              onClick={applyPin}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {pinApplied ? "Pin applied" : "Apply pin"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={diffVsPin}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {draftDiffLines.length > 0 && liveVerifyStatus === "mismatch"
+                ? `Diff pin (${draftDiffLines.length})`
+                : "Diff vs pin"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
               onClick={clearPin}
               className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
             >
@@ -2940,7 +3030,7 @@ export function OnrampTease() {
         {draftDiffLines.length > 0 && liveVerifyStatus === "mismatch" ? (
           <ul
             className="mt-2 max-h-40 list-disc space-y-1 overflow-y-auto rounded-lg border border-amber-300/35 bg-amber-400/10 px-4 py-2 text-xs text-amber-50"
-            aria-label="Draft link field diffs"
+            aria-label="Draft field diffs"
           >
             {draftDiffLines.slice(0, 12).map((line) => (
               <li key={line}>{line}</li>
