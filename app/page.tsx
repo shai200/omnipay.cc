@@ -201,6 +201,10 @@ const faqItems = [
     q: "What is Verify pin link / Diff pin link?",
     a: "Verify pin link compares a #omn-draft= URL to the pin slot without writing anything — match means the link equals the pin; mismatch means Paste pin link would change the pin. Diff pin link lists which fields differ (pin → link). Form and Save draft stay untouched. Fingerprints never leave your browser.",
   },
+  {
+    q: "What is Pin from draft / Draft from pin?",
+    a: "Pin from draft copies the Save draft localStorage slot into the pin slot without changing the form. Draft from pin copies the pin into Save draft (refreshes savedAt) without changing the form or pin. Use Apply pin / Restore draft to load into the form. Nothing uploads to Omnipay servers.",
+  },
 ] as const;
 
 export default function Home() {

@@ -584,6 +584,8 @@ export function OnrampTease() {
   const [pinExported, setPinExported] = useState(false);
   const [pinLinkPasted, setPinLinkPasted] = useState(false);
   const [pinImported, setPinImported] = useState(false);
+  const [pinFromDrafted, setPinFromDrafted] = useState(false);
+  const [draftFromPinned, setDraftFromPinned] = useState(false);
   const [verifyAnchor, setVerifyAnchor] = useState<"form" | "pin">("form");
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
@@ -1507,7 +1509,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -1980,6 +1982,78 @@ export function OnrampTease() {
     }
   }
 
+  /** Preview-only: copy Save draft storage → pin slot (form untouched). */
+  function pinFromDraft() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    const fp = fingerprintDraft(draft);
+    try {
+      window.localStorage.setItem(pinStorageKey, JSON.stringify(draft));
+    } catch {
+      setDraftHint(
+        "Pin from draft failed — browser storage may be blocked in this preview.",
+      );
+      return;
+    }
+    setPinAvailable(true);
+    setPinFingerprint(fp);
+    setPinSwapped(false);
+    setPinApplied(false);
+    setPinLinkCopied(false);
+    setPinExported(false);
+    setPinLinkPasted(false);
+    setPinImported(false);
+    setPinFromDrafted(true);
+    setDraftFromPinned(false);
+    window.setTimeout(() => setPinFromDrafted(false), 2000);
+    setDraftVerifyStatus("idle");
+    setVerifiedFormFp(null);
+    setDraftDiffLines([]);
+    setDraftHint(
+      `Pin from draft (FP ${fp}) — form unchanged. Apply pin to load into the form.`,
+    );
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: copy pin slot → Save draft storage (form untouched). */
+  function draftFromPin() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const payload: PreviewDraftV1 = {
+      ...pinned,
+      savedAt: new Date().toISOString(),
+    };
+    const fp = fingerprintDraft(payload);
+    try {
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(payload));
+    } catch {
+      setDraftHint(
+        "Draft from pin failed — browser storage may be blocked in this preview.",
+      );
+      return;
+    }
+    setDraftAvailable(true);
+    setDraftBanner(false);
+    setDraftSavedAt(payload.savedAt);
+    setDraftFromPinned(true);
+    setPinFromDrafted(false);
+    window.setTimeout(() => setDraftFromPinned(false), 2000);
+    setPinFingerprint(fp);
+    setDraftHint(
+      `Draft from pin (FP ${fp}) — form and pin slot unchanged. Restore draft to load into the form.`,
+    );
+    setSubmitHint(null);
+  }
+
   function clearPin() {
     try {
       window.localStorage.removeItem(pinStorageKey);
@@ -1994,6 +2068,7 @@ export function OnrampTease() {
     setPinExported(false);
     setPinLinkPasted(false);
     setPinImported(false);
+    setPinFromDrafted(false);
     if (verifyAnchor === "pin") {
       setDraftVerifyStatus("idle");
       setVerifiedFormFp(null);
@@ -2374,12 +2449,19 @@ export function OnrampTease() {
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
-            draftAvailable
+            draftFromPinned
               ? "bg-emerald-400/15 text-emerald-100"
-              : "bg-white/5 text-sky-100/70"
+              : draftAvailable
+                ? "bg-emerald-400/15 text-emerald-100"
+                : "bg-white/5 text-sky-100/70"
           }`}
         >
-          Draft {draftAvailable ? "saved" : "none"}
+          Draft{" "}
+          {draftFromPinned
+            ? "from pin"
+            : draftAvailable
+              ? "saved"
+              : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -2449,7 +2531,8 @@ export function OnrampTease() {
             pinLinkCopied ||
             pinExported ||
             pinLinkPasted ||
-            pinImported
+            pinImported ||
+            pinFromDrafted
               ? "bg-emerald-400/15 text-emerald-100"
               : pinAvailable
                 ? "bg-sky-400/15 text-sky-100"
@@ -2469,11 +2552,13 @@ export function OnrampTease() {
                     ? "link pasted"
                     : pinImported
                       ? "imported"
-                      : pinAvailable
-                        ? pinFingerprint
-                          ? `FP ${pinFingerprint}`
-                          : "ready"
-                        : "none"}
+                      : pinFromDrafted
+                        ? "from draft"
+                        : pinAvailable
+                          ? pinFingerprint
+                            ? `FP ${pinFingerprint}`
+                            : "ready"
+                          : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -3388,6 +3473,22 @@ export function OnrampTease() {
           >
             {pinImported ? "Pin imported" : "Import pin"}
           </button>
+          <button
+            type="button"
+            onClick={pinFromDraft}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {pinFromDrafted ? "Pin from draft ✓" : "Pin from draft"}
+          </button>
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={draftFromPin}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {draftFromPinned ? "Draft from pin ✓" : "Draft from pin"}
+            </button>
+          ) : null}
           {pinAvailable ? (
             <button
               type="button"
