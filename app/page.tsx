@@ -581,6 +581,27 @@ const goatYardWork = [
   },
 ] as const;
 
+const pigPaddockWork = [
+  {
+    name: "Root wallow",
+    rhythm: "After the goat browse",
+    detail:
+      "A small drove works the soft ground the goats leave — acorn mast, windfall, and clover strips — so the next cover crop seeds into turned earth, not a hardpan crust.",
+  },
+  {
+    name: "Farrow hut",
+    rhythm: "Quiet spring nights",
+    detail:
+      "Low timber huts on deep bedding when the prairie is still cold. Sows return to the paddock as soon as weather allows — the hut is the pause, not a confinement barn.",
+  },
+  {
+    name: "Smokehouse weeks",
+    rhythm: "Autumn cure, winter board",
+    detail:
+      "Whole animals for the smokehouse lane — bacon, ham, and lard for the stand after the pack shed has done its quiet work. Leah chalks cuts when the cure is honest; no anonymous freezer truck.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -679,6 +700,9 @@ export default function Home() {
             </a>
             <a href="#goat-yard" className="transition hover:text-[var(--foreground)]">
               Goat yard
+            </a>
+            <a href="#pig-paddock" className="transition hover:text-[var(--foreground)]">
+              Pig paddock
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1934,6 +1958,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the goat yard
+            </a>
+          </div>
+        </section>
+
+        {/* Pig paddock — one job: root after browse, cure for the stand */}
+        <section
+          id="pig-paddock"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -left-16 top-10 h-72 w-72 rounded-full bg-[var(--sky)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Root and wallow
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A pig paddock that finishes the rotation.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Root wallow, farrow hut, and smokehouse weeks — a small drove on
+              soft ground after the goat yard, then cuts that find the stand
+              once the smokehouse and pack-shed lanes have done their quiet work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {pigPaddockWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20pig%20paddock"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the pig paddock
             </a>
           </div>
         </section>
