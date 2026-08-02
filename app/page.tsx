@@ -644,6 +644,27 @@ const turkeyRunWork = [
   },
 ] as const;
 
+const rabbitWarrenWork = [
+  {
+    name: "Clover lane",
+    rhythm: "After the turkey run",
+    detail:
+      "A narrow strip of clover and chicory beside the range lane — rabbits graze the soft understory so the next cover crop faces clean ground, not a weed mat the cattle would ignore.",
+  },
+  {
+    name: "Nest boxes",
+    rhythm: "Quiet spring nights",
+    detail:
+      "Timber nest boxes under the hawthorn edge when frost still bites. Does kindle on deep straw, then return to the clover lane — the box is the pause, not a battery cage.",
+  },
+  {
+    name: "Market fryers",
+    rhythm: "Saturday board",
+    detail:
+      "A few fryers for the stand after the pack shed has done its quiet work — Leah chalks cuts when the count is honest. No anonymous freezer truck; just what the warren grew on Northfield clover.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -751,6 +772,9 @@ export default function Home() {
             </a>
             <a href="#turkey-run" className="transition hover:text-[var(--foreground)]">
               Turkey run
+            </a>
+            <a href="#rabbit-warren" className="transition hover:text-[var(--foreground)]">
+              Rabbit warren
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2138,6 +2162,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the turkey run
+            </a>
+          </div>
+        </section>
+
+        {/* Rabbit warren — one job: clover after the poultry lane, fryers for the stand */}
+        <section
+          id="rabbit-warren"
+          className="relative overflow-hidden border-t border-[var(--line)]"
+        >
+          <div className="pointer-events-none absolute -left-16 bottom-10 h-72 w-72 rounded-full bg-[var(--leaf)]/15 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Clover and quiet
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A rabbit warren that finishes the small livestock lane.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Clover lane, nest boxes, and market fryers — a small warren on soft
+              understory after the turkey run, then cuts that find the stand once
+              the pack-shed lane has done its quiet Saturday work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {rabbitWarrenWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20rabbit%20warren"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the rabbit warren
             </a>
           </div>
         </section>
