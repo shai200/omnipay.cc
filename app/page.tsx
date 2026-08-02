@@ -224,6 +224,27 @@ const compostYard = [
   },
 ] as const;
 
+const apiaryWork = [
+  {
+    name: "Hedge hives",
+    rhythm: "Lee of the windbreak",
+    detail:
+      "A small yard at the orchard edge — bees work bloom in the rows, then rest out of the prairie gale.",
+  },
+  {
+    name: "Bloom calendar",
+    rhythm: "Spring through frost",
+    detail:
+      "Cover crops, orchard blossom, and pasture clover keep forage close. We plant for bees as carefully as for dinner.",
+  },
+  {
+    name: "Farm honey",
+    rhythm: "Late summer jars",
+    detail:
+      "A light extract for the stand — floral, prairie-clear, and never enough for the whole waiting list.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -271,6 +292,9 @@ export default function Home() {
             </a>
             <a href="#compost" className="transition hover:text-[var(--foreground)]">
               Compost
+            </a>
+            <a href="#apiary" className="transition hover:text-[var(--foreground)]">
+              Apiary
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -798,6 +822,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask to see the compost yard
+            </a>
+          </div>
+        </section>
+
+        {/* Apiary — one job: pollinators that feed the farm */}
+        <section
+          id="apiary"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -left-20 top-10 h-72 w-72 rounded-full bg-[var(--sky)]/12 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Wings over the rows
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              An apiary that keeps the orchard and clover working.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Bees stitch the farm together — fruit set in the windbreak, seed
+              in the pasture, and a few late jars that taste like midsummer
+              light.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {apiaryWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20apiary"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the apiary
             </a>
           </div>
         </section>
