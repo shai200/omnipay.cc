@@ -65,6 +65,21 @@ const visitHours = [
   { day: "Weekdays", hours: "By appointment for CSA pickup" },
 ] as const;
 
+const csaShares = [
+  {
+    name: "Half share",
+    detail: "Feeds 1–2. Greens, eggs, and a weekly staple from the stand.",
+  },
+  {
+    name: "Full share",
+    detail: "Feeds 3–4. Adds wheat flour weeks and late-season fruit.",
+  },
+  {
+    name: "Pasture add-on",
+    detail: "Eggs every week of the season — hens follow the cattle rotation.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -88,6 +103,9 @@ export default function Home() {
             </a>
             <a href="#seasons" className="transition hover:text-[var(--foreground)]">
               Seasons
+            </a>
+            <a href="#csa" className="transition hover:text-[var(--foreground)]">
+              CSA
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -276,6 +294,55 @@ export default function Home() {
                 </li>
               ))}
             </ol>
+          </div>
+        </section>
+
+        {/* CSA — one job: how community shares work */}
+        <section
+          id="csa"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -left-16 bottom-0 h-80 w-80 rounded-full bg-[var(--leaf)]/18 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Community shares
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A season of food, not a shopping cart.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              CSA members reserve a share before planting. You get what the land
+              gives that week — pickup at the stand or weekday by appointment.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {csaShares.map((share, i) => (
+                <li
+                  key={share.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {share.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {share.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-12 max-w-xl text-sm text-[var(--muted)] md:text-base">
+              Season runs spring greens through first frost. Openings fill before
+              the ground thaws — join the harvest list and we write when a share
+              frees up.
+            </p>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20CSA%20inquiry"
+              className="mt-6 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about a share
+            </a>
           </div>
         </section>
 

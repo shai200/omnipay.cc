@@ -7,6 +7,7 @@ const links = [
   { href: "#land", label: "Land" },
   { href: "#harvest", label: "Harvest" },
   { href: "#seasons", label: "Seasons" },
+  { href: "#csa", label: "CSA" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
