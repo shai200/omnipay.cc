@@ -10,6 +10,7 @@ const links = [
   { href: "#csa", label: "CSA" },
   { href: "#stewards", label: "Stewards" },
   { href: "#field-days", label: "Field days" },
+  { href: "#table", label: "Table" },
   { href: "#visit", label: "Visit" },
 ] as const;
 

@@ -122,6 +122,27 @@ const fieldDays = [
   },
 ] as const;
 
+const farmTable = [
+  {
+    name: "Prairie loaf",
+    from: "Stone-milled wheat",
+    detail:
+      "A single rise overnight. Nutty crumb, thick crust — the flour from our mill.",
+  },
+  {
+    name: "Dawn greens",
+    from: "Market greens",
+    detail:
+      "Warm pan, garlic scape, and a soft pasture egg over the day’s pick.",
+  },
+  {
+    name: "Windbreak tart",
+    from: "Late apples",
+    detail:
+      "Heirloom slices, a little honey, and pastry thin enough to taste the orchard.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -154,6 +175,9 @@ export default function Home() {
             </a>
             <a href="#field-days" className="transition hover:text-[var(--foreground)]">
               Field days
+            </a>
+            <a href="#table" className="transition hover:text-[var(--foreground)]">
+              Table
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -469,6 +493,47 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the next field day
+            </a>
+          </div>
+        </section>
+
+        {/* Farm table — one job: cook what the land gave */}
+        <section id="table" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(680px_360px_at_80%_10%,rgba(198,164,90,0.14),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              From the farm table
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              Recipes that start in the rows, not the store aisle.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Three plates we cook when the stand is full — wheat, greens, and
+              late apples, nothing out of season.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {farmTable.map((dish, i) => (
+                <li
+                  key={dish.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {dish.from}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {dish.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {dish.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20farm%20table%20recipes"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask for this week&apos;s recipes
             </a>
           </div>
         </section>
