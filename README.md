@@ -1,55 +1,41 @@
-# OmniPay
+# OmniPay (`omnipay.cc`)
 
-A Fiat to Crypto bridge enabling seamless conversion between traditional currencies and cryptocurrencies.
+Fiat → crypto gateway focused on **recurring buys** and **smart reminders**.
+Crypto goes to the user’s wallet; card purchases via Stripe Crypto Onramp
+(live wiring needs Founder keys / App Hosting — static Hosting is v1).
 
-## Getting Started
-
-First, run the development server:
+## Local
 
 ```bash
+npm ci --legacy-peer-deps
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
+- Firebase Hosting static export (`output: "export"`) for preview channels
+- Stripe packages present for future onramp (not wired on static preview)
 
-## Tech Stack
+## Deploy (Firebase Hosting preview)
 
-- [Next.js](https://nextjs.org) - React framework
-- TypeScript - Type safety
-- Tailwind CSS - Styling
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-## Deploy (Firebase Hosting)
-
-Firebase project: `omnipaycc-9e9cb`. This app currently uses Next.js
-`output: "export"` so the static `out/` directory can be published to
-Firebase Hosting (App Hosting IAM is not yet available to the agent SA).
+Firebase project: `omnipaycc-9e9cb`. Prefer preview channels until Founder
+explicitly green-lights the live Firebase channel.
 
 ```bash
 npm ci --legacy-peer-deps
 npm run build
-npx firebase-tools hosting:channel:deploy <channel-name> --expires 7d
+npx firebase-tools hosting:channel:deploy agent-smoke --expires 7d
 ```
 
-Prefer preview channels until production cutover is explicit. Do not commit
-service-account JSON or `.env*` files.
+Or: `npm run firebase:preview`.
 
-Live marketing site today may still be served from another host
-(`https://omnipay.cc`); Firebase default site is
-`https://omnipaycc-9e9cb.web.app`.
+| Surface | URL |
+|---|---|
+| Preview channel | `https://omnipaycc-9e9cb--agent-smoke-*.web.app` |
+| Firebase live (untouched until FOUNDER_GO) | `https://omnipaycc-9e9cb.web.app` |
+| Current marketing host | `https://omnipay.cc` |
+
+Do **not** commit service-account JSON or `.env*` files.
