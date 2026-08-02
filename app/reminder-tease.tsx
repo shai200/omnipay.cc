@@ -269,6 +269,11 @@ export function ReminderTease() {
   >("link");
   const [reminderDiffLines, setReminderDiffLines] = useState<string[]>([]);
   const [reminderFormSwapped, setReminderFormSwapped] = useState(false);
+  const [reminderSlotFingerprint, setReminderSlotFingerprint] = useState<
+    string | null
+  >(null);
+  const [reminderFormCleared, setReminderFormCleared] = useState(false);
+  const [reminderFpCopied, setReminderFpCopied] = useState(false);
   const pasteReminderInputRef = useRef<HTMLInputElement>(null);
   const importReminderInputRef = useRef<HTMLInputElement>(null);
 
@@ -277,6 +282,7 @@ export function ReminderTease() {
     if (!saved) return;
     setReminderAvailable(true);
     setReminderSavedAt(saved.savedAt);
+    setReminderSlotFingerprint(fingerprintReminder(saved));
     setReminderBanner(true);
     setReminderHint(
       "Saved reminder prefs found in this browser — Restore reminder to reload them.",
@@ -313,6 +319,8 @@ export function ReminderTease() {
     };
   }
 
+  const reminderFormFingerprint = fingerprintReminder(buildReminderPayload());
+
   function applyReminder(draft: ReminderDraftV1) {
     setCadence(draft.cadence);
     setSendWindow(draft.sendWindow);
@@ -328,13 +336,16 @@ export function ReminderTease() {
     const payload = buildReminderPayload();
     try {
       window.localStorage.setItem(reminderStorageKey, JSON.stringify(payload));
+      const fp = fingerprintReminder(payload);
       setReminderAvailable(true);
       setReminderBanner(false);
       setReminderSavedAt(payload.savedAt);
+      setReminderSlotFingerprint(fp);
       setReminderVerifyStatus("idle");
       setReminderDiffLines([]);
+      setReminderFormCleared(false);
       setReminderHint(
-        "Reminder prefs saved in this browser — Restore reminder reloads them. Nothing uploads to Omnipay servers.",
+        `Reminder prefs saved (FP ${fp}) — Restore reminder reloads them. Nothing uploads to Omnipay servers.`,
       );
       setSubmitHint(null);
     } catch {
@@ -350,15 +361,19 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderHint("No saved reminder prefs in this browser.");
       return;
     }
     applyReminder(draft);
+    const fp = fingerprintReminder(draft);
     setReminderAvailable(true);
     setReminderBanner(false);
     setReminderSavedAt(draft.savedAt);
+    setReminderSlotFingerprint(fp);
+    setReminderFormCleared(false);
     setReminderHint(
-      "Reminder prefs restored — confirm on Omnipay.cc after sign-in to make them live.",
+      `Reminder prefs restored (FP ${fp}) — confirm on Omnipay.cc after sign-in to make them live.`,
     );
   }
 
@@ -371,6 +386,7 @@ export function ReminderTease() {
     setReminderAvailable(false);
     setReminderBanner(false);
     setReminderSavedAt(null);
+    setReminderSlotFingerprint(null);
     setReminderLinkCopied(false);
     setReminderExported(false);
     setReminderLinkPasted(false);
@@ -378,7 +394,72 @@ export function ReminderTease() {
     setReminderVerifyStatus("idle");
     setReminderDiffLines([]);
     setReminderFormSwapped(false);
+    setReminderFormCleared(false);
+    setReminderFpCopied(false);
     setReminderHint("Reminder prefs cleared from this browser.");
+  }
+
+  /** Preview-only: reset live form to defaults; Save reminder slot untouched. */
+  function clearForm() {
+    const slot = readReminderFromStorage();
+    setCadence("weekly");
+    setSendWindow("morning");
+    setDropAlerts(true);
+    setDropThreshold("10");
+    setTimezone("local");
+    setEmail("");
+    setEmailTouched(false);
+    setSubmitHint(null);
+    setReminderVerifyStatus("idle");
+    setReminderDiffLines([]);
+    setReminderFormSwapped(false);
+    setReminderFormCleared(true);
+    window.setTimeout(() => setReminderFormCleared(false), 2000);
+    const defaults: ReminderDraftV1 = {
+      v: 1,
+      savedAt: new Date().toISOString(),
+      cadence: "weekly",
+      sendWindow: "morning",
+      dropAlerts: true,
+      dropThreshold: "10",
+      timezone: "local",
+      email: "",
+    };
+    const formFp = fingerprintReminder(defaults);
+    if (slot) {
+      const slotFp = fingerprintReminder(slot);
+      setReminderAvailable(true);
+      setReminderSavedAt(slot.savedAt);
+      setReminderSlotFingerprint(slotFp);
+      setReminderBanner(false);
+      setReminderHint(
+        `Form cleared to defaults (FP ${formFp}) — Save reminder slot untouched (FP ${slotFp}).`,
+      );
+    } else {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
+      setReminderHint(
+        `Form cleared to defaults (FP ${formFp}) — no Save reminder slot in this browser.`,
+      );
+    }
+  }
+
+  /** Preview-only: copy live form fingerprint (not a share URL). */
+  async function copyReminderFormFp() {
+    try {
+      await navigator.clipboard.writeText(reminderFormFingerprint);
+      setReminderFpCopied(true);
+      window.setTimeout(() => setReminderFpCopied(false), 2000);
+      setReminderHint(
+        `Form FP ${reminderFormFingerprint} copied — cite when verifying across browsers. Slot untouched.`,
+      );
+    } catch {
+      setReminderHint(
+        "Copy form FP failed — clipboard may be blocked in this preview.",
+      );
+    }
   }
 
   /** Preview-only: copy Save reminder slot as a #omn-reminder= share URL (form untouched). */
@@ -388,6 +469,7 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
       return;
     }
@@ -395,8 +477,10 @@ export function ReminderTease() {
       const encoded = encodeReminderForHash(draft);
       const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${reminderHashPrefix}${encoded}`;
       await navigator.clipboard.writeText(url);
+      const fp = fingerprintReminder(draft);
       setReminderAvailable(true);
       setReminderSavedAt(draft.savedAt);
+      setReminderSlotFingerprint(fp);
       setReminderLinkCopied(true);
       setReminderExported(false);
       setReminderLinkPasted(false);
@@ -405,7 +489,7 @@ export function ReminderTease() {
       setReminderDiffLines([]);
       window.setTimeout(() => setReminderLinkCopied(false), 2000);
       setReminderHint(
-        "Reminder link copied — open / Paste reminder link on another browser. Form unchanged. Nothing uploads to Omnipay servers.",
+        `Reminder link copied (FP ${fp}) — open / Paste reminder link on another browser. Form unchanged. Nothing uploads to Omnipay servers.`,
       );
       setSubmitHint(null);
     } catch {
@@ -422,6 +506,7 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
       return;
     }
@@ -437,8 +522,10 @@ export function ReminderTease() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
+      const fp = fingerprintReminder(draft);
       setReminderAvailable(true);
       setReminderSavedAt(draft.savedAt);
+      setReminderSlotFingerprint(fp);
       setReminderExported(true);
       setReminderLinkCopied(false);
       setReminderLinkPasted(false);
@@ -447,7 +534,7 @@ export function ReminderTease() {
       setReminderDiffLines([]);
       window.setTimeout(() => setReminderExported(false), 2000);
       setReminderHint(
-        "Reminder JSON exported — Import reminder on another browser to restore the slot. Form unchanged.",
+        `Reminder JSON exported (FP ${fp}) — Import reminder on another browser to restore the slot. Form unchanged.`,
       );
       setSubmitHint(null);
     } catch {
@@ -474,8 +561,10 @@ export function ReminderTease() {
       );
       return false;
     }
+    const fp = fingerprintReminder(draft);
     setReminderAvailable(true);
     setReminderSavedAt(draft.savedAt);
+    setReminderSlotFingerprint(fp);
     setReminderBanner(false);
     setReminderLinkCopied(false);
     setReminderExported(false);
@@ -485,7 +574,7 @@ export function ReminderTease() {
     setReminderDiffLines([]);
     window.setTimeout(() => setReminderLinkPasted(false), 2000);
     setReminderHint(
-      "Reminder prefs pasted from link — form unchanged. Restore reminder to load into the form.",
+      `Reminder prefs pasted from link (FP ${fp}) — form unchanged. Restore reminder to load into the form.`,
     );
     setSubmitHint(null);
     return true;
@@ -537,6 +626,7 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderVerifyStatus("invalid");
       setReminderVerifyAnchor("link");
       setReminderDiffLines([]);
@@ -557,6 +647,7 @@ export function ReminderTease() {
     const linkFp = fingerprintReminder(link);
     setReminderAvailable(true);
     setReminderSavedAt(slot.savedAt);
+    setReminderSlotFingerprint(slotFp);
     setReminderVerifyAnchor("link");
     if (slotFp === linkFp) {
       setReminderVerifyStatus("match");
@@ -583,6 +674,7 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderVerifyStatus("invalid");
       setReminderVerifyAnchor("link");
       setReminderDiffLines([]);
@@ -603,6 +695,7 @@ export function ReminderTease() {
     const linkFp = fingerprintReminder(link);
     setReminderAvailable(true);
     setReminderSavedAt(slot.savedAt);
+    setReminderSlotFingerprint(slotFp);
     setReminderVerifyAnchor("link");
     if (slotFp === linkFp) {
       setReminderVerifyStatus("match");
@@ -629,6 +722,7 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderVerifyStatus("invalid");
       setReminderVerifyAnchor("form");
       setReminderDiffLines([]);
@@ -640,6 +734,7 @@ export function ReminderTease() {
     const slotFp = fingerprintReminder(slot);
     setReminderAvailable(true);
     setReminderSavedAt(slot.savedAt);
+    setReminderSlotFingerprint(slotFp);
     setReminderVerifyAnchor("form");
     if (formFp === slotFp) {
       setReminderVerifyStatus("match");
@@ -665,6 +760,7 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderVerifyStatus("invalid");
       setReminderVerifyAnchor("form");
       setReminderDiffLines([]);
@@ -676,6 +772,7 @@ export function ReminderTease() {
     const slotFp = fingerprintReminder(slot);
     setReminderAvailable(true);
     setReminderSavedAt(slot.savedAt);
+    setReminderSlotFingerprint(slotFp);
     setReminderVerifyAnchor("form");
     if (formFp === slotFp) {
       setReminderVerifyStatus("match");
@@ -701,6 +798,7 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
       return;
     }
@@ -724,12 +822,14 @@ export function ReminderTease() {
     setReminderAvailable(true);
     setReminderBanner(false);
     setReminderSavedAt(nextSlot.savedAt);
+    setReminderSlotFingerprint(nextSlotFp);
     setReminderFormSwapped(true);
+    setReminderFormCleared(false);
     window.setTimeout(() => setReminderFormSwapped(false), 2000);
     setReminderVerifyStatus("idle");
     setReminderDiffLines([]);
     setReminderHint(
-      `Swapped reminder ↔ form (form was FP ${currentFp} → now FP ${slotFp}; Save reminder holds previous form, FP ${nextSlotFp}).`,
+      `Swapped reminder ↔ form (form was FP ${currentFp} → now FP ${slotFp}; Save reminder holds previous form, FP ${nextSlotFp}). Clear form resets the form while keeping the slot.`,
     );
     setSubmitHint(null);
   }
@@ -740,9 +840,11 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
       return;
     }
+    setReminderSlotFingerprint(fingerprintReminder(slot));
     try {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) {
@@ -782,9 +884,11 @@ export function ReminderTease() {
       setReminderAvailable(false);
       setReminderBanner(false);
       setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
       setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
       return;
     }
+    setReminderSlotFingerprint(fingerprintReminder(slot));
     try {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) {
@@ -845,8 +949,10 @@ export function ReminderTease() {
           );
           return;
         }
+        const fp = fingerprintReminder(draft);
         setReminderAvailable(true);
         setReminderSavedAt(draft.savedAt);
+        setReminderSlotFingerprint(fp);
         setReminderBanner(false);
         setReminderLinkCopied(false);
         setReminderExported(false);
@@ -856,7 +962,7 @@ export function ReminderTease() {
         setReminderDiffLines([]);
         window.setTimeout(() => setReminderImported(false), 2000);
         setReminderHint(
-          "Reminder prefs imported — form unchanged. Restore reminder to load into the form.",
+          `Reminder prefs imported (FP ${fp}) — form unchanged. Restore reminder to load into the form.`,
         );
         setSubmitHint(null);
       } catch {
@@ -1090,6 +1196,23 @@ export function ReminderTease() {
         {emailStatus === "valid" ? ` → ${trimmedEmail}` : ""} — confirm on
         Omnipay.cc after sign-in.
       </p>
+      <ul
+        className="mt-3 flex flex-wrap gap-2 text-xs"
+        aria-label="Reminder fingerprint chips"
+      >
+        <li className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 font-mono text-[var(--foreground)]">
+          Form FP {reminderFormFingerprint}
+        </li>
+        <li
+          className={`rounded-full border border-[var(--line)] px-2.5 py-1 font-mono ${
+            reminderSlotFingerprint
+              ? "bg-[var(--accent)]/10 text-[var(--foreground)]"
+              : "bg-[#f7f9fc] text-[var(--muted)]"
+          }`}
+        >
+          Slot FP {reminderSlotFingerprint ?? "none"}
+        </li>
+      </ul>
       <p
         className="mt-3 flex flex-wrap gap-2"
         aria-label="Reminder draft tools"
@@ -1119,6 +1242,22 @@ export function ReminderTease() {
             Clear reminder
           </button>
         ) : null}
+        <button
+          type="button"
+          onClick={clearForm}
+          className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+        >
+          {reminderFormCleared ? "Form cleared" : "Clear form"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            void copyReminderFormFp();
+          }}
+          className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+        >
+          {reminderFpCopied ? "Form FP copied" : "Copy form FP"}
+        </button>
         {reminderAvailable ? (
           <button
             type="button"

@@ -261,6 +261,10 @@ const faqItems = [
     q: "What is Swap reminder ↔ form?",
     a: "Swap reminder ↔ form exchanges the live reminder form with the Save reminder localStorage slot — the previous form is written into the slot (fresh savedAt) and the prior slot loads into the form. Completes the reminder save/restore/verify/diff loop for preview hygiene. Nothing uploads to Omnipay servers; live schedules still confirm after sign-in on Omnipay.cc.",
   },
+  {
+    q: "What is Clear form / Reminder FP?",
+    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. Reminder FP chips show the live form fingerprint and the Save reminder slot fingerprint (ignores savedAt). Copy form FP puts the form fingerprint on the clipboard. Fingerprints never leave your browser.",
+  },
 ] as const;
 
 export default function Home() {
