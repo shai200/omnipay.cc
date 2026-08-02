@@ -80,6 +80,27 @@ const csaShares = [
   },
 ] as const;
 
+const stewards = [
+  {
+    name: "Mara Ellison",
+    role: "Soil & crops",
+    detail:
+      "Plans rotations, cover crops, and the wheat calendar. Grew up two counties over.",
+  },
+  {
+    name: "Jonah Reed",
+    role: "Pasture & flock",
+    detail:
+      "Moves cattle and hens on the same clock — rest paddocks, gold yolks, quiet fences.",
+  },
+  {
+    name: "Leah Cho",
+    role: "Stand & CSA",
+    detail:
+      "Runs weekend hours, packs shares, and answers the harvest list before dawn.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -106,6 +127,9 @@ export default function Home() {
             </a>
             <a href="#csa" className="transition hover:text-[var(--foreground)]">
               CSA
+            </a>
+            <a href="#stewards" className="transition hover:text-[var(--foreground)]">
+              Stewards
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -343,6 +367,41 @@ export default function Home() {
             >
               Ask about a share
             </a>
+          </div>
+        </section>
+
+        {/* Stewards — one job: who works the land */}
+        <section id="stewards" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(720px_380px_at_15%_30%,rgba(198,164,90,0.12),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Who farms here
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              Three stewards. One shared clock with the land.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              No absentee owners. The people who plant, graze, and pack the stand
+              are the same ones you meet on Saturday morning.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {stewards.map((person, i) => (
+                <li
+                  key={person.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {person.role}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {person.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {person.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
