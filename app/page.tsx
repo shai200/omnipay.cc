@@ -812,6 +812,27 @@ const lavenderFieldWork = [
   },
 ] as const;
 
+const sunflowerFieldWork = [
+  {
+    name: "Stalk rows",
+    rhythm: "After the lavender field",
+    detail:
+      "A tall belt of prairie sunflowers on the warm gravel edge past the spikes — heads catch the same late light the lavender finishes on, and the stalks drink deep without shading the orchard windbreak into damp.",
+  },
+  {
+    name: "Head mornings",
+    rhythm: "Quiet dawn cuts",
+    detail:
+      "Hand cuts when the faces lean and dew still holds. Mara shears ripe heads before the stand opens — the sunflower field is a finish lane, not a selfie maze that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "Press weeks",
+    rhythm: "Late summer board",
+    detail:
+      "A few seed trays for the farm table after the pack shed has done its quiet work — Leah chalks presses when the oil is honest. No anonymous commodity bin; just what the stalk finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -943,6 +964,9 @@ export default function Home() {
             </a>
             <a href="#lavender-field" className="transition hover:text-[var(--foreground)]">
               Lavender field
+            </a>
+            <a href="#sunflower-field" className="transition hover:text-[var(--foreground)]">
+              Sunflower field
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2690,6 +2714,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the lavender field
+            </a>
+          </div>
+        </section>
+
+        {/* Sunflower field — one job: stalk rows after the lavender field, head mornings + press weeks */}
+        <section
+          id="sunflower-field"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Stalk and prairie sun
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A sunflower field that finishes the lavender belt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Stalk rows, head mornings, and press weeks — a tall belt of gold
+              after the lavender field, then seed trays that find the farm table once
+              the pack-shed lane has done its quiet late-summer work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {sunflowerFieldWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20sunflower%20field"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the sunflower field
             </a>
           </div>
         </section>
