@@ -350,6 +350,27 @@ const cellarWork = [
   },
 ] as const;
 
+const workshopWork = [
+  {
+    name: "Weld bay",
+    rhythm: "Mend before mud",
+    detail:
+      "Gates, hitch pins, and mobile-coop frames get rebuilt here — steel that stays on the farm instead of a dealer invoice every March.",
+  },
+  {
+    name: "Winter rebuild",
+    rhythm: "Frost to seed order",
+    detail:
+      "When the field rests, the shop works: bearings, belts, and a careful eye on the small tractor so spring doesn’t start with a tow.",
+  },
+  {
+    name: "Parts shelf",
+    rhythm: "Labeled, borrowed, returned",
+    detail:
+      "Bolts, fence clips, and spare drip fittings live in one bay. Neighbors borrow; we keep a chalk ledger so nothing vanishes before planting week.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -415,6 +436,9 @@ export default function Home() {
             </a>
             <a href="#cellar" className="transition hover:text-[var(--foreground)]">
               Cellar
+            </a>
+            <a href="#workshop" className="transition hover:text-[var(--foreground)]">
+              Workshop
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1199,6 +1223,50 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the cellar
+            </a>
+          </div>
+        </section>
+
+        {/* Workshop — one job: mend steel and machines so spring starts ready */}
+        <section
+          id="workshop"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--sky)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Steel and spare parts
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A workshop that keeps the farm running without a dealer trip.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Weld bay, winter rebuild, and a parts shelf with a chalk ledger —
+              mend first, plant second, buy last.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {workshopWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20workshop"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the workshop
             </a>
           </div>
         </section>
