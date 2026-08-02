@@ -308,6 +308,9 @@ export function ReminderTease() {
     useState(false);
   const [reminderFormDefaultsPairCopied, setReminderFormDefaultsPairCopied] =
     useState(false);
+  const [reminderFormSlotPairCopied, setReminderFormSlotPairCopied] =
+    useState(false);
+  const [reminderFormExported, setReminderFormExported] = useState(false);
   const [reminderDefaultsPasted, setReminderDefaultsPasted] = useState(false);
   const [reminderDefaultsImported, setReminderDefaultsImported] =
     useState(false);
@@ -1435,7 +1438,10 @@ export function ReminderTease() {
       setReminderSlotFingerprint(slotFp);
       setReminderDefaultsSlotCompared(true);
       setReminderDefaultsSlotPairCopied(true);
+      setReminderFormDefaultsPairCopied(false);
+      setReminderFormSlotPairCopied(false);
       setReminderDefaultsExported(false);
+      setReminderFormExported(false);
       setReminderVerifyAnchor("defaults-slot");
       setReminderVerifyStatus(defaultsFp === slotFp ? "match" : "mismatch");
       if (defaultsFp === slotFp) {
@@ -1482,8 +1488,10 @@ export function ReminderTease() {
       anchor.remove();
       URL.revokeObjectURL(url);
       setReminderDefaultsExported(true);
+      setReminderFormExported(false);
       setReminderDefaultsSlotPairCopied(false);
       setReminderFormDefaultsPairCopied(false);
+      setReminderFormSlotPairCopied(false);
       setReminderExported(false);
       window.setTimeout(() => setReminderDefaultsExported(false), 2000);
       setReminderHint(
@@ -1507,8 +1515,10 @@ export function ReminderTease() {
       await navigator.clipboard.writeText(pair);
       setReminderFormDefaultsCompared(true);
       setReminderFormDefaultsPairCopied(true);
+      setReminderFormSlotPairCopied(false);
       setReminderDefaultsSlotPairCopied(false);
       setReminderDefaultsExported(false);
+      setReminderFormExported(false);
       setReminderDefaultsPasted(false);
       setReminderDefaultsImported(false);
       setReminderVerifyAnchor("defaults");
@@ -1536,6 +1546,97 @@ export function ReminderTease() {
     } catch {
       setReminderHint(
         "Copy Form↔Defaults pair failed — clipboard may be blocked in this preview.",
+      );
+    }
+  }
+
+  /** Preview-only: copy Form FP ↔ Slot FP citation pair (defaults untouched). */
+  async function copyFormSlotFpPair() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
+      setReminderHint(
+        "Copy Form↔Slot pair — no Save reminder slot in this browser. Save reminder first.",
+      );
+      return;
+    }
+    const formFp = reminderFormFingerprint;
+    const slotFp = fingerprintReminder(slot);
+    const matchMark = formFp === slotFp ? "=" : "≠";
+    const pair = `Form FP ${formFp} ↔ Slot FP ${slotFp} (${matchMark})`;
+    try {
+      await navigator.clipboard.writeText(pair);
+      setReminderAvailable(true);
+      setReminderSavedAt(slot.savedAt);
+      setReminderSlotFingerprint(slotFp);
+      setReminderFormSlotCompared(true);
+      setReminderFormSlotPairCopied(true);
+      setReminderFormDefaultsPairCopied(false);
+      setReminderDefaultsSlotPairCopied(false);
+      setReminderDefaultsExported(false);
+      setReminderFormExported(false);
+      setReminderVerifyAnchor("form");
+      setReminderVerifyStatus(formFp === slotFp ? "match" : "mismatch");
+      if (formFp === slotFp) {
+        setReminderDiffLines([]);
+      } else {
+        setReminderDiffLines(
+          diffReminderFields(
+            buildReminderPayload(),
+            slot,
+            "form",
+            "slot",
+          ),
+        );
+      }
+      window.setTimeout(() => {
+        setReminderFormSlotPairCopied(false);
+        setReminderFormSlotCompared(false);
+      }, 2000);
+      setReminderHint(
+        `Copied ${pair} — cite when verifying live form vs Save reminder. Defaults untouched.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setReminderHint(
+        "Copy Form↔Slot pair failed — clipboard may be blocked in this preview.",
+      );
+    }
+  }
+
+  /** Preview-only: download live form as JSON (slot untouched). */
+  function exportFormJson() {
+    const form = buildReminderPayload();
+    const formFp = fingerprintReminder(form);
+    const body = `${JSON.stringify(form, null, 2)}\n`;
+    try {
+      const blob = new Blob([body], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "omnipay-reminder-form.json";
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setReminderFormExported(true);
+      setReminderDefaultsExported(false);
+      setReminderExported(false);
+      setReminderFormDefaultsPairCopied(false);
+      setReminderFormSlotPairCopied(false);
+      setReminderDefaultsSlotPairCopied(false);
+      window.setTimeout(() => setReminderFormExported(false), 2000);
+      setReminderHint(
+        `Form JSON exported (FP ${formFp}) — Paste/Import defaults (or Paste reminder link) can reload it on another browser. Slot untouched.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setReminderHint(
+        "Export form failed — use Copy form FP instead.",
       );
     }
   }
@@ -2432,6 +2533,34 @@ export function ReminderTease() {
           {reminderFormDefaultsPairCopied
             ? "Form↔Defaults pair copied"
             : "Copy Form↔Defaults pair"}
+        </button>
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={() => {
+              void copyFormSlotFpPair();
+            }}
+            className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+              reminderFormSlotPairCopied
+                ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+                : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+            }`}
+          >
+            {reminderFormSlotPairCopied
+              ? "Form↔Slot pair copied"
+              : "Copy Form↔Slot pair"}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={exportFormJson}
+          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+            reminderFormExported
+              ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+              : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+          }`}
+        >
+          {reminderFormExported ? "Form exported" : "Export form"}
         </button>
         <button
           type="button"
