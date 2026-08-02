@@ -90,6 +90,7 @@ const links = [
   { href: "#eye-of-the-goat-bean-field", label: "Eye of the Goat bean field" },
   { href: "#christmas-lima-bean-field", label: "Christmas Lima bean field" },
   { href: "#dragon-tongue-bean-field", label: "Dragon Tongue bean field" },
+  { href: "#scarlet-runner-bean-field", label: "Scarlet Runner bean field" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
