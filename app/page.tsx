@@ -623,6 +623,27 @@ const duckPondWork = [
   },
 ] as const;
 
+const turkeyRunWork = [
+  {
+    name: "Range lane",
+    rhythm: "After the duck pond",
+    detail:
+      "A wide grass corridor between the reed margin and the windbreak — turkeys work ticks and grasshoppers so the next cattle pass finds cleaner pasture, not a bug bloom.",
+  },
+  {
+    name: "Brush roost",
+    rhythm: "Dusk lock-in",
+    detail:
+      "Low timber roosts under hawthorn and cedar when the prairie goes dark. Birds return to the lane at first light — the roost is the pause, not a confinement barn.",
+  },
+  {
+    name: "Feast weeks",
+    rhythm: "Late autumn board",
+    detail:
+      "Whole birds for the holiday table after the pack shed has done its quiet work — Leah chalks names when the count is honest. No anonymous freezer truck; just what the range grew on Northfield rain.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -727,6 +748,9 @@ export default function Home() {
             </a>
             <a href="#duck-pond" className="transition hover:text-[var(--foreground)]">
               Duck pond
+            </a>
+            <a href="#turkey-run" className="transition hover:text-[var(--foreground)]">
+              Turkey run
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2069,6 +2093,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the duck pond
+            </a>
+          </div>
+        </section>
+
+        {/* Turkey run — one job: range after the wet edge, feast birds for the stand */}
+        <section
+          id="turkey-run"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Range and feather
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A turkey run that finishes the poultry lane.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Range lane, brush roost, and feast weeks — a small flock on open
+              grass after the duck pond, then birds that find the stand once the
+              pack-shed lane has done its quiet autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {turkeyRunWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20turkey%20run"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the turkey run
             </a>
           </div>
         </section>
