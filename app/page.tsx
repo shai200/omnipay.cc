@@ -287,6 +287,27 @@ const millWork = [
   },
 ] as const;
 
+const creekWork = [
+  {
+    name: "Spring rise",
+    rhythm: "Snowmelt to May",
+    detail:
+      "The creek swells and softens the lower pasture. We fence the bank, let willows hold the edge, and wait out the mud before cattle return.",
+  },
+  {
+    name: "Hand irrigation",
+    rhythm: "Dry summer weeks",
+    detail:
+      "A small lift to the high tunnels and market beds — not a flood, just enough so greens don’t bolt early and transplants root before heat.",
+  },
+  {
+    name: "Bank forage",
+    rhythm: "Year-round edge",
+    detail:
+      "Wild mint, willow shade, and bird cover along the water. Pollinators use the corridor between orchard and pasture when the prairie is loud with wind.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -343,6 +364,9 @@ export default function Home() {
             </a>
             <a href="#mill" className="transition hover:text-[var(--foreground)]">
               Mill
+            </a>
+            <a href="#creek" className="transition hover:text-[var(--foreground)]">
+              Creek
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1001,6 +1025,47 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about mill flour
+            </a>
+          </div>
+        </section>
+
+        {/* Creek — one job: water that feeds the farm */}
+        <section id="creek" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(720px_380px_at_75%_30%,rgba(143,180,201,0.16),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Water on the edge
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A creek that keeps pasture soft and tunnels alive.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Eighty acres sit between creek and windbreak — spring rise, careful
+              summer lifts, and a living bank that birds and bees still claim.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {creekWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20creek"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the creek
             </a>
           </div>
         </section>
