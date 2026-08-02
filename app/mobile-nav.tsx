@@ -28,6 +28,7 @@ const links = [
   { href: "#smokehouse", label: "Smokehouse" },
   { href: "#sugarhouse", label: "Sugarhouse" },
   { href: "#pack-shed", label: "Pack shed" },
+  { href: "#machine-shed", label: "Machine shed" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
