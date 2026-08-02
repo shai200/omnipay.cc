@@ -518,6 +518,27 @@ const machineShedWork = [
   },
 ] as const;
 
+const henhouseWork = [
+  {
+    name: "Nest boxes",
+    rhythm: "Before the gate opens",
+    detail:
+      "Clean straw, one hen at a time, and yolks that still carry pasture light. Eggs leave for the pack shed before the Saturday board is chalked — never under grocery fluorescents.",
+  },
+  {
+    name: "Roost loft",
+    rhythm: "Dusk lock-in",
+    detail:
+      "Timber perches above the scratch floor; fox wire tight to the sill. Jonah counts heads when the cattle move, then latches the loft before the lane goes dark.",
+  },
+  {
+    name: "Mobile coop",
+    rhythm: "With the cattle clock",
+    detail:
+      "The wheeled house follows rest paddocks so hens work fresh grass and leave fertilizer where the next cover crop wants it. Machine-shed frame, pasture purpose.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -607,6 +628,9 @@ export default function Home() {
             </a>
             <a href="#machine-shed" className="transition hover:text-[var(--foreground)]">
               Machine shed
+            </a>
+            <a href="#henhouse" className="transition hover:text-[var(--foreground)]">
+              Henhouse
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1733,6 +1757,48 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the machine shed
+            </a>
+          </div>
+        </section>
+
+        {/* Henhouse — one job: pasture eggs on the cattle clock */}
+        <section id="henhouse" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(680px_360px_at_75%_35%,rgba(198,164,90,0.12),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Nest and roost
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A henhouse that follows the cattle clock.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Nest boxes, roost loft, and mobile coop — gold yolks that track
+              Jonah’s pasture moves, then ride the pack-shed share lane before
+              the stand board opens.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {henhouseWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20henhouse"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the henhouse
             </a>
           </div>
         </section>
