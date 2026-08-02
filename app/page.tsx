@@ -875,6 +875,27 @@ const cornfieldWork = [
   },
 ] as const;
 
+const wheatFieldWork = [
+  {
+    name: "Head rows",
+    rhythm: "After the cornfield",
+    detail:
+      "A long belt of prairie wheat on the warm gravel edge past the ears — heads catch the same late light the corn finishes on, and the straw drinks deep without crowding the orchard windbreak into damp.",
+  },
+  {
+    name: "Bind mornings",
+    rhythm: "Quiet dawn sheaves",
+    detail:
+      "Hand binds when the awns dry and dew still holds. Mara ties ripe sheaves before the stand opens — the wheat field is a finish lane, not a combine parade that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "Mill weeks",
+    rhythm: "Late autumn board",
+    detail:
+      "A few stone-mill sacks for the farm table after the pack shed has done its quiet work — Leah chalks flour when the grind is honest. No anonymous commodity bin; just what the head finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -1015,6 +1036,9 @@ export default function Home() {
             </a>
             <a href="#cornfield" className="transition hover:text-[var(--foreground)]">
               Cornfield
+            </a>
+            <a href="#wheat-field" className="transition hover:text-[var(--foreground)]">
+              Wheat field
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2897,6 +2921,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the cornfield
+            </a>
+          </div>
+        </section>
+
+        {/* Wheat field — one job: head rows after the cornfield, bind mornings + mill weeks */}
+        <section
+          id="wheat-field"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Head and prairie gold
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A wheat field that finishes the corn belt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Head rows, bind mornings, and mill weeks — a long belt of gold
+              after the cornfield, then stone-mill sacks that find the farm table once
+              the pack-shed lane has done its quiet late-autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {wheatFieldWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20wheat%20field"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the wheat field
             </a>
           </div>
         </section>
