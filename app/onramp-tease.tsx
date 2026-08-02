@@ -588,6 +588,8 @@ export function OnrampTease() {
   const [draftFromPinned, setDraftFromPinned] = useState(false);
   const [draftPinSwapped, setDraftPinSwapped] = useState(false);
   const [formDraftSwapped, setFormDraftSwapped] = useState(false);
+  const [savedLinkCopied, setSavedLinkCopied] = useState(false);
+  const [savedExported, setSavedExported] = useState(false);
   const [draftSlotFingerprint, setDraftSlotFingerprint] = useState<
     string | null
   >(null);
@@ -1511,6 +1513,8 @@ export function OnrampTease() {
     setDraftFromPinned(false);
     setDraftPinSwapped(false);
     setFormDraftSwapped(false);
+    setSavedLinkCopied(false);
+    setSavedExported(false);
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
     setDraftDiffLines([]);
@@ -1529,7 +1533,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft / Swap form ↔ draft / Verify form vs pin / Diff form vs pin / Verify draft vs link / Diff draft vs link. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft / Swap form ↔ draft / Verify form vs pin / Diff form vs pin / Verify draft vs link / Diff draft vs link / Copy Save draft link / Export Save draft. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -2598,6 +2602,74 @@ export function OnrampTease() {
     }
   }
 
+  /** Preview-only: copy Save draft slot as a #omn-draft= share URL (form + pin untouched). */
+  async function copySavedDraftLink() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    const draftFp = fingerprintDraft(draft);
+    try {
+      const encoded = encodeDraftForHash(draft);
+      const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${draftHashPrefix}${encoded}`;
+      await navigator.clipboard.writeText(url);
+      setDraftAvailable(true);
+      setDraftSlotFingerprint(draftFp);
+      setSavedLinkCopied(true);
+      setSavedExported(false);
+      window.setTimeout(() => setSavedLinkCopied(false), 2000);
+      setDraftHint(
+        `Save draft link copied (FP ${draftFp}) — open / Paste / Verify draft vs link on another browser. Form and pin unchanged.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setDraftHint(
+        "Copy Save draft link failed — use Export Save draft .json instead.",
+      );
+    }
+  }
+
+  /** Preview-only: download Save draft slot as JSON (form + pin untouched). */
+  function exportSavedDraftJson() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    const draftFp = fingerprintDraft(draft);
+    const body = `${JSON.stringify(draft, null, 2)}\n`;
+    try {
+      const blob = new Blob([body], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${orderRef.toLowerCase()}-saved-draft.json`;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setDraftAvailable(true);
+      setDraftSlotFingerprint(draftFp);
+      setSavedExported(true);
+      setSavedLinkCopied(false);
+      window.setTimeout(() => setSavedExported(false), 2000);
+      setDraftHint(
+        `Save draft JSON exported (FP ${draftFp}) — Import draft on another browser to restore. Form and pin unchanged.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setDraftHint(
+        "Export Save draft failed — use Copy Save draft link instead.",
+      );
+    }
+  }
+
   function clearPin() {
     try {
       window.localStorage.removeItem(pinStorageKey);
@@ -2998,7 +3070,11 @@ export function OnrampTease() {
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
-            draftFromPinned || draftPinSwapped || formDraftSwapped
+            draftFromPinned ||
+            draftPinSwapped ||
+            formDraftSwapped ||
+            savedLinkCopied ||
+            savedExported
               ? "bg-emerald-400/15 text-emerald-100"
               : draftAvailable
                 ? "bg-emerald-400/15 text-emerald-100"
@@ -3006,15 +3082,19 @@ export function OnrampTease() {
           }`}
         >
           Draft{" "}
-          {formDraftSwapped
-            ? "↔ form"
-            : draftPinSwapped
-              ? "↔ pin"
-              : draftFromPinned
-                ? "from pin"
-                : draftAvailable
-                  ? "saved"
-                  : "none"}
+          {savedLinkCopied
+            ? "link copied"
+            : savedExported
+              ? "exported"
+              : formDraftSwapped
+                ? "↔ form"
+                : draftPinSwapped
+                  ? "↔ pin"
+                  : draftFromPinned
+                    ? "from pin"
+                    : draftAvailable
+                      ? "saved"
+                      : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -4142,6 +4222,26 @@ export function OnrampTease() {
               liveVerifyStatus === "mismatch"
                 ? `Diff draft/link (${draftDiffLines.length})`
                 : "Diff draft vs link"}
+            </button>
+          ) : null}
+          {draftAvailable ? (
+            <button
+              type="button"
+              onClick={() => {
+                void copySavedDraftLink();
+              }}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {savedLinkCopied ? "Save link copied" : "Copy Save draft link"}
+            </button>
+          ) : null}
+          {draftAvailable ? (
+            <button
+              type="button"
+              onClick={exportSavedDraftJson}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {savedExported ? "Save exported" : "Export Save draft"}
             </button>
           ) : null}
           {pinAvailable ? (
