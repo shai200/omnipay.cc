@@ -14,6 +14,20 @@ const sendWindows = [
   { id: "evening", label: "Evening", detail: "After work" },
 ] as const;
 
+const dropThresholds = [
+  { id: "5", label: "5%", detail: "Sensitive" },
+  { id: "10", label: "10%", detail: "Balanced" },
+  { id: "20", label: "20%", detail: "Big dips only" },
+] as const;
+
+const timezones = [
+  { id: "local", label: "Local device" },
+  { id: "america-new_york", label: "US Eastern" },
+  { id: "america-los_angeles", label: "US Pacific" },
+  { id: "europe-london", label: "London" },
+  { id: "asia-singapore", label: "Singapore" },
+] as const;
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ReminderTease() {
@@ -22,6 +36,10 @@ export function ReminderTease() {
   const [sendWindow, setSendWindow] =
     useState<(typeof sendWindows)[number]["id"]>("morning");
   const [dropAlerts, setDropAlerts] = useState(true);
+  const [dropThreshold, setDropThreshold] =
+    useState<(typeof dropThresholds)[number]["id"]>("10");
+  const [timezone, setTimezone] =
+    useState<(typeof timezones)[number]["id"]>("local");
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [submitHint, setSubmitHint] = useState<string | null>(null);
@@ -37,6 +55,11 @@ export function ReminderTease() {
     cadences.find((option) => option.id === cadence) ?? cadences[0];
   const selectedWindow =
     sendWindows.find((option) => option.id === sendWindow) ?? sendWindows[0];
+  const selectedThreshold =
+    dropThresholds.find((option) => option.id === dropThreshold) ??
+    dropThresholds[1];
+  const selectedTimezone =
+    timezones.find((option) => option.id === timezone) ?? timezones[0];
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     setEmailTouched(true);
@@ -130,6 +153,23 @@ export function ReminderTease() {
         <input type="hidden" name="send_window" value={sendWindow} />
       </fieldset>
       <label className="mt-6 block text-sm font-medium text-[var(--foreground)]">
+        Reminder timezone
+        <select
+          name="timezone"
+          value={timezone}
+          onChange={(event) =>
+            setTimezone(event.target.value as (typeof timezones)[number]["id"])
+          }
+          className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+        >
+          {timezones.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="mt-6 block text-sm font-medium text-[var(--foreground)]">
         Email for reminders
         <input
           name="email"
@@ -173,11 +213,51 @@ export function ReminderTease() {
           </span>
         </span>
       </label>
+      {dropAlerts ? (
+        <fieldset className="mt-4">
+          <legend className="text-sm font-medium text-[var(--foreground)]">
+            Drop alert threshold
+          </legend>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {dropThresholds.map((option) => {
+              const selected = dropThreshold === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setDropThreshold(option.id)}
+                  aria-pressed={selected}
+                  className={`rounded-xl px-3 py-3 text-left transition-colors ${
+                    selected
+                      ? "bg-[var(--accent)] text-white"
+                      : "border border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold">
+                    {option.label}
+                  </span>
+                  <span
+                    className={`mt-1 block text-xs ${
+                      selected ? "text-sky-100/85" : "text-[var(--muted)]"
+                    }`}
+                  >
+                    {option.detail}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <input type="hidden" name="drop_threshold" value={dropThreshold} />
+        </fieldset>
+      ) : null}
       <p className="mt-5 rounded-xl border border-[var(--line)] bg-[#f7f9fc] px-4 py-3 text-sm leading-6 text-[var(--foreground)]">
         Reminder preview:{" "}
         <span className="font-semibold">{selectedCadence.label}</span> cadence ·{" "}
-        <span className="font-semibold">{selectedWindow.label}</span> window
-        {dropAlerts ? " + drop alerts" : ""}
+        <span className="font-semibold">{selectedWindow.label}</span> window ·{" "}
+        <span className="font-semibold">{selectedTimezone.label}</span>
+        {dropAlerts
+          ? ` + drop alerts ≥${selectedThreshold.label}`
+          : ""}
         {emailStatus === "valid" ? ` → ${trimmedEmail}` : ""} — confirm on
         Omnipay.cc after sign-in.
       </p>

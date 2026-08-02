@@ -62,8 +62,12 @@ const faqItems = [
     a: "Preview shows an estimate (~1.5% network + processing tease). Live checkout locks the Stripe quote before you pay.",
   },
   {
+    q: "How fresh is the preview quote?",
+    a: "Tease quotes soft-expire after ~45 seconds with a visible countdown. Refresh quote to renew — the locked Stripe price still happens only at checkout.",
+  },
+  {
     q: "Are reminder emails required?",
-    a: "No. Reminders are optional discipline tools — weekly, bi-weekly, or monthly, with preferred send windows and optional drop alerts.",
+    a: "No. Reminders are optional discipline tools — weekly, bi-weekly, or monthly, with preferred send windows, timezone, and optional drop-alert thresholds.",
   },
 ] as const;
 

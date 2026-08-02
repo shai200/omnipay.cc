@@ -1,10 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 const presets = [25, 50, 100, 250] as const;
 const minAmount = 10;
 const maxAmount = 10_000;
+/** Preview-only: tease quotes soft-stale after this many seconds. */
+const quoteTtlSeconds = 45;
 
 const assets = [
   { id: "btc", label: "BTC", name: "Bitcoin", network: "Bitcoin" },
@@ -69,17 +71,35 @@ function formatQuoteTime(date: Date) {
   });
 }
 
+function formatUnitRate(
+  assetId: (typeof assets)[number]["id"],
+  jitterBps: number,
+) {
+  const base = teaseRatesUsd[assetId];
+  const adjusted = base * (1 + jitterBps / 10_000);
+  if (assetId === "usdc") return `$${adjusted.toFixed(4)}`;
+  if (assetId === "btc") {
+    return `$${Math.round(adjusted).toLocaleString("en-US")}`;
+  }
+  if (assetId === "eth") {
+    return `$${Math.round(adjusted).toLocaleString("en-US")}`;
+  }
+  return `$${adjusted.toFixed(2)}`;
+}
+
 export function OnrampTease() {
   const [amount, setAmount] = useState("50");
   const [asset, setAsset] = useState<(typeof assets)[number]["id"]>("btc");
   const [wallet, setWallet] = useState("");
   const [walletTouched, setWalletTouched] = useState(false);
   const [amountTouched, setAmountTouched] = useState(false);
+  const [confirmWallet, setConfirmWallet] = useState(false);
   const [submitHint, setSubmitHint] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] =
     useState<(typeof paymentMethods)[number]["id"]>("visa");
   const [quoteAt, setQuoteAt] = useState(() => new Date());
   const [quoteJitterBps, setQuoteJitterBps] = useState(0);
+  const [quoteAgeSec, setQuoteAgeSec] = useState(0);
 
   const selectedAsset = useMemo(
     () => assets.find((option) => option.id === asset) ?? assets[0],
@@ -130,6 +150,9 @@ export function OnrampTease() {
   const receiveEstimate = amountValid
     ? formatReceive(adjustedAmount, selectedAsset.id)
     : "—";
+  const unitRate = formatUnitRate(selectedAsset.id, quoteJitterBps);
+  const quoteRemaining = Math.max(0, quoteTtlSeconds - quoteAgeSec);
+  const quoteStale = quoteRemaining === 0;
 
   const trimmedWallet = wallet.trim();
   const walletStatus = !trimmedWallet
@@ -140,9 +163,22 @@ export function OnrampTease() {
 
   const readyAmount = amountValid;
   const readyNetwork = Boolean(activeNetwork);
+  const readyConfirm =
+    walletStatus !== "valid" || confirmWallet;
   const selectedPayment =
     paymentMethods.find((option) => option.id === paymentMethod) ??
     paymentMethods[0];
+
+  useEffect(() => {
+    const tick = () => {
+      setQuoteAgeSec(
+        Math.floor((Date.now() - quoteAt.getTime()) / 1000),
+      );
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [quoteAt]);
 
   function refreshQuote() {
     // Preview-only ±15 bps wobble so "Refresh quote" feels alive without
@@ -150,6 +186,7 @@ export function OnrampTease() {
     const next = Math.round((Math.random() * 30 - 15) * 10) / 10;
     setQuoteJitterBps(next);
     setQuoteAt(new Date());
+    setQuoteAgeSec(0);
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -172,6 +209,22 @@ export function OnrampTease() {
       event.preventDefault();
       setSubmitHint(
         `Fix the ${activeNetwork?.label ?? "wallet"} address format, or clear it to finish on Omnipay.cc.`,
+      );
+      return;
+    }
+
+    if (walletStatus === "valid" && !confirmWallet) {
+      event.preventDefault();
+      setSubmitHint(
+        "Confirm the destination wallet before continuing — crypto is sent to that address.",
+      );
+      return;
+    }
+
+    if (quoteStale) {
+      event.preventDefault();
+      setSubmitHint(
+        "Tease quote expired — tap Refresh quote, then continue.",
       );
       return;
     }
@@ -233,6 +286,26 @@ export function OnrampTease() {
         <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
           Pay {selectedPayment.label}
         </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            quoteStale
+              ? "bg-amber-400/15 text-amber-100"
+              : "bg-emerald-400/15 text-emerald-100"
+          }`}
+        >
+          Quote {quoteStale ? "stale" : `${quoteRemaining}s`}
+        </li>
+        {walletStatus === "valid" ? (
+          <li
+            className={`rounded-full px-2.5 py-1 ${
+              readyConfirm
+                ? "bg-emerald-400/15 text-emerald-100"
+                : "bg-amber-400/15 text-amber-100"
+            }`}
+          >
+            Dest {readyConfirm ? "confirmed" : "confirm"}
+          </li>
+        ) : null}
       </ul>
       <fieldset className="mt-6">
         <legend className="text-sm text-sky-100/80">Buy asset</legend>
@@ -253,6 +326,7 @@ export function OnrampTease() {
                     )?.id ?? "ethereum";
                   setNetwork(nextNetwork);
                   setWalletTouched(false);
+                  setConfirmWallet(false);
                   setSubmitHint(null);
                 }}
                 aria-pressed={selected}
@@ -282,6 +356,7 @@ export function OnrampTease() {
                 onClick={() => {
                   setNetwork(option.id);
                   setWalletTouched(false);
+                  setConfirmWallet(false);
                   setSubmitHint(null);
                 }}
                 aria-pressed={selected}
@@ -306,6 +381,7 @@ export function OnrampTease() {
           value={wallet}
           onChange={(event) => {
             setWallet(event.target.value);
+            setConfirmWallet(false);
             setSubmitHint(null);
           }}
           onBlur={() => setWalletTouched(true)}
@@ -326,6 +402,31 @@ export function OnrampTease() {
         <p className="mt-2 text-xs text-emerald-200/90" role="status">
           Looks like a valid {activeNetwork?.label} address for preview.
         </p>
+      ) : null}
+      {walletStatus === "valid" ? (
+        <label className="mt-3 flex items-start gap-3 text-sm text-sky-100/90">
+          <input
+            type="checkbox"
+            name="confirm_wallet"
+            value="1"
+            checked={confirmWallet}
+            onChange={(event) => {
+              setConfirmWallet(event.target.checked);
+              setSubmitHint(null);
+            }}
+            className="mt-1 h-4 w-4 rounded border-white/30 accent-[var(--accent)]"
+          />
+          <span>
+            <span className="font-semibold text-white">
+              Confirm destination wallet
+            </span>
+            <span className="mt-1 block text-xs text-sky-100/70">
+              I understand crypto will be sent to{" "}
+              {trimmedWallet.slice(0, 6)}…{trimmedWallet.slice(-4)} on{" "}
+              {activeNetwork?.label}.
+            </span>
+          </span>
+        </label>
       ) : null}
       <fieldset className="mt-4">
         <legend className="text-sm text-sky-100/80">Buy amount (USD)</legend>
@@ -405,10 +506,19 @@ export function OnrampTease() {
         </div>
         <input type="hidden" name="payment_method" value={paymentMethod} />
       </fieldset>
-      <div className="mt-4 rounded-xl border border-sky-300/25 bg-sky-400/10 px-4 py-3 text-sm leading-6 text-sky-50">
+      <div
+        className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-6 ${
+          quoteStale
+            ? "border-amber-300/40 bg-amber-400/10 text-amber-50"
+            : "border-sky-300/25 bg-sky-400/10 text-sky-50"
+        }`}
+      >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs uppercase tracking-[0.12em] text-sky-200/80">
             Tease quote as of {formatQuoteTime(quoteAt)}
+            {quoteStale
+              ? " · expired"
+              : ` · valid ${quoteRemaining}s`}
           </p>
           <button
             type="button"
@@ -427,6 +537,15 @@ export function OnrampTease() {
           via {selectedPayment.label}.
         </p>
         <p className="mt-2 text-sky-100/80">
+          Tease unit rate{" "}
+          <span className="font-semibold text-white">{unitRate}</span> /{" "}
+          {selectedAsset.label}
+          {quoteJitterBps !== 0
+            ? ` (${quoteJitterBps > 0 ? "+" : ""}${quoteJitterBps} bps)`
+            : ""}
+          .
+        </p>
+        <p className="mt-2 text-sky-100/80">
           You&apos;ll receive about{" "}
           <span className="font-semibold text-white">{receiveEstimate}</span>{" "}
           (tease rate — final quote locks in checkout).
@@ -435,6 +554,11 @@ export function OnrampTease() {
           Est. network + processing {feeEstimate} · card total {totalEstimate} ·
           ETA under 1 min after payment.
         </p>
+        {quoteStale ? (
+          <p className="mt-2 text-xs text-amber-100" role="status">
+            Preview quote went soft-stale — refresh before continuing.
+          </p>
+        ) : null}
       </div>
       <p className="mt-3 text-xs leading-5 text-sky-100/65">
         Pay with Visa, Mastercard, Amex, or debit — Stripe Crypto Onramp.
