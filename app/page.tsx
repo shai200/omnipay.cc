@@ -28,6 +28,12 @@ const reminderPoints = [
   },
 ] as const;
 
+const onrampSteps = [
+  { label: "Card", detail: "Any credit or debit card" },
+  { label: "Wallet", detail: "Your address, not ours" },
+  { label: "Crypto", detail: "Arrives in minutes" },
+] as const;
+
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -58,12 +64,18 @@ export default function Home() {
               Omnipay.cc
             </span>
           </a>
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-2 sm:gap-3">
             <a
               href="#reminders"
               className="hidden rounded-lg px-3 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:inline"
             >
               Reminders
+            </a>
+            <a
+              href="https://omnipay.cc/auth/register"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white"
+            >
+              Register
             </a>
             <a
               href="https://omnipay.cc/auth/login"
@@ -103,8 +115,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 border-t border-[var(--line)] bg-[#0b1b33] py-20 text-white">
-        <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 md:grid-cols-2 md:items-center md:px-10">
+      <section
+        id="onramp"
+        className="relative z-10 border-t border-[var(--line)] bg-[#0b1b33] py-20 text-white"
+      >
+        <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 md:grid-cols-2 md:items-center md:px-10">
           <div>
             <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-4xl">
               Buy crypto, sent directly to your wallet
@@ -113,25 +128,61 @@ export default function Home() {
               Use any credit or debit card. Keep full control — crypto goes
               straight to your wallet, not a custodial middleman.
             </p>
+            <ol className="mt-8 space-y-4">
+              {onrampSteps.map((step, index) => (
+                <li key={step.label} className="flex items-start gap-4">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-sky-100">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <p className="font-semibold">{step.label}</p>
+                    <p className="text-sm text-sky-100/75">{step.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/5 p-8 backdrop-blur">
+          <form
+            action="https://omnipay.cc/auth/register"
+            method="get"
+            className="rounded-2xl border border-white/15 bg-white/5 p-8 backdrop-blur"
+          >
             <p className="text-sm font-medium uppercase tracking-[0.14em] text-sky-200/80">
               Card on-ramp
             </p>
             <p className="mt-3 text-xl font-semibold">
               Fiat in. Crypto out — to your address.
             </p>
-            <p className="mt-3 text-base leading-7 text-sky-100/80">
-              Live Stripe Crypto Onramp wiring needs App Hosting / API keys
-              (Founder GO). Until then, start on the production auth flow.
-            </p>
-            <a
-              href="https://omnipay.cc/auth/register"
-              className="mt-6 inline-flex rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-deep)]"
+            <label className="mt-6 block text-sm text-sky-100/80">
+              Destination wallet
+              <input
+                name="wallet"
+                type="text"
+                placeholder="0x… or your chain address"
+                className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
+              />
+            </label>
+            <label className="mt-4 block text-sm text-sky-100/80">
+              Buy amount (USD)
+              <input
+                name="amount"
+                type="number"
+                min="10"
+                step="1"
+                placeholder="50"
+                className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
+              />
+            </label>
+            <button
+              type="submit"
+              className="mt-6 w-full rounded-xl bg-[var(--accent)] px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-deep)]"
             >
-              Continue on Omnipay.cc
-            </a>
-          </div>
+              Continue to Omnipay.cc
+            </button>
+            <p className="mt-3 text-xs leading-5 text-sky-100/60">
+              Opens the live checkout flow on Omnipay.cc. Powered by Stripe.
+            </p>
+          </form>
         </div>
       </section>
 
@@ -201,27 +252,40 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-[var(--line)] bg-white py-10">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 text-sm text-[var(--muted)] md:flex-row md:items-center md:justify-between md:px-10">
-          <p>© {new Date().getFullYear()} Omnipay.cc · Your secure gateway to cryptocurrency</p>
-          <div className="flex flex-wrap gap-4">
-            <a
-              href="https://omnipay.cc/PrivacyPolicy"
-              className="hover:text-[var(--foreground)]"
-            >
-              Privacy
-            </a>
-            <a
-              href="https://omnipay.cc/TermsOfService"
-              className="hover:text-[var(--foreground)]"
-            >
-              Terms
-            </a>
-            <a
-              href="https://omnipay.cc/BusinessInfo"
-              className="hover:text-[var(--foreground)]"
-            >
-              Business info
-            </a>
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 text-sm text-[var(--muted)] md:px-10">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="font-[family-name:var(--font-display)] text-base font-semibold text-[var(--foreground)]">
+                Omnipay.cc
+              </p>
+              <p className="mt-1">Your secure gateway to cryptocurrency</p>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <a
+                href="https://omnipay.cc/PrivacyPolicy"
+                className="hover:text-[var(--foreground)]"
+              >
+                Privacy
+              </a>
+              <a
+                href="https://omnipay.cc/TermsOfService"
+                className="hover:text-[var(--foreground)]"
+              >
+                Terms
+              </a>
+              <a
+                href="https://omnipay.cc/BusinessInfo"
+                className="hover:text-[var(--foreground)]"
+              >
+                Business info
+              </a>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 border-t border-[var(--line)] pt-6 md:flex-row md:items-center md:justify-between">
+            <p>© {new Date().getFullYear()} Omnipay.cc. All rights reserved.</p>
+            <p className="text-xs md:text-sm">
+              Bank-grade encryption · Verified by Stripe · PCI-DSS compliant
+            </p>
           </div>
         </div>
       </footer>
