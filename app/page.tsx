@@ -197,6 +197,10 @@ const faqItems = [
     q: "What is Paste pin link / Import pin?",
     a: "Paste pin link reads a #omn-draft= URL (clipboard or paste field) into the pin slot only — form and Save draft stay unchanged. Import pin loads Export pin / Export draft .json into the pin slot the same way. Use Apply pin to load the pin into the form. Nothing uploads to Omnipay servers.",
   },
+  {
+    q: "What is Verify pin link / Diff pin link?",
+    a: "Verify pin link compares a #omn-draft= URL to the pin slot without writing anything — match means the link equals the pin; mismatch means Paste pin link would change the pin. Diff pin link lists which fields differ (pin → link). Form and Save draft stay untouched. Fingerprints never leave your browser.",
+  },
 ] as const;
 
 export default function Home() {

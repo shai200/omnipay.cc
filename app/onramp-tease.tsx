@@ -288,6 +288,7 @@ function diffDraftFields(
   current: PreviewDraftV1,
   other: PreviewDraftV1,
   otherLabel: "link" | "pin" = "link",
+  currentLabel: "form" | "pin" = "form",
 ): string[] {
   const keys = Object.keys(draftFieldLabels) as Array<
     keyof typeof draftFieldLabels
@@ -296,7 +297,7 @@ function diffDraftFields(
   for (const key of keys) {
     if (current[key] === other[key]) continue;
     lines.push(
-      `${draftFieldLabels[key]}: form ${formatDraftDiffValue(current[key])} → ${otherLabel} ${formatDraftDiffValue(other[key])}`,
+      `${draftFieldLabels[key]}: ${currentLabel} ${formatDraftDiffValue(current[key])} → ${otherLabel} ${formatDraftDiffValue(other[key])}`,
     );
   }
   return lines;
@@ -583,6 +584,7 @@ export function OnrampTease() {
   const [pinExported, setPinExported] = useState(false);
   const [pinLinkPasted, setPinLinkPasted] = useState(false);
   const [pinImported, setPinImported] = useState(false);
+  const [verifyAnchor, setVerifyAnchor] = useState<"form" | "pin">("form");
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
@@ -1062,10 +1064,14 @@ export function OnrampTease() {
   }
 
   const draftFingerprint = fingerprintDraft(buildDraftPayload());
+  const liveVerifyAnchorFp =
+    verifyAnchor === "pin" ? pinFingerprint : draftFingerprint;
   const liveVerifyStatus =
     draftVerifyStatus === "invalid"
       ? "invalid"
-      : draftVerifyStatus !== "idle" && verifiedFormFp === draftFingerprint
+      : draftVerifyStatus !== "idle" &&
+          liveVerifyAnchorFp !== null &&
+          verifiedFormFp === liveVerifyAnchorFp
         ? draftVerifyStatus
         : "idle";
 
@@ -1331,6 +1337,7 @@ export function OnrampTease() {
       setDraftVerifyStatus("invalid");
       setVerifiedFormFp(null);
       setDraftDiffLines([]);
+      setVerifyAnchor("form");
       setDraftHint(
         "Verify failed — need a #omn-draft= URL/token (or paste into the field).",
       );
@@ -1339,6 +1346,7 @@ export function OnrampTease() {
     const current = buildDraftPayload();
     const currentFp = fingerprintDraft(current);
     const linkFp = fingerprintDraft(draft);
+    setVerifyAnchor("form");
     setVerifiedFormFp(currentFp);
     if (currentFp === linkFp) {
       setDraftVerifyStatus("match");
@@ -1365,6 +1373,7 @@ export function OnrampTease() {
       setDraftVerifyStatus("invalid");
       setVerifiedFormFp(null);
       setDraftDiffLines([]);
+      setVerifyAnchor("form");
       setDraftHint(
         "Diff failed — need a #omn-draft= URL/token (or paste into the field).",
       );
@@ -1373,6 +1382,7 @@ export function OnrampTease() {
     const current = buildDraftPayload();
     const currentFp = fingerprintDraft(current);
     const linkFp = fingerprintDraft(draft);
+    setVerifyAnchor("form");
     setVerifiedFormFp(currentFp);
     if (currentFp === linkFp) {
       setDraftVerifyStatus("match");
@@ -1482,6 +1492,7 @@ export function OnrampTease() {
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
     setDraftDiffLines([]);
+    setVerifyAnchor("form");
     setDraftHint("Draft cleared from this browser.");
   }
 
@@ -1496,7 +1507,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import pin. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -1553,6 +1564,8 @@ export function OnrampTease() {
     const current = buildDraftPayload();
     const currentFp = fingerprintDraft(current);
     const pinFp = fingerprintDraft(pinned);
+    setVerifyAnchor("form");
+    setVerifiedFormFp(currentFp);
     if (currentFp === pinFp) {
       setDraftVerifyStatus("match");
       setDraftDiffLines([]);
@@ -1569,6 +1582,7 @@ export function OnrampTease() {
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
     setDraftDiffLines([]);
+    setVerifyAnchor("form");
     setDraftHint(
       `Applied pin (FP ${pinFp}) — pin slot unchanged. Form was FP ${currentFp}. Refresh quote if stale.`,
     );
@@ -1588,6 +1602,7 @@ export function OnrampTease() {
     const current = buildDraftPayload();
     const currentFp = fingerprintDraft(current);
     const pinFp = fingerprintDraft(pinned);
+    setVerifyAnchor("form");
     setVerifiedFormFp(currentFp);
     if (currentFp === pinFp) {
       setDraftVerifyStatus("match");
@@ -1793,6 +1808,178 @@ export function OnrampTease() {
     reader.readAsText(file);
   }
 
+  /** Preview-only: compare a #omn-draft= link to the pin slot without applying. */
+  function verifyPinAgainstLink(raw: string): boolean {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("pin");
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return false;
+    }
+    const link = extractDraftFromPaste(raw);
+    if (!link) {
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("pin");
+      setDraftHint(
+        "Verify pin link failed — need a #omn-draft= URL/token (or paste into the field).",
+      );
+      return false;
+    }
+    const pinFp = fingerprintDraft(pinned);
+    const linkFp = fingerprintDraft(link);
+    setPinFingerprint(pinFp);
+    setVerifyAnchor("pin");
+    setVerifiedFormFp(pinFp);
+    if (pinFp === linkFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `Pin link matches pin slot (FP ${pinFp}) — form and pin unchanged.`,
+      );
+    } else {
+      const diffs = diffDraftFields(pinned, link, "link", "pin");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Pin link FP ${linkFp} ≠ pin FP ${pinFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Paste pin link to overwrite pin.`,
+      );
+    }
+    setSubmitHint(null);
+    return true;
+  }
+
+  /** Preview-only: list field diffs between pin slot and a #omn-draft= link. */
+  function diffPinAgainstLink(raw: string): boolean {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("pin");
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return false;
+    }
+    const link = extractDraftFromPaste(raw);
+    if (!link) {
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("pin");
+      setDraftHint(
+        "Diff pin link failed — need a #omn-draft= URL/token (or paste into the field).",
+      );
+      return false;
+    }
+    const pinFp = fingerprintDraft(pinned);
+    const linkFp = fingerprintDraft(link);
+    setPinFingerprint(pinFp);
+    setVerifyAnchor("pin");
+    setVerifiedFormFp(pinFp);
+    if (pinFp === linkFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `No field diffs — pin link matches pin slot (FP ${pinFp}).`,
+      );
+    } else {
+      const diffs = diffDraftFields(pinned, link, "link", "pin");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Diff pin link: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (link FP ${linkFp} ≠ pin FP ${pinFp}). Paste pin link to overwrite pin.`,
+      );
+    }
+    setSubmitHint(null);
+    return true;
+  }
+
+  async function verifyPinLinkFromClipboard() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setDraftVerifyStatus("invalid");
+        setDraftDiffLines([]);
+        setVerifyAnchor("pin");
+        setDraftHint(
+          "Clipboard is empty — paste a #omn-draft= link into the field, then Verify pin link.",
+        );
+        pasteDraftInputRef.current?.focus();
+        return;
+      }
+      if (!verifyPinAgainstLink(text)) {
+        pasteDraftInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteDraftInputRef.current?.value ?? "";
+      if (field.trim()) {
+        verifyPinAgainstLink(field);
+        return;
+      }
+      setDraftVerifyStatus("invalid");
+      setDraftDiffLines([]);
+      setVerifyAnchor("pin");
+      setDraftHint(
+        "Clipboard read blocked — paste the #omn-draft= link into the field, then Verify pin link.",
+      );
+      pasteDraftInputRef.current?.focus();
+    }
+  }
+
+  async function diffPinLinkFromClipboard() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setDraftVerifyStatus("invalid");
+        setDraftDiffLines([]);
+        setVerifyAnchor("pin");
+        setDraftHint(
+          "Clipboard is empty — paste a #omn-draft= link into the field, then Diff pin link.",
+        );
+        pasteDraftInputRef.current?.focus();
+        return;
+      }
+      if (!diffPinAgainstLink(text)) {
+        pasteDraftInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteDraftInputRef.current?.value ?? "";
+      if (field.trim()) {
+        diffPinAgainstLink(field);
+        return;
+      }
+      setDraftVerifyStatus("invalid");
+      setDraftDiffLines([]);
+      setVerifyAnchor("pin");
+      setDraftHint(
+        "Clipboard read blocked — paste the #omn-draft= link into the field, then Diff pin link.",
+      );
+      pasteDraftInputRef.current?.focus();
+    }
+  }
+
   function clearPin() {
     try {
       window.localStorage.removeItem(pinStorageKey);
@@ -1807,6 +1994,12 @@ export function OnrampTease() {
     setPinExported(false);
     setPinLinkPasted(false);
     setPinImported(false);
+    if (verifyAnchor === "pin") {
+      setDraftVerifyStatus("idle");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("form");
+    }
     setDraftHint("Pin cleared from this browser (Save draft untouched).");
   }
 
@@ -3104,9 +3297,9 @@ export function OnrampTease() {
             onClick={verifyDraftLinkFromClipboard}
             className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
           >
-            {liveVerifyStatus === "match"
+            {verifyAnchor === "form" && liveVerifyStatus === "match"
               ? "Link matches"
-              : liveVerifyStatus === "mismatch"
+              : verifyAnchor === "form" && liveVerifyStatus === "mismatch"
                 ? "Link mismatch"
                 : "Verify draft link"}
           </button>
@@ -3115,7 +3308,9 @@ export function OnrampTease() {
             onClick={diffDraftLinkFromClipboard}
             className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
           >
-            {draftDiffLines.length > 0 && liveVerifyStatus === "mismatch"
+            {verifyAnchor === "form" &&
+            draftDiffLines.length > 0 &&
+            liveVerifyStatus === "mismatch"
               ? `Diff (${draftDiffLines.length})`
               : "Diff draft link"}
           </button>
@@ -3150,7 +3345,9 @@ export function OnrampTease() {
               onClick={diffVsPin}
               className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
             >
-              {draftDiffLines.length > 0 && liveVerifyStatus === "mismatch"
+              {verifyAnchor === "form" &&
+              draftDiffLines.length > 0 &&
+              liveVerifyStatus === "mismatch"
                 ? `Diff pin (${draftDiffLines.length})`
                 : "Diff vs pin"}
             </button>
@@ -3191,6 +3388,36 @@ export function OnrampTease() {
           >
             {pinImported ? "Pin imported" : "Import pin"}
           </button>
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={() => {
+                void verifyPinLinkFromClipboard();
+              }}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "pin" && liveVerifyStatus === "match"
+                ? "Pin link matches"
+                : verifyAnchor === "pin" && liveVerifyStatus === "mismatch"
+                  ? "Pin link mismatch"
+                  : "Verify pin link"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={() => {
+                void diffPinLinkFromClipboard();
+              }}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "pin" &&
+              draftDiffLines.length > 0 &&
+              liveVerifyStatus === "mismatch"
+                ? `Diff pin link (${draftDiffLines.length})`
+                : "Diff pin link"}
+            </button>
+          ) : null}
           {pinAvailable ? (
             <button
               type="button"
