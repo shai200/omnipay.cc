@@ -203,6 +203,27 @@ const orchardRows = [
   },
 ] as const;
 
+const compostYard = [
+  {
+    name: "Hot piles",
+    rhythm: "Turned weekly",
+    detail:
+      "Kitchen scraps, orchard pulp, and bedding heat fast. Steam in winter means microbes are still on the clock.",
+  },
+  {
+    name: "Leaf mold",
+    rhythm: "Two winters",
+    detail:
+      "Windbreak leaves rest in quiet bays until they crumble — soft mulch for greens and the orchard drip line.",
+  },
+  {
+    name: "Return to rows",
+    rhythm: "Spring dressing",
+    detail:
+      "Finished compost goes under cover crops and market beds — living soil, not a bag from town.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -247,6 +268,9 @@ export default function Home() {
             </a>
             <a href="#orchard" className="transition hover:text-[var(--foreground)]">
               Orchard
+            </a>
+            <a href="#compost" className="transition hover:text-[var(--foreground)]">
+              Compost
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -733,6 +757,47 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about press weeks
+            </a>
+          </div>
+        </section>
+
+        {/* Compost — one job: how scraps become living soil */}
+        <section id="compost" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(720px_380px_at_75%_30%,rgba(198,164,90,0.12),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Back to the soil
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A compost yard that never leaves the farm empty-handed.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              What the stand, kitchen, and orchard leave behind becomes next
+              season&apos;s fertility — turned, rested, and returned to the rows.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {compostYard.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20compost%20yard"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask to see the compost yard
             </a>
           </div>
         </section>
