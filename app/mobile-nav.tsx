@@ -24,6 +24,7 @@ const links = [
   { href: "#workshop", label: "Workshop" },
   { href: "#greenhouse", label: "Greenhouse" },
   { href: "#woodlot", label: "Woodlot" },
+  { href: "#dairy", label: "Dairy" },
   { href: "#visit", label: "Visit" },
 ] as const;
 

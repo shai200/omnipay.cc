@@ -413,6 +413,27 @@ const woodlotWork = [
   },
 ] as const;
 
+const dairyWork = [
+  {
+    name: "Morning milk",
+    rhythm: "Dawn in the parlor",
+    detail:
+      "A small Jersey herd on rotational grass — milk cooled the same hour it leaves the parlor, never trucked across three counties first.",
+  },
+  {
+    name: "Cream room",
+    rhythm: "After the first skim",
+    detail:
+      "Cream rises overnight in shallow pans. Butter churn and cultured cream for CSA weeks — fat from pasture, not a carton aisle.",
+  },
+  {
+    name: "Aged wheels",
+    rhythm: "Cellar weeks",
+    detail:
+      "Cloth-bound cheddar and soft bloomy rounds rest beside the root jars. Field-day tastings start here, not at a grocery counter.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -487,6 +508,9 @@ export default function Home() {
             </a>
             <a href="#woodlot" className="transition hover:text-[var(--foreground)]">
               Woodlot
+            </a>
+            <a href="#dairy" className="transition hover:text-[var(--foreground)]">
+              Dairy
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1400,6 +1424,47 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the woodlot
+            </a>
+          </div>
+        </section>
+
+        {/* Dairy — one job: milk, cream, and wheels from pasture grass */}
+        <section id="dairy" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(680px_360px_at_20%_40%,rgba(198,164,90,0.12),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Milk and cream
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A dairy that starts with grass and ends on your table.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Morning milk, cream room, and aged wheels — the quiet line from
+              rotational pasture to butter, cheese, and Saturday stand bottles.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {dairyWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20dairy"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the dairy
             </a>
           </div>
         </section>
