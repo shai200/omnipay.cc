@@ -1,3 +1,5 @@
+import MobileNav from "./mobile-nav";
+
 const practices = [
   {
     title: "Living soil",
@@ -32,6 +34,25 @@ const crops = [
   },
 ] as const;
 
+const seasons = [
+  {
+    name: "Spring",
+    work: "Soil rest ends. Cover crops turn in; greens and early potatoes go to ground.",
+  },
+  {
+    name: "Summer",
+    work: "Long days, irrigation by hand where needed, and the first CSA boxes leave the stand.",
+  },
+  {
+    name: "Autumn",
+    work: "Wheat and late apples. Pasture rotation slows; the farm stand runs on weekend harvest.",
+  },
+  {
+    name: "Winter",
+    work: "Tools mend, seed orders, and compost heaps work quietly under frost.",
+  },
+] as const;
+
 const visitSteps = [
   { label: "Arrive", detail: "Gravel lane off County Road 12" },
   { label: "Walk", detail: "Self-guided paths through the rows" },
@@ -42,7 +63,7 @@ export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
       <header className="absolute inset-x-0 top-0 z-20">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5 md:px-8">
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-5 md:px-8">
           <a
             href="#top"
             className="font-[family-name:var(--font-fraunces)] text-xl font-semibold tracking-tight md:text-2xl"
@@ -56,16 +77,20 @@ export default function Home() {
             <a href="#harvest" className="transition hover:text-[var(--foreground)]">
               Harvest
             </a>
+            <a href="#seasons" className="transition hover:text-[var(--foreground)]">
+              Seasons
+            </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
             </a>
           </nav>
           <a
             href="#visit"
-            className="rounded-sm bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[#1a2418] transition hover:bg-[var(--accent-deep)] hover:text-[var(--foreground)]"
+            className="hidden rounded-sm bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[#1a2418] transition hover:bg-[var(--accent-deep)] hover:text-[var(--foreground)] md:inline-block"
           >
             Plan a visit
           </a>
+          <MobileNav />
         </div>
       </header>
 
@@ -179,6 +204,41 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+
+        {/* Seasons */}
+        <section id="seasons" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(700px_360px_at_90%_20%,rgba(143,180,201,0.16),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Year on the land
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              Farming follows the year, not a warehouse clock.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Four turns of work — plant, tend, gather, rest — so the soil and
+              the people who work it stay strong.
+            </p>
+            <ol className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {seasons.map((season, i) => (
+                <li
+                  key={season.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {season.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {season.work}
+                  </p>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 
