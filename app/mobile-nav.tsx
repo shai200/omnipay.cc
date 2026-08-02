@@ -38,6 +38,7 @@ const links = [
   { href: "#rabbit-warren", label: "Rabbit warren" },
   { href: "#goose-yard", label: "Goose yard" },
   { href: "#horse-paddock", label: "Horse paddock" },
+  { href: "#cattle-yard", label: "Cattle yard" },
   { href: "#visit", label: "Visit" },
 ] as const;
 

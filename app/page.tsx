@@ -707,6 +707,27 @@ const horsePaddockWork = [
   },
 ] as const;
 
+const cattleYardWork = [
+  {
+    name: "Grazing strip",
+    rhythm: "After the horse paddock",
+    detail:
+      "A narrow strip of mixed grass beside the draft lane — cattle finish the understory the horses leave soft, so the next pasture pulse finds clean sod, not a mat the sheepfold would ignore.",
+  },
+  {
+    name: "Mineral trough",
+    rhythm: "Quiet dawn checks",
+    detail:
+      "A low trough under the willow edge when frost still bites. Jonah fills salt and kelp before the strip opens — the yard is a pause for health, not a confinement lot.",
+  },
+  {
+    name: "Finish weeks",
+    rhythm: "Autumn board",
+    detail:
+      "A few beeves for the stand after the pack shed has done its quiet work — Leah chalks cuts when the count is honest. No anonymous freezer truck; just what the yard finished on Northfield grass.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -823,6 +844,9 @@ export default function Home() {
             </a>
             <a href="#horse-paddock" className="transition hover:text-[var(--foreground)]">
               Horse paddock
+            </a>
+            <a href="#cattle-yard" className="transition hover:text-[var(--foreground)]">
+              Cattle yard
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2345,6 +2369,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the horse paddock
+            </a>
+          </div>
+        </section>
+
+        {/* Cattle yard — one job: grazing strip after the horse paddock, mineral trough + finish weeks */}
+        <section
+          id="cattle-yard"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -right-20 top-8 h-80 w-80 rounded-full bg-[var(--sky)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Herd and clay
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A cattle yard that finishes the herd lane.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Grazing strip, mineral trough, and finish weeks — a small herd on
+              soft grass after the horse paddock, then beeves that find the
+              stand once the pack-shed lane has done its quiet autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {cattleYardWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20cattle%20yard"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the cattle yard
             </a>
           </div>
         </section>
