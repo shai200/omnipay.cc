@@ -164,6 +164,13 @@ const purchasePurposes = [
   { id: "gift", label: "Gift", detail: "Someone else" },
 ] as const;
 
+/** Preview-only tax residency tease — not a live W-9 / CRS answer. */
+const taxResidencies = [
+  { id: "us", label: "US person", detail: "Tax resident US" },
+  { id: "non-us", label: "Non-US", detail: "Outside US" },
+  { id: "prefer-not", label: "Prefer not", detail: "Tell us later" },
+] as const;
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const memoMaxLen = 80;
 const promoMaxLen = 24;
@@ -254,6 +261,9 @@ export function OnrampTease() {
   const [fiatCurrency, setFiatCurrency] =
     useState<(typeof fiatCurrencies)[number]["id"]>("usd");
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [taxResidency, setTaxResidency] =
+    useState<(typeof taxResidencies)[number]["id"]>("us");
+  const [selfCustodyAccepted, setSelfCustodyAccepted] = useState(false);
   const [quoteAt, setQuoteAt] = useState(() => new Date());
   const [quoteJitterBps, setQuoteJitterBps] = useState(0);
   const [quoteAgeSec, setQuoteAgeSec] = useState(0);
@@ -421,6 +431,9 @@ export function OnrampTease() {
   const selectedPurpose =
     purchasePurposes.find((option) => option.id === purchasePurpose) ??
     purchasePurposes[0];
+  const selectedTaxResidency =
+    taxResidencies.find((option) => option.id === taxResidency) ??
+    taxResidencies[0];
 
   useEffect(() => {
     const tick = () => {
@@ -492,6 +505,7 @@ export function OnrampTease() {
       `via ${selectedPayment.label} · ${selectedCountry.label}`,
       `${selectedCadence.label} · ${selectedSpeed.label}`,
       `funds ${selectedFundSource.label} · purpose ${selectedPurpose.label}`,
+      `tax ${selectedTaxResidency.label}`,
       receiveEstimate !== "—" ? `receive ${receiveEstimate}` : null,
       totalEstimate !== "—" ? `card total ${totalEstimate}` : null,
     ]
@@ -507,6 +521,44 @@ export function OnrampTease() {
         "Share summary copy failed — select the order preview text manually.",
       );
     }
+  }
+
+  function resetPreview() {
+    setAmount("50");
+    setAsset("btc");
+    setWallet("");
+    setWalletTouched(false);
+    setAmountTouched(false);
+    setConfirmWallet(false);
+    setSubmitHint(null);
+    setPaymentMethod("visa");
+    setBuyCadence("once");
+    setSlippage("1");
+    setNetworkSpeed("standard");
+    setOrderMemo("");
+    setRiskAccepted(false);
+    setTosAccepted(false);
+    setReceiptEmail("");
+    setReceiptTouched(false);
+    setBillingCountry("us");
+    setPromoCode("");
+    setPromoTouched(false);
+    setFundSource("salary");
+    setPurchasePurpose("invest");
+    setAgeConfirmed(false);
+    setReceiptConfirm("");
+    setReceiptConfirmTouched(false);
+    setRefCopied(false);
+    setSummaryCopied(false);
+    setFiatCurrency("usd");
+    setPrivacyAccepted(false);
+    setTaxResidency("us");
+    setSelfCustodyAccepted(false);
+    setQuoteJitterBps(0);
+    setQuoteAt(new Date());
+    setQuoteAgeSec(0);
+    setLockedUnits(null);
+    setNetwork("bitcoin");
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -615,6 +667,14 @@ export function OnrampTease() {
       event.preventDefault();
       setSubmitHint(
         "Accept the Privacy Policy soft-gate before continuing to Omnipay.cc.",
+      );
+      return;
+    }
+
+    if (!selfCustodyAccepted) {
+      event.preventDefault();
+      setSubmitHint(
+        "Acknowledge self-custody before continuing — crypto settles to your wallet, not Omnipay custody.",
       );
       return;
     }
@@ -774,6 +834,15 @@ export function OnrampTease() {
         >
           Privacy {privacyAccepted ? "accepted" : "needed"}
         </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            selfCustodyAccepted
+              ? "bg-emerald-400/15 text-emerald-100"
+              : "bg-amber-400/15 text-amber-100"
+          }`}
+        >
+          Custody {selfCustodyAccepted ? "acked" : "needed"}
+        </li>
         <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
           {selectedFiat.label}
         </li>
@@ -782,6 +851,9 @@ export function OnrampTease() {
         </li>
         <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
           Purpose {selectedPurpose.label}
+        </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          Tax {selectedTaxResidency.label}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -1443,6 +1515,46 @@ export function OnrampTease() {
           compliance.
         </p>
       </fieldset>
+      <fieldset className="mt-4">
+        <legend className="text-sm text-sky-100/80">Tax residency</legend>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {taxResidencies.map((option) => {
+            const selected = taxResidency === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setTaxResidency(option.id);
+                  setSubmitHint(null);
+                }}
+                aria-pressed={selected}
+                className={`rounded-lg px-2 py-2.5 text-left transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                <span className="block text-sm font-semibold">
+                  {option.label}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[11px] ${
+                    selected ? "text-[#0b1b33]/70" : "text-sky-100/65"
+                  }`}
+                >
+                  {option.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="tax_residency" value={taxResidency} />
+        <p className="mt-2 text-xs text-sky-100/65">
+          Compliance tease only — live Omnipay.cc may collect W-9 / CRS forms
+          at KYC. Prefer not is allowed in preview.
+        </p>
+      </fieldset>
       <div
         className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-6 ${
           quoteStale || slippageBreach
@@ -1487,6 +1599,13 @@ export function OnrampTease() {
           >
             {summaryCopied ? "Shared" : "Share summary"}
           </button>
+          <button
+            type="button"
+            onClick={resetPreview}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            Reset preview
+          </button>
         </p>
         <input type="hidden" name="order_ref" value={orderRef} />
         <p className="mt-2">
@@ -1501,7 +1620,8 @@ export function OnrampTease() {
           {selectedCadence.label.toLowerCase()} ·{" "}
           {selectedSpeed.label.toLowerCase()} · funds{" "}
           {selectedFundSource.label.toLowerCase()} · purpose{" "}
-          {selectedPurpose.label.toLowerCase()}
+          {selectedPurpose.label.toLowerCase()} · tax{" "}
+          {selectedTaxResidency.label.toLowerCase()}
           {trimmedMemo ? ` · memo “${trimmedMemo.slice(0, 24)}${trimmedMemo.length > 24 ? "…" : ""}”` : ""}
           {activePromo ? ` · promo ${trimmedPromo}` : ""}
           .
@@ -1629,6 +1749,28 @@ export function OnrampTease() {
               Omnipay.cc Privacy Policy
             </a>{" "}
             still applies at live checkout.
+          </span>
+        </span>
+      </label>
+      <label className="mt-3 flex items-start gap-3 text-sm text-sky-100/90">
+        <input
+          type="checkbox"
+          name="self_custody_accepted"
+          value="1"
+          checked={selfCustodyAccepted}
+          onChange={(event) => {
+            setSelfCustodyAccepted(event.target.checked);
+            setSubmitHint(null);
+          }}
+          className="mt-1 h-4 w-4 rounded border-white/30 accent-[var(--accent)]"
+        />
+        <span>
+          <span className="font-semibold text-white">
+            I understand crypto settles to my wallet (self-custody)
+          </span>
+          <span className="mt-1 block text-xs text-sky-100/70">
+            Preview soft-gate — after settle, Omnipay does not custody your
+            assets. Wrong address risk is yours; confirm destination carefully.
           </span>
         </span>
       </label>

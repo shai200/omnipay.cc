@@ -129,6 +129,18 @@ const faqItems = [
     q: "What does Share summary do?",
     a: "Copies a one-line order preview (ref, amount, asset, network, cadence, fees) to your clipboard so you can paste it into notes or support — tease only, not a live payment receipt.",
   },
+  {
+    q: "Why ask tax residency?",
+    a: "Preview lets you pick US person, Non-US, or Prefer not as a compliance tease. Live Omnipay.cc may collect W-9 / CRS forms at KYC — this picker does not replace tax forms.",
+  },
+  {
+    q: "Why acknowledge self-custody?",
+    a: "Preview soft-gates Continue behind a self-custody acknowledgment: after settle, crypto is in your wallet, not Omnipay custody. Wrong-address risk remains yours — confirm destination carefully.",
+  },
+  {
+    q: "What does Reset preview do?",
+    a: "Clears the on-ramp tease back to defaults (amount, wallet, soft-gates, promo, quote jitter) so you can start a clean preview session. The order ref stays for the page load.",
+  },
 ] as const;
 
 export default function Home() {
