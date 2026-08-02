@@ -959,6 +959,27 @@ const barleyFieldWork = [
   },
 ] as const;
 
+const speltFieldWork = [
+  {
+    name: "Hull rows",
+    rhythm: "After the barley field",
+    detail:
+      "An ancient belt of spelt on the warm gravel edge past the barley — hulls catch the same late light the spikes finish on, and the deep roots knit the clay without crowding the orchard windbreak into damp.",
+  },
+  {
+    name: "Cradle mornings",
+    rhythm: "Quiet dawn sheaves",
+    detail:
+      "Hand cradles when the hulls dry and dew still holds. Mara ties ripe sheaves before the stand opens — the spelt field is a finish lane, not a combine parade that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "Loaf weeks",
+    rhythm: "Late autumn board",
+    detail:
+      "A few stone-mill sacks for the farm table after the pack shed has done its quiet work — Leah chalks spelt flour when the grind is honest. No anonymous commodity bin; just what the hull finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -1111,6 +1132,9 @@ export default function Home() {
             </a>
             <a href="#barley-field" className="transition hover:text-[var(--foreground)]">
               Barley field
+            </a>
+            <a href="#spelt-field" className="transition hover:text-[var(--foreground)]">
+              Spelt field
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -3173,6 +3197,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the barley field
+            </a>
+          </div>
+        </section>
+
+        {/* Spelt field — one job: hull rows after the barley field, cradle mornings + loaf weeks */}
+        <section
+          id="spelt-field"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Hull and ancient gold
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A spelt field that finishes the barley belt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Hull rows, cradle mornings, and loaf weeks — an ancient belt of gold
+              after the barley field, then stone-mill sacks that find the farm table once
+              the pack-shed lane has done its quiet late-autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {speltFieldWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20spelt%20field"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the spelt field
             </a>
           </div>
         </section>
