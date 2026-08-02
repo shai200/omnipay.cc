@@ -186,6 +186,8 @@ const promoMaxLen = 24;
 const smsMaxLen = 18;
 /** Preview-only draft in this browser — not a server-side order. */
 const draftStorageKey = "omnipay-preview-draft-v1";
+/** Preview-only A/B pin slot (this browser) — independent of Save draft. */
+const pinStorageKey = "omnipay-preview-pin-v1";
 /** Preview-only autosave preference (this browser). */
 const autosavePrefKey = "omnipay-preview-autosave-v1";
 /** Debounce for preview autosave writes. */
@@ -352,6 +354,16 @@ function parseDraftPayload(raw: unknown): PreviewDraftV1 | null {
 function readDraftFromStorage(): PreviewDraftV1 | null {
   try {
     const raw = window.localStorage.getItem(draftStorageKey);
+    if (!raw) return null;
+    return parseDraftPayload(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+function readPinFromStorage(): PreviewDraftV1 | null {
+  try {
+    const raw = window.localStorage.getItem(pinStorageKey);
     if (!raw) return null;
     return parseDraftPayload(JSON.parse(raw));
   } catch {
@@ -562,6 +574,9 @@ export function OnrampTease() {
   >("idle");
   const [verifiedFormFp, setVerifiedFormFp] = useState<string | null>(null);
   const [draftDiffLines, setDraftDiffLines] = useState<string[]>([]);
+  const [pinAvailable, setPinAvailable] = useState(false);
+  const [pinFingerprint, setPinFingerprint] = useState<string | null>(null);
+  const [pinSwapped, setPinSwapped] = useState(false);
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
@@ -779,6 +794,11 @@ export function OnrampTease() {
         setDraftBanner(true);
         setDraftSavedAt(existing.savedAt);
       }
+    }
+    const pinned = readPinFromStorage();
+    if (pinned) {
+      setPinAvailable(true);
+      setPinFingerprint(fingerprintDraft(pinned));
     }
     try {
       const pref = window.localStorage.getItem(autosavePrefKey);
@@ -1458,6 +1478,72 @@ export function OnrampTease() {
     setDraftHint("Draft cleared from this browser.");
   }
 
+  /** Preview-only: stash current form in the A/B pin slot (localStorage). */
+  function pinDraft() {
+    const payload = buildDraftPayload();
+    try {
+      window.localStorage.setItem(pinStorageKey, JSON.stringify(payload));
+      const fp = fingerprintDraft(payload);
+      setPinAvailable(true);
+      setPinFingerprint(fp);
+      setPinSwapped(false);
+      setDraftHint(
+        `Pin saved (FP ${fp}) — Swap pin to A/B against another tease. Clear pin removes it.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setDraftHint(
+        "Pin draft failed — browser storage may be blocked in this preview.",
+      );
+    }
+  }
+
+  /** Preview-only: swap form ↔ pin without touching Save draft storage. */
+  function swapPin() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
+    const pinFp = fingerprintDraft(pinned);
+    try {
+      window.localStorage.setItem(pinStorageKey, JSON.stringify(current));
+      setPinAvailable(true);
+      setPinFingerprint(currentFp);
+    } catch {
+      setDraftHint(
+        "Swap pin failed — could not write pin slot (storage blocked).",
+      );
+      return;
+    }
+    applyDraft(pinned);
+    setPinSwapped(true);
+    window.setTimeout(() => setPinSwapped(false), 2000);
+    setDraftVerifyStatus("idle");
+    setVerifiedFormFp(null);
+    setDraftDiffLines([]);
+    setDraftHint(
+      `Swapped with pin (form was FP ${currentFp} → now FP ${pinFp}; pin holds previous). Refresh quote if stale.`,
+    );
+    setSubmitHint(null);
+  }
+
+  function clearPin() {
+    try {
+      window.localStorage.removeItem(pinStorageKey);
+    } catch {
+      /* ignore */
+    }
+    setPinAvailable(false);
+    setPinFingerprint(null);
+    setPinSwapped(false);
+    setDraftHint("Pin cleared from this browser (Save draft untouched).");
+  }
+
   function dismissDraftBanner() {
     setDraftBanner(false);
   }
@@ -1896,6 +1982,24 @@ export function OnrampTease() {
           {draftDiffLines.length > 0 && liveVerifyStatus === "mismatch"
             ? `${draftDiffLines.length}`
             : "idle"}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            pinSwapped
+              ? "bg-emerald-400/15 text-emerald-100"
+              : pinAvailable
+                ? "bg-sky-400/15 text-sky-100"
+                : "bg-white/5 text-sky-100/70"
+          }`}
+        >
+          Pin{" "}
+          {pinSwapped
+            ? "swapped"
+            : pinAvailable
+              ? pinFingerprint
+                ? `FP ${pinFingerprint}`
+                : "ready"
+              : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -2734,6 +2838,31 @@ export function OnrampTease() {
               ? `Diff (${draftDiffLines.length})`
               : "Diff draft link"}
           </button>
+          <button
+            type="button"
+            onClick={pinDraft}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {pinAvailable ? "Repin draft" : "Pin draft"}
+          </button>
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={swapPin}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {pinSwapped ? "Pin swapped" : "Swap pin"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={clearPin}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              Clear pin
+            </button>
+          ) : null}
           <input
             ref={pasteDraftInputRef}
             type="text"

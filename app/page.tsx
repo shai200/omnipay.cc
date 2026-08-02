@@ -181,6 +181,10 @@ const faqItems = [
     q: "Can I Diff a draft link?",
     a: "Yes — Diff draft link (or Verify on mismatch) lists which tease fields differ between the form and a #omn-draft= URL without applying it. Paste draft link still applies the link. Diffs stay in your browser.",
   },
+  {
+    q: "What is Pin draft / Swap pin?",
+    a: "Pin draft stashes the current tease in a second localStorage slot (independent of Save draft). Swap pin exchanges the form with the pin so you can A/B two configurations. Clear pin removes only the pin — drafts and #omn-draft= hashes stay until you Clear draft.",
+  },
 ] as const;
 
 export default function Home() {
