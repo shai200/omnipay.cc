@@ -1,4 +1,5 @@
 import { OnrampTease } from "./onramp-tease";
+import { ReminderTease } from "./reminder-tease";
 
 const features = [
   {
@@ -188,17 +189,7 @@ export default function Home() {
               </article>
             ))}
           </div>
-          <div className="mt-12 flex flex-wrap items-center gap-4">
-            <a
-              href="https://omnipay.cc/reminders"
-              className="inline-flex items-center justify-center rounded-xl bg-[var(--accent)] px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-[var(--accent-deep)]"
-            >
-              Set up your reminders
-            </a>
-            <p className="text-sm text-[var(--muted)]">
-              Sign in on Omnipay.cc to customize alerts.
-            </p>
-          </div>
+          <ReminderTease />
         </div>
       </section>
 

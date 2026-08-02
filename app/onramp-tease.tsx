@@ -3,9 +3,16 @@
 import { useState } from "react";
 
 const presets = [25, 50, 100, 250] as const;
+const assets = [
+  { id: "btc", label: "BTC", name: "Bitcoin" },
+  { id: "eth", label: "ETH", name: "Ethereum" },
+  { id: "usdc", label: "USDC", name: "USD Coin" },
+  { id: "sol", label: "SOL", name: "Solana" },
+] as const;
 
 export function OnrampTease() {
   const [amount, setAmount] = useState("50");
+  const [asset, setAsset] = useState<(typeof assets)[number]["id"]>("btc");
 
   return (
     <form
@@ -19,7 +26,32 @@ export function OnrampTease() {
       <p className="mt-3 text-xl font-semibold">
         Fiat in. Crypto out — to your address.
       </p>
-      <label className="mt-6 block text-sm text-sky-100/80">
+      <fieldset className="mt-6">
+        <legend className="text-sm text-sky-100/80">Buy asset</legend>
+        <div className="mt-2 grid grid-cols-4 gap-2">
+          {assets.map((option) => {
+            const selected = asset === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setAsset(option.id)}
+                aria-pressed={selected}
+                title={option.name}
+                className={`rounded-lg px-2 py-2.5 text-sm font-semibold transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="asset" value={asset} />
+      </fieldset>
+      <label className="mt-4 block text-sm text-sky-100/80">
         Destination wallet
         <input
           name="wallet"
