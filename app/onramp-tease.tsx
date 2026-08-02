@@ -288,7 +288,7 @@ function diffDraftFields(
   current: PreviewDraftV1,
   other: PreviewDraftV1,
   otherLabel: "link" | "pin" = "link",
-  currentLabel: "form" | "pin" = "form",
+  currentLabel: "form" | "pin" | "draft" = "form",
 ): string[] {
   const keys = Object.keys(draftFieldLabels) as Array<
     keyof typeof draftFieldLabels
@@ -586,7 +586,12 @@ export function OnrampTease() {
   const [pinImported, setPinImported] = useState(false);
   const [pinFromDrafted, setPinFromDrafted] = useState(false);
   const [draftFromPinned, setDraftFromPinned] = useState(false);
-  const [verifyAnchor, setVerifyAnchor] = useState<"form" | "pin">("form");
+  const [draftSlotFingerprint, setDraftSlotFingerprint] = useState<
+    string | null
+  >(null);
+  const [verifyAnchor, setVerifyAnchor] = useState<"form" | "pin" | "draft">(
+    "form",
+  );
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
@@ -791,6 +796,7 @@ export function OnrampTease() {
         );
         setDraftAvailable(true);
         setDraftSavedAt(fromHash.savedAt);
+        setDraftSlotFingerprint(fingerprintDraft(fromHash));
       } catch {
         /* form applied even if storage blocked */
       }
@@ -804,6 +810,7 @@ export function OnrampTease() {
         setDraftAvailable(true);
         setDraftBanner(true);
         setDraftSavedAt(existing.savedAt);
+        setDraftSlotFingerprint(fingerprintDraft(existing));
       }
     }
     const pinned = readPinFromStorage();
@@ -1067,7 +1074,11 @@ export function OnrampTease() {
 
   const draftFingerprint = fingerprintDraft(buildDraftPayload());
   const liveVerifyAnchorFp =
-    verifyAnchor === "pin" ? pinFingerprint : draftFingerprint;
+    verifyAnchor === "pin"
+      ? pinFingerprint
+      : verifyAnchor === "draft"
+        ? draftSlotFingerprint
+        : draftFingerprint;
   const liveVerifyStatus =
     draftVerifyStatus === "invalid"
       ? "invalid"
@@ -1084,6 +1095,7 @@ export function OnrampTease() {
       setDraftAvailable(true);
       setDraftBanner(false);
       setDraftSavedAt(payload.savedAt);
+      setDraftSlotFingerprint(fingerprintDraft(payload));
       if (!opts?.silent) {
         setDraftHint("Draft saved in this browser — Restore after refresh.");
       } else {
@@ -1223,6 +1235,7 @@ export function OnrampTease() {
           );
           setDraftAvailable(true);
           setDraftSavedAt(draft.savedAt);
+          setDraftSlotFingerprint(fingerprintDraft(draft));
         } catch {
           /* imported into form even if storage blocked */
         }
@@ -1280,6 +1293,7 @@ export function OnrampTease() {
       window.localStorage.setItem(draftStorageKey, JSON.stringify(draft));
       setDraftAvailable(true);
       setDraftSavedAt(draft.savedAt);
+      setDraftSlotFingerprint(fingerprintDraft(draft));
     } catch {
       /* form applied even if storage blocked */
     }
@@ -1489,6 +1503,7 @@ export function OnrampTease() {
     setDraftAvailable(false);
     setDraftBanner(false);
     setDraftSavedAt(null);
+    setDraftSlotFingerprint(null);
     setDraftLinkCopied(false);
     setDraftLinkPasted(false);
     setDraftVerifyStatus("idle");
@@ -1509,7 +1524,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Verify draft vs pin / Diff draft vs pin. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -2044,6 +2059,7 @@ export function OnrampTease() {
     setDraftAvailable(true);
     setDraftBanner(false);
     setDraftSavedAt(payload.savedAt);
+    setDraftSlotFingerprint(fp);
     setDraftFromPinned(true);
     setPinFromDrafted(false);
     window.setTimeout(() => setDraftFromPinned(false), 2000);
@@ -2051,6 +2067,104 @@ export function OnrampTease() {
     setDraftHint(
       `Draft from pin (FP ${fp}) — form and pin slot unchanged. Restore draft to load into the form.`,
     );
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: compare Save draft slot vs pin slot (form untouched). */
+  function verifyDraftVsPin() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("draft");
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("draft");
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const draftFp = fingerprintDraft(draft);
+    const pinFp = fingerprintDraft(pinned);
+    setDraftAvailable(true);
+    setDraftSlotFingerprint(draftFp);
+    setPinAvailable(true);
+    setPinFingerprint(pinFp);
+    setVerifyAnchor("draft");
+    setVerifiedFormFp(draftFp);
+    if (draftFp === pinFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `Save draft matches pin (FP ${draftFp}) — form unchanged.`,
+      );
+    } else {
+      const diffs = diffDraftFields(draft, pinned, "pin", "draft");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Save draft FP ${draftFp} ≠ pin FP ${pinFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Pin from draft / Draft from pin to sync slots.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: list field diffs between Save draft and pin (form untouched). */
+  function diffDraftVsPin() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("draft");
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("draft");
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const draftFp = fingerprintDraft(draft);
+    const pinFp = fingerprintDraft(pinned);
+    setDraftAvailable(true);
+    setDraftSlotFingerprint(draftFp);
+    setPinAvailable(true);
+    setPinFingerprint(pinFp);
+    setVerifyAnchor("draft");
+    setVerifiedFormFp(draftFp);
+    if (draftFp === pinFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `No field diffs — Save draft matches pin (FP ${draftFp}).`,
+      );
+    } else {
+      const diffs = diffDraftFields(draft, pinned, "pin", "draft");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Diff draft vs pin: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (draft FP ${draftFp} ≠ pin FP ${pinFp}). Pin from draft / Draft from pin to sync.`,
+      );
+    }
     setSubmitHint(null);
   }
 
@@ -2069,7 +2183,7 @@ export function OnrampTease() {
     setPinLinkPasted(false);
     setPinImported(false);
     setPinFromDrafted(false);
-    if (verifyAnchor === "pin") {
+    if (verifyAnchor === "pin" || verifyAnchor === "draft") {
       setDraftVerifyStatus("idle");
       setVerifiedFormFp(null);
       setDraftDiffLines([]);
@@ -3487,6 +3601,32 @@ export function OnrampTease() {
               className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
             >
               {draftFromPinned ? "Draft from pin ✓" : "Draft from pin"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={verifyDraftVsPin}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "draft" && liveVerifyStatus === "match"
+                ? "Draft=pin match"
+                : verifyAnchor === "draft" && liveVerifyStatus === "mismatch"
+                  ? "Draft≠pin"
+                  : "Verify draft vs pin"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={diffDraftVsPin}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "draft" &&
+              draftDiffLines.length > 0 &&
+              liveVerifyStatus === "mismatch"
+                ? `Diff draft/pin (${draftDiffLines.length})`
+                : "Diff draft vs pin"}
             </button>
           ) : null}
           {pinAvailable ? (

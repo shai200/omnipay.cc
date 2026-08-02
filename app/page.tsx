@@ -205,6 +205,10 @@ const faqItems = [
     q: "What is Pin from draft / Draft from pin?",
     a: "Pin from draft copies the Save draft localStorage slot into the pin slot without changing the form. Draft from pin copies the pin into Save draft (refreshes savedAt) without changing the form or pin. Use Apply pin / Restore draft to load into the form. Nothing uploads to Omnipay servers.",
   },
+  {
+    q: "What is Verify draft vs pin / Diff draft vs pin?",
+    a: "Verify draft vs pin compares the Save draft slot to the pin slot without writing anything — match means the two slots are equal; mismatch means Pin from draft or Draft from pin would change a slot. Diff draft vs pin lists which fields differ (draft → pin). The form stays untouched. Fingerprints never leave your browser.",
+  },
 ] as const;
 
 export default function Home() {
