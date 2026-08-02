@@ -590,6 +590,8 @@ export function OnrampTease() {
   const [formDraftSwapped, setFormDraftSwapped] = useState(false);
   const [savedLinkCopied, setSavedLinkCopied] = useState(false);
   const [savedExported, setSavedExported] = useState(false);
+  const [savedLinkPasted, setSavedLinkPasted] = useState(false);
+  const [savedImported, setSavedImported] = useState(false);
   const [draftSlotFingerprint, setDraftSlotFingerprint] = useState<
     string | null
   >(null);
@@ -600,6 +602,7 @@ export function OnrampTease() {
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
   const importPinInputRef = useRef<HTMLInputElement | null>(null);
+  const importSavedDraftInputRef = useRef<HTMLInputElement | null>(null);
   const pasteDraftInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedAsset = useMemo(
@@ -1515,6 +1518,8 @@ export function OnrampTease() {
     setFormDraftSwapped(false);
     setSavedLinkCopied(false);
     setSavedExported(false);
+    setSavedLinkPasted(false);
+    setSavedImported(false);
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
     setDraftDiffLines([]);
@@ -1533,7 +1538,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft / Swap form ↔ draft / Verify form vs pin / Diff form vs pin / Verify draft vs link / Diff draft vs link / Copy Save draft link / Export Save draft. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft / Swap form ↔ draft / Verify form vs pin / Diff form vs pin / Verify draft vs link / Diff draft vs link / Copy Save draft link / Export Save draft / Paste Save draft link / Import Save draft. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -2620,9 +2625,11 @@ export function OnrampTease() {
       setDraftSlotFingerprint(draftFp);
       setSavedLinkCopied(true);
       setSavedExported(false);
+      setSavedLinkPasted(false);
+      setSavedImported(false);
       window.setTimeout(() => setSavedLinkCopied(false), 2000);
       setDraftHint(
-        `Save draft link copied (FP ${draftFp}) — open / Paste / Verify draft vs link on another browser. Form and pin unchanged.`,
+        `Save draft link copied (FP ${draftFp}) — open / Paste Save draft link / Verify draft vs link on another browser. Form and pin unchanged.`,
       );
       setSubmitHint(null);
     } catch {
@@ -2658,9 +2665,11 @@ export function OnrampTease() {
       setDraftSlotFingerprint(draftFp);
       setSavedExported(true);
       setSavedLinkCopied(false);
+      setSavedLinkPasted(false);
+      setSavedImported(false);
       window.setTimeout(() => setSavedExported(false), 2000);
       setDraftHint(
-        `Save draft JSON exported (FP ${draftFp}) — Import draft on another browser to restore. Form and pin unchanged.`,
+        `Save draft JSON exported (FP ${draftFp}) — Import Save draft on another browser to restore the slot. Form and pin unchanged.`,
       );
       setSubmitHint(null);
     } catch {
@@ -2668,6 +2677,137 @@ export function OnrampTease() {
         "Export Save draft failed — use Copy Save draft link instead.",
       );
     }
+  }
+
+  /** Preview-only: write Save draft slot from a #omn-draft= paste (form / pin untouched). */
+  function applyPastedToSavedDraft(raw: string): boolean {
+    const draft = extractDraftFromPaste(raw);
+    if (!draft) {
+      setDraftHint(
+        "Paste Save draft link failed — need a #omn-draft= URL or Export Save draft .json.",
+      );
+      return false;
+    }
+    const fp = fingerprintDraft(draft);
+    try {
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(draft));
+    } catch {
+      setDraftHint(
+        "Paste Save draft link failed — browser storage may be blocked in this preview.",
+      );
+      return false;
+    }
+    setDraftAvailable(true);
+    setDraftSavedAt(draft.savedAt);
+    setDraftSlotFingerprint(fp);
+    setDraftBanner(false);
+    setSavedLinkCopied(false);
+    setSavedExported(false);
+    setSavedLinkPasted(true);
+    setSavedImported(false);
+    setDraftFromPinned(false);
+    setDraftPinSwapped(false);
+    setFormDraftSwapped(false);
+    window.setTimeout(() => setSavedLinkPasted(false), 2000);
+    setDraftVerifyStatus("idle");
+    setVerifiedFormFp(null);
+    setDraftDiffLines([]);
+    setDraftHint(
+      `Save draft pasted from link (FP ${fp}) — form and pin unchanged. Restore draft to load into the form.`,
+    );
+    setSubmitHint(null);
+    return true;
+  }
+
+  async function pasteSavedDraftLinkFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        const field = pasteDraftInputRef.current?.value ?? "";
+        if (field.trim() && applyPastedToSavedDraft(field)) {
+          if (pasteDraftInputRef.current) pasteDraftInputRef.current.value = "";
+          return;
+        }
+        setDraftHint(
+          "Clipboard is empty — paste a #omn-draft= link into the field, then Paste Save draft link.",
+        );
+        pasteDraftInputRef.current?.focus();
+        return;
+      }
+      if (!applyPastedToSavedDraft(text)) {
+        pasteDraftInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteDraftInputRef.current?.value ?? "";
+      if (field.trim() && applyPastedToSavedDraft(field)) {
+        if (pasteDraftInputRef.current) pasteDraftInputRef.current.value = "";
+        return;
+      }
+      setDraftHint(
+        "Clipboard read blocked — paste the #omn-draft= link into the field, then Paste Save draft link.",
+      );
+      pasteDraftInputRef.current?.focus();
+    }
+  }
+
+  function openImportSavedDraftPicker() {
+    importSavedDraftInputRef.current?.click();
+  }
+
+  function onImportSavedDraftFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text =
+          typeof reader.result === "string" ? reader.result : "";
+        const draft = parseDraftPayload(JSON.parse(text));
+        if (!draft) {
+          setDraftHint(
+            "Import Save draft failed — file is not a valid Omnipay preview draft v1.",
+          );
+          return;
+        }
+        const fp = fingerprintDraft(draft);
+        try {
+          window.localStorage.setItem(draftStorageKey, JSON.stringify(draft));
+        } catch {
+          setDraftHint(
+            "Import Save draft failed — browser storage may be blocked in this preview.",
+          );
+          return;
+        }
+        setDraftAvailable(true);
+        setDraftSavedAt(draft.savedAt);
+        setDraftSlotFingerprint(fp);
+        setDraftBanner(false);
+        setSavedLinkCopied(false);
+        setSavedExported(false);
+        setSavedLinkPasted(false);
+        setSavedImported(true);
+        setDraftFromPinned(false);
+        setDraftPinSwapped(false);
+        setFormDraftSwapped(false);
+        window.setTimeout(() => setSavedImported(false), 2000);
+        setDraftVerifyStatus("idle");
+        setVerifiedFormFp(null);
+        setDraftDiffLines([]);
+        setDraftHint(
+          `Save draft imported (FP ${fp}) — form and pin unchanged. Restore draft to load into the form.`,
+        );
+        setSubmitHint(null);
+      } catch {
+        setDraftHint(
+          "Import Save draft failed — choose a .json exported from Export Save draft / Export draft.",
+        );
+      }
+    };
+    reader.onerror = () => {
+      setDraftHint("Import Save draft failed — could not read that file.");
+    };
+    reader.readAsText(file);
   }
 
   function clearPin() {
@@ -3074,7 +3214,9 @@ export function OnrampTease() {
             draftPinSwapped ||
             formDraftSwapped ||
             savedLinkCopied ||
-            savedExported
+            savedExported ||
+            savedLinkPasted ||
+            savedImported
               ? "bg-emerald-400/15 text-emerald-100"
               : draftAvailable
                 ? "bg-emerald-400/15 text-emerald-100"
@@ -3082,19 +3224,23 @@ export function OnrampTease() {
           }`}
         >
           Draft{" "}
-          {savedLinkCopied
-            ? "link copied"
-            : savedExported
-              ? "exported"
-              : formDraftSwapped
-                ? "↔ form"
-                : draftPinSwapped
-                  ? "↔ pin"
-                  : draftFromPinned
-                    ? "from pin"
-                    : draftAvailable
-                      ? "saved"
-                      : "none"}
+          {savedLinkPasted
+            ? "link pasted"
+            : savedImported
+              ? "imported"
+              : savedLinkCopied
+                ? "link copied"
+                : savedExported
+                  ? "exported"
+                  : formDraftSwapped
+                    ? "↔ form"
+                    : draftPinSwapped
+                      ? "↔ pin"
+                      : draftFromPinned
+                        ? "from pin"
+                        : draftAvailable
+                          ? "saved"
+                          : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -4244,6 +4390,22 @@ export function OnrampTease() {
               {savedExported ? "Save exported" : "Export Save draft"}
             </button>
           ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              void pasteSavedDraftLinkFromClipboard();
+            }}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {savedLinkPasted ? "Save link pasted" : "Paste Save draft link"}
+          </button>
+          <button
+            type="button"
+            onClick={openImportSavedDraftPicker}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {savedImported ? "Save imported" : "Import Save draft"}
+          </button>
           {pinAvailable ? (
             <button
               type="button"
@@ -4349,6 +4511,15 @@ export function OnrampTease() {
             aria-hidden
             tabIndex={-1}
             onChange={onImportPinFile}
+          />
+          <input
+            ref={importSavedDraftInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            aria-hidden
+            tabIndex={-1}
+            onChange={onImportSavedDraftFile}
           />
           <button
             type="button"

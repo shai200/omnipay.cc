@@ -230,6 +230,10 @@ const faqItems = [
     a: "Copy Save draft link puts the Save draft localStorage slot on the clipboard as a #omn-draft= URL without changing the form or pin (unlike Copy draft link, which encodes the live form). Export Save draft downloads that same slot as .json. Use Verify draft vs link to confirm a shared URL matches Save draft. Nothing uploads to Omnipay servers.",
   },
   {
+    q: "What is Paste Save draft link / Import Save draft?",
+    a: "Paste Save draft link writes a #omn-draft= URL into the Save draft localStorage slot only — form and pin stay untouched (unlike Paste draft link, which also applies to the form). Import Save draft loads Export Save draft / Export draft .json into that same slot. Restore draft still loads into the form. Fingerprints never leave your browser.",
+  },
+  {
     q: "What is Verify draft vs pin / Diff draft vs pin?",
     a: "Verify draft vs pin compares the Save draft slot to the pin slot without writing anything — match means the two slots are equal; mismatch means Pin from draft or Draft from pin would change a slot. Diff draft vs pin lists which fields differ (draft → pin). The form stays untouched. Fingerprints never leave your browser.",
   },
