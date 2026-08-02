@@ -161,6 +161,27 @@ const weekHaul = [
   },
 ] as const;
 
+const pastureLife = [
+  {
+    name: "Cattle rotation",
+    rhythm: "Move every few days",
+    detail:
+      "Small groups graze hard, then leave. Grass recovers; roots deepen; manure lands where it helps.",
+  },
+  {
+    name: "Mobile coop",
+    rhythm: "Follows the herd",
+    detail:
+      "Hens scratch behind the cattle — bugs, seed, and clean paddocks. Yolks track the pasture clock.",
+  },
+  {
+    name: "Rest paddocks",
+    rhythm: "Weeks of quiet",
+    detail:
+      "Empty fields are working fields. Pollinators, birds, and soil biology get their turn undisturbed.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -199,6 +220,9 @@ export default function Home() {
             </a>
             <a href="#haul" className="transition hover:text-[var(--foreground)]">
               Haul
+            </a>
+            <a href="#pasture" className="transition hover:text-[var(--foreground)]">
+              Pasture
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -599,6 +623,47 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask what is left this week
+            </a>
+          </div>
+        </section>
+
+        {/* Pasture — one job: how herd and flock keep the land working */}
+        <section id="pasture" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(700px_380px_at_20%_40%,rgba(63,122,82,0.2),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Herd and flock
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              Animals on a clock with the grass — not a feedlot calendar.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Cattle and hens move together so every paddock gets graze, scratch,
+              and rest. The pasture is a crop we harvest with hooves and beaks.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {pastureLife.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20pasture%20visit"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask to walk the pasture
             </a>
           </div>
         </section>
