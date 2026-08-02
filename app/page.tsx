@@ -263,7 +263,7 @@ const faqItems = [
   },
   {
     q: "What is Clear form / Reminder FP?",
-    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. When the form differs from defaults, Clear form arms a Confirm reset to defaults step (second click applies). Reminder FP chips show Form FP, Defaults FP, and Slot FP (ignores savedAt). Copy form FP / Copy defaults FP / Copy Slot FP put fingerprints on the clipboard. Fingerprints never leave your browser.",
+    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. When the form differs from defaults, Clear form arms a Confirm reset to defaults step (second click applies). Reminder FP chips show Form FP, Defaults FP, and Slot FP (ignores savedAt). Copy form FP / Copy defaults FP / Copy Slot FP put fingerprints on the clipboard. Compare Defaults FP ↔ Slot FP reports whether saved prefs equal Clear form targets. Fingerprints never leave your browser.",
   },
   {
     q: "What is Defaults FP / Confirm reset to defaults?",
@@ -280,6 +280,10 @@ const faqItems = [
   {
     q: "What is Copy Slot FP / Auto-disarm banner?",
     a: "Copy Slot FP puts the Save reminder Slot FP on the clipboard (form untouched) so you can cite it across browsers. Auto-disarm banner appears while Confirm reset is armed, shows the live countdown, and auto-disarms with no apply when the timer expires — Cancel reset or editing the form also disarms. Fingerprints never leave your browser.",
+  },
+  {
+    q: "What is Compare Defaults FP ↔ Slot FP?",
+    a: "Defaults FP chip highlights green (=) when it matches Slot FP and amber (≠) when it diverges (only when a Save reminder slot exists). Compare Defaults FP ↔ Slot FP reports the match without writing and surfaces Diff lines on diverge — useful to see whether saved prefs equal Clear form targets. Form stays untouched. Fingerprints never leave your browser.",
   },
   {
     q: "What is Verify form vs defaults / Diff form vs defaults?",
