@@ -287,7 +287,7 @@ function formatDraftDiffValue(value: unknown): string {
 function diffDraftFields(
   current: PreviewDraftV1,
   other: PreviewDraftV1,
-  otherLabel: "link" | "pin" = "link",
+  otherLabel: "link" | "pin" | "draft" = "link",
   currentLabel: "form" | "pin" | "draft" = "form",
 ): string[] {
   const keys = Object.keys(draftFieldLabels) as Array<
@@ -590,9 +590,9 @@ export function OnrampTease() {
   const [draftSlotFingerprint, setDraftSlotFingerprint] = useState<
     string | null
   >(null);
-  const [verifyAnchor, setVerifyAnchor] = useState<"form" | "pin" | "draft">(
-    "form",
-  );
+  const [verifyAnchor, setVerifyAnchor] = useState<
+    "form" | "pin" | "draft" | "saved"
+  >("form");
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
@@ -1079,7 +1079,7 @@ export function OnrampTease() {
       ? pinFingerprint
       : verifyAnchor === "draft"
         ? draftSlotFingerprint
-        : draftFingerprint;
+        : draftFingerprint; // form | saved track live form FP
   const liveVerifyStatus =
     draftVerifyStatus === "invalid"
       ? "invalid"
@@ -1527,7 +1527,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -2225,6 +2225,80 @@ export function OnrampTease() {
       setDraftDiffLines(diffs);
       setDraftHint(
         `Diff draft vs pin: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (draft FP ${draftFp} ≠ pin FP ${pinFp}). Pin from draft / Draft from pin to sync.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: compare live form vs Save draft slot (neither written). */
+  function verifyFormVsDraft() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("saved");
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
+    const draftFp = fingerprintDraft(draft);
+    setDraftAvailable(true);
+    setDraftSlotFingerprint(draftFp);
+    setVerifyAnchor("saved");
+    setVerifiedFormFp(currentFp);
+    if (currentFp === draftFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `Form matches Save draft (FP ${draftFp}) — nothing to restore.`,
+      );
+    } else {
+      const diffs = diffDraftFields(current, draft, "draft", "form");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Form FP ${currentFp} ≠ Save draft FP ${draftFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Restore draft to load saved values.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: list field diffs between form and Save draft (neither written). */
+  function diffFormVsDraft() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("saved");
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
+    const draftFp = fingerprintDraft(draft);
+    setDraftAvailable(true);
+    setDraftSlotFingerprint(draftFp);
+    setVerifyAnchor("saved");
+    setVerifiedFormFp(currentFp);
+    if (currentFp === draftFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `No field diffs — form matches Save draft (FP ${draftFp}).`,
+      );
+    } else {
+      const diffs = diffDraftFields(current, draft, "draft", "form");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Diff form vs draft: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (form FP ${currentFp} ≠ draft FP ${draftFp}). Restore draft to load saved values.`,
       );
     }
     setSubmitHint(null);
@@ -3703,6 +3777,32 @@ export function OnrampTease() {
               liveVerifyStatus === "mismatch"
                 ? `Diff draft/pin (${draftDiffLines.length})`
                 : "Diff draft vs pin"}
+            </button>
+          ) : null}
+          {draftAvailable ? (
+            <button
+              type="button"
+              onClick={verifyFormVsDraft}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "saved" && liveVerifyStatus === "match"
+                ? "Form=draft match"
+                : verifyAnchor === "saved" && liveVerifyStatus === "mismatch"
+                  ? "Form≠draft"
+                  : "Verify form vs draft"}
+            </button>
+          ) : null}
+          {draftAvailable ? (
+            <button
+              type="button"
+              onClick={diffFormVsDraft}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "saved" &&
+              draftDiffLines.length > 0 &&
+              liveVerifyStatus === "mismatch"
+                ? `Diff form/draft (${draftDiffLines.length})`
+                : "Diff form vs draft"}
             </button>
           ) : null}
           {pinAvailable ? (
