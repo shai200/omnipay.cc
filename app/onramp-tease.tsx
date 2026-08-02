@@ -54,6 +54,20 @@ const paymentMethods = [
   { id: "debit", label: "Debit" },
 ] as const;
 
+const buyCadences = [
+  { id: "once", label: "Once", detail: "Single buy" },
+  { id: "weekly", label: "Weekly", detail: "DCA habit" },
+  { id: "monthly", label: "Monthly", detail: "Long game" },
+] as const;
+
+const slippageOptions = [
+  { id: "0.5", label: "0.5%", detail: "Tight" },
+  { id: "1", label: "1%", detail: "Balanced" },
+  { id: "2", label: "2%", detail: "Flexible" },
+] as const;
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function formatReceive(amount: number, assetId: (typeof assets)[number]["id"]) {
   const rate = teaseRatesUsd[assetId];
   const units = amount / rate;
@@ -87,6 +101,16 @@ function formatUnitRate(
   return `$${adjusted.toFixed(2)}`;
 }
 
+function formatUnits(
+  units: number,
+  assetId: (typeof assets)[number]["id"],
+) {
+  if (assetId === "usdc") return `~${units.toFixed(2)} USDC`;
+  if (assetId === "btc") return `~${units.toFixed(6)} BTC`;
+  if (assetId === "eth") return `~${units.toFixed(5)} ETH`;
+  return `~${units.toFixed(4)} SOL`;
+}
+
 export function OnrampTease() {
   const [amount, setAmount] = useState("50");
   const [asset, setAsset] = useState<(typeof assets)[number]["id"]>("btc");
@@ -97,9 +121,16 @@ export function OnrampTease() {
   const [submitHint, setSubmitHint] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] =
     useState<(typeof paymentMethods)[number]["id"]>("visa");
+  const [buyCadence, setBuyCadence] =
+    useState<(typeof buyCadences)[number]["id"]>("once");
+  const [slippage, setSlippage] =
+    useState<(typeof slippageOptions)[number]["id"]>("1");
+  const [receiptEmail, setReceiptEmail] = useState("");
+  const [receiptTouched, setReceiptTouched] = useState(false);
   const [quoteAt, setQuoteAt] = useState(() => new Date());
   const [quoteJitterBps, setQuoteJitterBps] = useState(0);
   const [quoteAgeSec, setQuoteAgeSec] = useState(0);
+  const [lockedUnits, setLockedUnits] = useState<number | null>(null);
 
   const selectedAsset = useMemo(
     () => assets.find((option) => option.id === asset) ?? assets[0],
@@ -150,6 +181,21 @@ export function OnrampTease() {
   const receiveEstimate = amountValid
     ? formatReceive(adjustedAmount, selectedAsset.id)
     : "—";
+  const currentUnits = amountValid
+    ? adjustedAmount / teaseRatesUsd[selectedAsset.id]
+    : 0;
+  const slippagePct = Number(slippage);
+  const floorUnits =
+    lockedUnits !== null
+      ? lockedUnits * (1 - slippagePct / 100)
+      : amountValid
+        ? currentUnits * (1 - slippagePct / 100)
+        : 0;
+  const minReceiveEstimate = amountValid
+    ? formatUnits(floorUnits, selectedAsset.id)
+    : "—";
+  const slippageBreach =
+    amountValid && lockedUnits !== null && currentUnits + 1e-12 < floorUnits;
   const unitRate = formatUnitRate(selectedAsset.id, quoteJitterBps);
   const quoteRemaining = Math.max(0, quoteTtlSeconds - quoteAgeSec);
   const quoteStale = quoteRemaining === 0;
@@ -161,6 +207,13 @@ export function OnrampTease() {
       ? "valid"
       : "invalid";
 
+  const trimmedReceipt = receiptEmail.trim();
+  const receiptStatus = !trimmedReceipt
+    ? "empty"
+    : emailPattern.test(trimmedReceipt)
+      ? "valid"
+      : "invalid";
+
   const readyAmount = amountValid;
   const readyNetwork = Boolean(activeNetwork);
   const readyConfirm =
@@ -168,6 +221,11 @@ export function OnrampTease() {
   const selectedPayment =
     paymentMethods.find((option) => option.id === paymentMethod) ??
     paymentMethods[0];
+  const selectedCadence =
+    buyCadences.find((option) => option.id === buyCadence) ?? buyCadences[0];
+  const selectedSlippage =
+    slippageOptions.find((option) => option.id === slippage) ??
+    slippageOptions[1];
 
   useEffect(() => {
     const tick = () => {
@@ -180,18 +238,41 @@ export function OnrampTease() {
     return () => window.clearInterval(id);
   }, [quoteAt]);
 
+  useEffect(() => {
+    // Seed min-receive floor from the initial tease amount/asset.
+    if (lockedUnits === null && amountValid) {
+      setLockedUnits(parsedAmount / teaseRatesUsd[selectedAsset.id]);
+    }
+  }, [amountValid, lockedUnits, parsedAmount, selectedAsset.id]);
+
+  function lockQuoteUnits(
+    nextAmount: number,
+    nextAsset: (typeof assets)[number]["id"],
+    nextJitter: number,
+  ) {
+    setLockedUnits(
+      (nextAmount * (1 + nextJitter / 10_000)) / teaseRatesUsd[nextAsset],
+    );
+  }
+
   function refreshQuote() {
-    // Preview-only ±15 bps wobble so "Refresh quote" feels alive without
-    // pretending to be a live market feed.
-    const next = Math.round((Math.random() * 30 - 15) * 10) / 10;
+    // Preview-only ±80 bps wobble so "Refresh quote" can soft-trip a tight
+    // min-receive floor without pretending to be a live market feed.
+    const next = Math.round((Math.random() * 160 - 80) * 10) / 10;
+    // Lock floor against the zero-jitter baseline for this amount/asset.
+    if (amountValid) {
+      lockQuoteUnits(parsedAmount, selectedAsset.id, 0);
+    }
     setQuoteJitterBps(next);
     setQuoteAt(new Date());
     setQuoteAgeSec(0);
+    setSubmitHint(null);
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     setAmountTouched(true);
     if (trimmedWallet) setWalletTouched(true);
+    if (trimmedReceipt) setReceiptTouched(true);
 
     if (!amountValid) {
       event.preventDefault();
@@ -221,10 +302,26 @@ export function OnrampTease() {
       return;
     }
 
+    if (receiptStatus === "invalid") {
+      event.preventDefault();
+      setSubmitHint(
+        "Receipt email looks invalid — fix it or clear the field to continue.",
+      );
+      return;
+    }
+
     if (quoteStale) {
       event.preventDefault();
       setSubmitHint(
         "Tease quote expired — tap Refresh quote, then continue.",
+      );
+      return;
+    }
+
+    if (slippageBreach) {
+      event.preventDefault();
+      setSubmitHint(
+        `Tease receive fell below your ${selectedSlippage.label} min-receive floor — refresh quote or widen slippage.`,
       );
       return;
     }
@@ -306,8 +403,65 @@ export function OnrampTease() {
             Dest {readyConfirm ? "confirmed" : "confirm"}
           </li>
         ) : null}
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          {selectedCadence.label}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            slippageBreach
+              ? "bg-amber-400/15 text-amber-100"
+              : "bg-emerald-400/15 text-emerald-100"
+          }`}
+        >
+          Slip {selectedSlippage.label}
+        </li>
+        {receiptStatus === "valid" ? (
+          <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+            Receipt ready
+          </li>
+        ) : receiptStatus === "invalid" ? (
+          <li className="rounded-full bg-amber-400/15 px-2.5 py-1 text-amber-100">
+            Receipt fix
+          </li>
+        ) : null}
       </ul>
       <fieldset className="mt-6">
+        <legend className="text-sm text-sky-100/80">Buy frequency</legend>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {buyCadences.map((option) => {
+            const selected = buyCadence === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setBuyCadence(option.id);
+                  setSubmitHint(null);
+                }}
+                aria-pressed={selected}
+                className={`rounded-lg px-2 py-2.5 text-left transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                <span className="block text-sm font-semibold">
+                  {option.label}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[11px] ${
+                    selected ? "text-[#0b1b33]/70" : "text-sky-100/65"
+                  }`}
+                >
+                  {option.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="buy_cadence" value={buyCadence} />
+      </fieldset>
+      <fieldset className="mt-4">
         <legend className="text-sm text-sky-100/80">Buy asset</legend>
         <div className="mt-2 grid grid-cols-4 gap-2">
           {assets.map((option) => {
@@ -327,6 +481,14 @@ export function OnrampTease() {
                   setNetwork(nextNetwork);
                   setWalletTouched(false);
                   setConfirmWallet(false);
+                  setQuoteJitterBps(0);
+                  setQuoteAt(new Date());
+                  setQuoteAgeSec(0);
+                  if (amountValid) {
+                    lockQuoteUnits(parsedAmount, option.id, 0);
+                  } else {
+                    setLockedUnits(null);
+                  }
                   setSubmitHint(null);
                 }}
                 aria-pressed={selected}
@@ -440,6 +602,10 @@ export function OnrampTease() {
                 onClick={() => {
                   setAmount(String(preset));
                   setAmountTouched(true);
+                  setQuoteJitterBps(0);
+                  setQuoteAt(new Date());
+                  setQuoteAgeSec(0);
+                  lockQuoteUnits(preset, selectedAsset.id, 0);
                   setSubmitHint(null);
                 }}
                 aria-pressed={selected}
@@ -462,8 +628,22 @@ export function OnrampTease() {
           step="1"
           value={amount}
           onChange={(event) => {
-            setAmount(event.target.value);
+            const next = event.target.value;
+            setAmount(next);
             setSubmitHint(null);
+            const nextParsed = Number(next);
+            if (
+              Number.isFinite(nextParsed) &&
+              nextParsed >= minAmount &&
+              nextParsed <= maxAmount
+            ) {
+              setQuoteJitterBps(0);
+              setQuoteAt(new Date());
+              setQuoteAgeSec(0);
+              lockQuoteUnits(nextParsed, selectedAsset.id, 0);
+            } else {
+              setLockedUnits(null);
+            }
           }}
           onBlur={() => setAmountTouched(true)}
           placeholder="50"
@@ -506,9 +686,75 @@ export function OnrampTease() {
         </div>
         <input type="hidden" name="payment_method" value={paymentMethod} />
       </fieldset>
+      <fieldset className="mt-4">
+        <legend className="text-sm text-sky-100/80">
+          Max slippage / min receive
+        </legend>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {slippageOptions.map((option) => {
+            const selected = slippage === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setSlippage(option.id);
+                  setSubmitHint(null);
+                }}
+                aria-pressed={selected}
+                className={`rounded-lg px-2 py-2.5 text-left transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                <span className="block text-sm font-semibold">
+                  {option.label}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[11px] ${
+                    selected ? "text-[#0b1b33]/70" : "text-sky-100/65"
+                  }`}
+                >
+                  {option.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="slippage" value={slippage} />
+      </fieldset>
+      <label className="mt-4 block text-sm text-sky-100/80">
+        Receipt email{" "}
+        <span className="text-sky-100/55">(optional)</span>
+        <input
+          name="receipt_email"
+          type="email"
+          autoComplete="email"
+          value={receiptEmail}
+          onChange={(event) => {
+            setReceiptEmail(event.target.value);
+            setSubmitHint(null);
+          }}
+          onBlur={() => setReceiptTouched(true)}
+          placeholder="you@company.com"
+          aria-invalid={receiptTouched && receiptStatus === "invalid"}
+          className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
+        />
+      </label>
+      {receiptTouched && receiptStatus === "invalid" ? (
+        <p className="mt-2 text-xs text-amber-200/90" role="status">
+          Enter a valid email, or clear the field to skip receipts in preview.
+        </p>
+      ) : null}
+      {receiptStatus === "valid" ? (
+        <p className="mt-2 text-xs text-emerald-200/90" role="status">
+          Receipt tease will go to {trimmedReceipt} after checkout.
+        </p>
+      ) : null}
       <div
         className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-6 ${
-          quoteStale
+          quoteStale || slippageBreach
             ? "border-amber-300/40 bg-amber-400/10 text-amber-50"
             : "border-sky-300/25 bg-sky-400/10 text-sky-50"
         }`}
@@ -534,7 +780,7 @@ export function OnrampTease() {
           {trimmedWallet
             ? ` → ${trimmedWallet.slice(0, 6)}…${trimmedWallet.slice(-4)}`
             : " → your wallet"}{" "}
-          via {selectedPayment.label}.
+          via {selectedPayment.label} · {selectedCadence.label.toLowerCase()}.
         </p>
         <p className="mt-2 text-sky-100/80">
           Tease unit rate{" "}
@@ -551,12 +797,24 @@ export function OnrampTease() {
           (tease rate — final quote locks in checkout).
         </p>
         <p className="mt-2 text-sky-100/80">
+          Min receive floor{" "}
+          <span className="font-semibold text-white">{minReceiveEstimate}</span>{" "}
+          at {selectedSlippage.label} slippage.
+        </p>
+        <p className="mt-2 text-sky-100/80">
           Est. network + processing {feeEstimate} · card total {totalEstimate} ·
-          ETA under 1 min after payment.
+          ETA under 1 min after payment
+          {receiptStatus === "valid" ? ` · receipt → ${trimmedReceipt}` : ""}.
         </p>
         {quoteStale ? (
           <p className="mt-2 text-xs text-amber-100" role="status">
             Preview quote went soft-stale — refresh before continuing.
+          </p>
+        ) : null}
+        {slippageBreach ? (
+          <p className="mt-2 text-xs text-amber-100" role="status">
+            Tease receive is under your min-receive floor — refresh quote or
+            widen slippage.
           </p>
         ) : null}
       </div>

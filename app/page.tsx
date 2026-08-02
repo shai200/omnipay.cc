@@ -69,6 +69,14 @@ const faqItems = [
     q: "Are reminder emails required?",
     a: "No. Reminders are optional discipline tools — weekly, bi-weekly, or monthly, with preferred send windows, timezone, and optional drop-alert thresholds.",
   },
+  {
+    q: "What is max slippage?",
+    a: "Preview lets you set a 0.5% / 1% / 2% min-receive floor against the tease quote. If refresh wobble drops below that floor, refresh again or widen slippage — live Stripe still locks at checkout.",
+  },
+  {
+    q: "Can I schedule recurring buys from the preview?",
+    a: "Choose Once, Weekly, or Monthly on the on-ramp tease. Recurring settlement and reminder wiring finish after sign-in on Omnipay.cc.",
+  },
 ] as const;
 
 export default function Home() {
