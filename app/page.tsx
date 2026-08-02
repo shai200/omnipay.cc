@@ -728,6 +728,27 @@ const cattleYardWork = [
   },
 ] as const;
 
+const berryPatchWork = [
+  {
+    name: "Cane rows",
+    rhythm: "After the cattle yard",
+    detail:
+      "A low belt of raspberry and blackcurrant on the sunny side of the grazing strip — birds nest in the edges, and the canes drink the runoff the cattle leave soft without flooding the orchard windbreak.",
+  },
+  {
+    name: "Pick mornings",
+    rhythm: "Quiet dawn flats",
+    detail:
+      "Shallow flats under the willow shade when dew still holds. Leah weighs by the pint before the stand opens — the patch is a harvest lane, not a U-pick free-for-all that tramples next year’s crowns.",
+  },
+  {
+    name: "Preserve weeks",
+    rhythm: "High summer board",
+    detail:
+      "A few jars and freezer pints for the farm table after the pack shed has done its quiet work — Leah chalks batches when the count is honest. No anonymous freezer truck; just what the canes finished on Northfield sun.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -847,6 +868,9 @@ export default function Home() {
             </a>
             <a href="#cattle-yard" className="transition hover:text-[var(--foreground)]">
               Cattle yard
+            </a>
+            <a href="#berry-patch" className="transition hover:text-[var(--foreground)]">
+              Berry patch
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2414,6 +2438,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the cattle yard
+            </a>
+          </div>
+        </section>
+
+        {/* Berry patch — one job: cane rows after the cattle yard, pick mornings + preserve weeks */}
+        <section
+          id="berry-patch"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -left-16 bottom-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Cane and sun
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A berry patch that finishes the summer lane.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Cane rows, pick mornings, and preserve weeks — a low belt of fruit
+              after the cattle yard, then jars that find the farm table once the
+              pack-shed lane has done its quiet high-summer work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {berryPatchWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20berry%20patch"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the berry patch
             </a>
           </div>
         </section>
