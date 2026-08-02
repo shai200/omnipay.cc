@@ -686,6 +686,27 @@ const gooseYardWork = [
   },
 ] as const;
 
+const horsePaddockWork = [
+  {
+    name: "Draft lane",
+    rhythm: "After the goose yard",
+    detail:
+      "A soft lane between the wet meadow and the machine shed — draft horses pull the light cultivator so spring beds open without a diesel cloud the CSA kids would taste all afternoon.",
+  },
+  {
+    name: "Harness wall",
+    rhythm: "Quiet barn evenings",
+    detail:
+      "Collars and traces hang by number on the north wall of the barn. Jonah checks fit before dawn work — the paddock is rest and water, not a parking lot for idle iron.",
+  },
+  {
+    name: "Work weeks",
+    rhythm: "Spring and autumn board",
+    detail:
+      "A few days of horse-drawn soil work when the ground is honest — Leah chalks which beds the team opened. No anonymous tractor hour; just what the paddock pulled on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -799,6 +820,9 @@ export default function Home() {
             </a>
             <a href="#goose-yard" className="transition hover:text-[var(--foreground)]">
               Goose yard
+            </a>
+            <a href="#horse-paddock" className="transition hover:text-[var(--foreground)]">
+              Horse paddock
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2276,6 +2300,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the goose yard
+            </a>
+          </div>
+        </section>
+
+        {/* Horse paddock — one job: draft lane after the goose yard, harness wall + work weeks */}
+        <section
+          id="horse-paddock"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -left-16 bottom-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Draft and quiet
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A horse paddock that finishes the draft lane.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Draft lane, harness wall, and work weeks — a small team on soft
+              footing after the goose yard, then beds that open without diesel
+              once the machine-shed calendar has room for horse-drawn days.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {horsePaddockWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20horse%20paddock"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the horse paddock
             </a>
           </div>
         </section>
