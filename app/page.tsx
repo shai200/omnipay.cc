@@ -392,6 +392,27 @@ const greenhouseWork = [
   },
 ] as const;
 
+const woodlotWork = [
+  {
+    name: "Shade edge",
+    rhythm: "Windbreak and rest",
+    detail:
+      "Oak and ash along the west fence cut the prairie gale before it hits the tunnels. Cattle loaf in the cool strip after noon rotation.",
+  },
+  {
+    name: "Cord wood",
+    rhythm: "Late autumn cut",
+    detail:
+      "Fallen limbs and thinning cuts stack for the workshop stove and spring maple sugar weekend — heat from the land, not a propane truck.",
+  },
+  {
+    name: "Forest forage",
+    rhythm: "After rain, before frost",
+    detail:
+      "Morels in soft springs, wild greens along the ditch, and a quiet path for field-day walks that never leave the fence line.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -463,6 +484,9 @@ export default function Home() {
             </a>
             <a href="#greenhouse" className="transition hover:text-[var(--foreground)]">
               Greenhouse
+            </a>
+            <a href="#woodlot" className="transition hover:text-[var(--foreground)]">
+              Woodlot
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1332,6 +1356,50 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the greenhouse
+            </a>
+          </div>
+        </section>
+
+        {/* Woodlot — one job: shade, fuel, and forage at the prairie edge */}
+        <section
+          id="woodlot"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-[var(--leaf)]/15 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Timber and shade
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A woodlot that softens the wind and feeds the stove.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Shade edge, cord wood, and forest forage — the quiet strip where
+              prairie meets timber and the farm still listens to the trees.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {woodlotWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20woodlot"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the woodlot
             </a>
           </div>
         </section>
