@@ -34,6 +34,13 @@ const onrampSteps = [
   { label: "Crypto", detail: "Arrives in minutes" },
 ] as const;
 
+const trustSignals = [
+  { value: "100%", label: "Secure" },
+  { value: "24/7", label: "Available" },
+  { value: "<1min", label: "Processing" },
+  { value: "0", label: "Fraud verified" },
+] as const;
+
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -65,6 +72,12 @@ export default function Home() {
             </span>
           </a>
           <nav className="flex items-center gap-2 sm:gap-3">
+            <a
+              href="#onramp"
+              className="hidden rounded-lg px-3 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:inline"
+            >
+              Buy crypto
+            </a>
             <a
               href="#reminders"
               className="hidden rounded-lg px-3 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:inline"
@@ -247,6 +260,59 @@ export default function Home() {
                 </p>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="trust"
+        className="relative z-10 border-t border-[var(--line)] bg-[#0b1b33] py-16 text-white"
+        aria-label="Trust signals"
+      >
+        <div className="mx-auto w-full max-w-6xl px-6 md:px-10">
+          <p className="text-center text-sm font-medium uppercase tracking-[0.16em] text-sky-200/75">
+            Trusted by thousands
+          </p>
+          <dl className="mt-10 grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-6">
+            {trustSignals.map((signal) => (
+              <div key={signal.label} className="text-center">
+                <dt className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-white md:text-4xl">
+                  {signal.value}
+                </dt>
+                <dd className="mt-2 text-sm text-sky-100/75">{signal.label}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      <section
+        id="start"
+        className="relative z-10 border-t border-[var(--line)] bg-[linear-gradient(120deg,#0670d2_0%,#034f97_100%)] py-16 text-white"
+      >
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-6 px-6 md:flex-row md:items-center md:justify-between md:px-10">
+          <div className="max-w-xl">
+            <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight md:text-4xl">
+              Ready to accumulate?
+            </h2>
+            <p className="mt-3 text-lg leading-8 text-sky-100/90">
+              Open an account, set a reminder cadence, and send your next buy
+              straight to your wallet.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="https://omnipay.cc/auth/register"
+              className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3.5 text-base font-semibold text-[#0b1b33] transition-transform duration-300 hover:-translate-y-0.5"
+            >
+              Create account
+            </a>
+            <a
+              href="#onramp"
+              className="inline-flex items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3.5 text-base font-semibold text-white backdrop-blur transition-colors hover:bg-white/20"
+            >
+              Try the on-ramp
+            </a>
           </div>
         </div>
       </section>
