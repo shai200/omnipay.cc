@@ -318,6 +318,40 @@ function readDraftFromHash(): PreviewDraftV1 | null {
   );
 }
 
+/** Preview-only: extract draft from a pasted URL, hash, or bare token. */
+function extractDraftFromPaste(raw: string): PreviewDraftV1 | null {
+  const text = raw.trim();
+  if (!text) return null;
+  try {
+    if (text.includes("#") || text.startsWith("http")) {
+      const asUrl = text.includes("://")
+        ? new URL(text)
+        : new URL(text, window.location.origin);
+      const hash = asUrl.hash.replace(/^#/, "");
+      if (hash.startsWith(draftHashPrefix)) {
+        return decodeDraftFromHash(
+          decodeURIComponent(hash.slice(draftHashPrefix.length)),
+        );
+      }
+    }
+  } catch {
+    /* fall through to bare-token parse */
+  }
+  const hashIdx = text.indexOf(`#${draftHashPrefix}`);
+  if (hashIdx >= 0) {
+    return decodeDraftFromHash(
+      decodeURIComponent(text.slice(hashIdx + 1 + draftHashPrefix.length)),
+    );
+  }
+  if (text.startsWith(draftHashPrefix)) {
+    return decodeDraftFromHash(
+      decodeURIComponent(text.slice(draftHashPrefix.length)),
+    );
+  }
+  // Bare base64url token (no prefix) — attempt decode.
+  return decodeDraftFromHash(text);
+}
+
 function clearDraftHash() {
   if (!window.location.hash.startsWith(`#${draftHashPrefix}`)) return;
   const { pathname, search } = window.location;
@@ -445,9 +479,11 @@ export function OnrampTease() {
   const [draftExported, setDraftExported] = useState(false);
   const [draftImported, setDraftImported] = useState(false);
   const [draftLinkCopied, setDraftLinkCopied] = useState(false);
+  const [draftLinkPasted, setDraftLinkPasted] = useState(false);
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
+  const pasteDraftInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedAsset = useMemo(
     () => assets.find((option) => option.id === asset) ?? assets[0],
@@ -866,6 +902,7 @@ export function OnrampTease() {
     setDraftExported(false);
     setDraftImported(false);
     setDraftLinkCopied(false);
+    setDraftLinkPasted(false);
     setFiatCurrency("usd");
     setPrivacyAccepted(false);
     setTaxResidency("us");
@@ -996,6 +1033,7 @@ export function OnrampTease() {
     setDraftExported(false);
     setDraftImported(false);
     setDraftLinkCopied(false);
+    setDraftLinkPasted(false);
     setSubmitHint(null);
   }
 
@@ -1095,6 +1133,68 @@ export function OnrampTease() {
     }
   }
 
+  function applyPastedDraft(raw: string) {
+    const draft = extractDraftFromPaste(raw);
+    if (!draft) {
+      setDraftHint(
+        "Paste draft link failed — need a #omn-draft= URL or Export draft .json.",
+      );
+      return false;
+    }
+    applyDraft(draft);
+    try {
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(draft));
+      setDraftAvailable(true);
+      setDraftSavedAt(draft.savedAt);
+    } catch {
+      /* form applied even if storage blocked */
+    }
+    try {
+      const encoded = encodeDraftForHash(draft);
+      const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${draftHashPrefix}${encoded}`;
+      window.history.replaceState(null, "", url);
+    } catch {
+      /* hash sync best-effort */
+    }
+    setDraftBanner(false);
+    setDraftLinkPasted(true);
+    window.setTimeout(() => setDraftLinkPasted(false), 2000);
+    setDraftHint(
+      "Draft pasted from link — refresh quote if the tease looks stale.",
+    );
+    setSubmitHint(null);
+    return true;
+  }
+
+  async function pasteDraftLinkFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setDraftHint(
+          "Clipboard is empty — paste a #omn-draft= link into the field below.",
+        );
+        pasteDraftInputRef.current?.focus();
+        return;
+      }
+      if (!applyPastedDraft(text)) {
+        pasteDraftInputRef.current?.focus();
+      }
+    } catch {
+      setDraftHint(
+        "Clipboard read blocked — paste the #omn-draft= link into the field below.",
+      );
+      pasteDraftInputRef.current?.focus();
+    }
+  }
+
+  function applyFromPasteField(input: HTMLInputElement) {
+    const value = input.value;
+    if (!value.trim()) return;
+    if (applyPastedDraft(value)) {
+      input.value = "";
+    }
+  }
+
   function restoreDraft() {
     const draft = readDraftFromStorage();
     if (!draft) {
@@ -1121,6 +1221,7 @@ export function OnrampTease() {
     setDraftBanner(false);
     setDraftSavedAt(null);
     setDraftLinkCopied(false);
+    setDraftLinkPasted(false);
     setDraftHint("Draft cleared from this browser.");
   }
 
@@ -1519,6 +1620,15 @@ export function OnrampTease() {
           }`}
         >
           Link {draftLinkCopied ? "copied" : "share"}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            draftLinkPasted
+              ? "bg-emerald-400/15 text-emerald-100"
+              : "bg-white/5 text-sky-100/70"
+          }`}
+        >
+          Link {draftLinkPasted ? "pasted" : "paste"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -2326,6 +2436,36 @@ export function OnrampTease() {
           >
             {draftLinkCopied ? "Link copied" : "Copy draft link"}
           </button>
+          <button
+            type="button"
+            onClick={pasteDraftLinkFromClipboard}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {draftLinkPasted ? "Link pasted" : "Paste draft link"}
+          </button>
+          <input
+            ref={pasteDraftInputRef}
+            type="text"
+            inputMode="url"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="#omn-draft=… or full URL"
+            aria-label="Paste draft link"
+            onPaste={(event) => {
+              const text = event.clipboardData.getData("text");
+              if (!text.trim()) return;
+              event.preventDefault();
+              if (applyPastedDraft(text)) {
+                event.currentTarget.value = "";
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              applyFromPasteField(event.currentTarget);
+            }}
+            className="min-w-[12rem] flex-1 rounded-lg border border-white/20 bg-[#071222]/70 px-2.5 py-1 text-xs text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
+          />
           <input
             ref={importDraftInputRef}
             type="file"

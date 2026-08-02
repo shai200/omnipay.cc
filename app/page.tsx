@@ -169,6 +169,10 @@ const faqItems = [
     q: "Can I share a draft link?",
     a: "Yes — Copy draft link puts a preview-only URL hash (#omn-draft=…) on your clipboard. Opening that link restores the tease client-side. The hash never uploads to Omnipay servers; Clear draft removes it from the address bar.",
   },
+  {
+    q: "Can I paste a draft link?",
+    a: "Yes — Paste draft link reads the clipboard (or the paste field) for a #omn-draft= URL/token and restores the tease client-side. If clipboard access is blocked, paste into the field next to the button. Same preview-only hash — never uploaded to Omnipay servers.",
+  },
 ] as const;
 
 export default function Home() {
