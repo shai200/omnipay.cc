@@ -917,6 +917,27 @@ const ryeFieldWork = [
   },
 ] as const;
 
+const oatFieldWork = [
+  {
+    name: "Panicle rows",
+    rhythm: "After the rye field",
+    detail:
+      "A soft belt of oats on the warm gravel edge past the rye — panicles catch the same late light the culms finish on, and the straw drinks deep without crowding the orchard windbreak into damp.",
+  },
+  {
+    name: "Flail mornings",
+    rhythm: "Quiet dawn sheaves",
+    detail:
+      "Hand flails when the hulls dry and dew still holds. Mara ties ripe sheaves before the stand opens — the oat field is a finish lane, not a combine parade that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "Porridge weeks",
+    rhythm: "Late autumn board",
+    detail:
+      "A few stone-mill sacks for the farm table after the pack shed has done its quiet work — Leah chalks oat groats when the grind is honest. No anonymous commodity bin; just what the panicle finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -1063,6 +1084,9 @@ export default function Home() {
             </a>
             <a href="#rye-field" className="transition hover:text-[var(--foreground)]">
               Rye field
+            </a>
+            <a href="#oat-field" className="transition hover:text-[var(--foreground)]">
+              Oat field
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -3035,6 +3059,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the rye field
+            </a>
+          </div>
+        </section>
+
+        {/* Oat field — one job: panicle rows after the rye field, flail mornings + porridge weeks */}
+        <section
+          id="oat-field"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Panicle and soft gold
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              An oat field that finishes the rye belt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Panicle rows, flail mornings, and porridge weeks — a soft belt of gold
+              after the rye field, then stone-mill sacks that find the farm table once
+              the pack-shed lane has done its quiet late-autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {oatFieldWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20oat%20field"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the oat field
             </a>
           </div>
         </section>
