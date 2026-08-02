@@ -143,6 +143,24 @@ const farmTable = [
   },
 ] as const;
 
+const weekHaul = [
+  {
+    name: "Butter lettuce",
+    status: "At the stand",
+    detail: "Dawn-cut heads — cool, sweet, and gone by noon most Saturdays.",
+  },
+  {
+    name: "Pasture dozen",
+    status: "Limited",
+    detail: "Eggs from hens on the cattle rotation — yolks deep as harvest light.",
+  },
+  {
+    name: "Stone-milled flour",
+    status: "Bags ready",
+    detail: "Prairie wheat ground Friday. Bread flour and a coarser pastry cut.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -178,6 +196,9 @@ export default function Home() {
             </a>
             <a href="#table" className="transition hover:text-[var(--foreground)]">
               Table
+            </a>
+            <a href="#haul" className="transition hover:text-[var(--foreground)]">
+              Haul
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -534,6 +555,50 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask for this week&apos;s recipes
+            </a>
+          </div>
+        </section>
+
+        {/* This week's haul — one job: what is at the stand now */}
+        <section
+          id="haul"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -left-20 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/12 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              This week&apos;s haul
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              What left the rows for the stand board.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Updated before Saturday open. Quantities shift with weather —
+              come early for greens; flour lasts the weekend.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {weekHaul.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.status}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20this%20week%20haul"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask what is left this week
             </a>
           </div>
         </section>
