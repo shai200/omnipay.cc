@@ -177,6 +177,49 @@ const smsPattern = /^\+?[1-9]\d{7,14}$/;
 const memoMaxLen = 80;
 const promoMaxLen = 24;
 const smsMaxLen = 18;
+/** Preview-only draft in this browser — not a server-side order. */
+const draftStorageKey = "omnipay-preview-draft-v1";
+
+type PreviewDraftV1 = {
+  v: 1;
+  savedAt: string;
+  amount: string;
+  asset: (typeof assets)[number]["id"];
+  network: (typeof networks)[number]["id"];
+  wallet: string;
+  confirmWallet: boolean;
+  paymentMethod: (typeof paymentMethods)[number]["id"];
+  buyCadence: (typeof buyCadences)[number]["id"];
+  slippage: (typeof slippageOptions)[number]["id"];
+  networkSpeed: (typeof networkSpeeds)[number]["id"];
+  orderMemo: string;
+  riskAccepted: boolean;
+  tosAccepted: boolean;
+  privacyAccepted: boolean;
+  selfCustodyAccepted: boolean;
+  ageConfirmed: boolean;
+  receiptEmail: string;
+  receiptConfirm: string;
+  billingCountry: (typeof billingCountries)[number]["id"];
+  promoCode: string;
+  fundSource: (typeof fundSources)[number]["id"];
+  purchasePurpose: (typeof purchasePurposes)[number]["id"];
+  fiatCurrency: (typeof fiatCurrencies)[number]["id"];
+  taxResidency: (typeof taxResidencies)[number]["id"];
+  smsPhone: string;
+};
+
+function readDraftFromStorage(): PreviewDraftV1 | null {
+  try {
+    const raw = window.localStorage.getItem(draftStorageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PreviewDraftV1;
+    if (parsed?.v !== 1 || typeof parsed.amount !== "string") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 function makeOrderRef() {
   const n = Math.floor(Math.random() * 900_000) + 100_000;
@@ -290,6 +333,10 @@ export function OnrampTease() {
   const [quoteJitterBps, setQuoteJitterBps] = useState(0);
   const [quoteAgeSec, setQuoteAgeSec] = useState(0);
   const [lockedUnits, setLockedUnits] = useState<number | null>(null);
+  const [draftAvailable, setDraftAvailable] = useState(false);
+  const [draftBanner, setDraftBanner] = useState(false);
+  const [draftHint, setDraftHint] = useState<string | null>(null);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
 
   const selectedAsset = useMemo(
     () => assets.find((option) => option.id === asset) ?? assets[0],
@@ -479,6 +526,14 @@ export function OnrampTease() {
   }, [quoteAt]);
 
   useEffect(() => {
+    const existing = readDraftFromStorage();
+    if (!existing) return;
+    setDraftAvailable(true);
+    setDraftBanner(true);
+    setDraftSavedAt(existing.savedAt);
+  }, []);
+
+  useEffect(() => {
     // Seed min-receive floor from the initial tease amount/asset.
     if (lockedUnits === null && amountValid) {
       setLockedUnits(amountInUsd / teaseRatesUsd[selectedAsset.id]);
@@ -595,6 +650,120 @@ export function OnrampTease() {
     setQuoteAgeSec(0);
     setLockedUnits(null);
     setNetwork("bitcoin");
+    setDraftHint(null);
+  }
+
+  function saveDraft() {
+    const payload: PreviewDraftV1 = {
+      v: 1,
+      savedAt: new Date().toISOString(),
+      amount,
+      asset,
+      network,
+      wallet,
+      confirmWallet,
+      paymentMethod,
+      buyCadence,
+      slippage,
+      networkSpeed,
+      orderMemo,
+      riskAccepted,
+      tosAccepted,
+      privacyAccepted,
+      selfCustodyAccepted,
+      ageConfirmed,
+      receiptEmail,
+      receiptConfirm,
+      billingCountry,
+      promoCode,
+      fundSource,
+      purchasePurpose,
+      fiatCurrency,
+      taxResidency,
+      smsPhone,
+    };
+    try {
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(payload));
+      setDraftAvailable(true);
+      setDraftBanner(false);
+      setDraftSavedAt(payload.savedAt);
+      setDraftHint("Draft saved in this browser — Restore after refresh.");
+      setSubmitHint(null);
+    } catch {
+      setDraftHint(
+        "Save draft failed — browser storage may be blocked in this preview.",
+      );
+    }
+  }
+
+  function applyDraft(draft: PreviewDraftV1) {
+    setAmount(draft.amount);
+    setAsset(draft.asset);
+    setNetwork(draft.network);
+    setWallet(draft.wallet);
+    setWalletTouched(Boolean(draft.wallet.trim()));
+    setAmountTouched(Boolean(draft.amount.trim()));
+    setConfirmWallet(draft.confirmWallet);
+    setPaymentMethod(draft.paymentMethod);
+    setBuyCadence(draft.buyCadence);
+    setSlippage(draft.slippage);
+    setNetworkSpeed(draft.networkSpeed);
+    setOrderMemo(draft.orderMemo);
+    setRiskAccepted(draft.riskAccepted);
+    setTosAccepted(draft.tosAccepted);
+    setPrivacyAccepted(draft.privacyAccepted);
+    setSelfCustodyAccepted(draft.selfCustodyAccepted);
+    setAgeConfirmed(draft.ageConfirmed);
+    setReceiptEmail(draft.receiptEmail);
+    setReceiptTouched(Boolean(draft.receiptEmail.trim()));
+    setReceiptConfirm(draft.receiptConfirm);
+    setReceiptConfirmTouched(Boolean(draft.receiptConfirm.trim()));
+    setBillingCountry(draft.billingCountry);
+    setPromoCode(draft.promoCode);
+    setPromoTouched(Boolean(draft.promoCode.trim()));
+    setFundSource(draft.fundSource);
+    setPurchasePurpose(draft.purchasePurpose);
+    setFiatCurrency(draft.fiatCurrency);
+    setTaxResidency(draft.taxResidency);
+    setSmsPhone(draft.smsPhone);
+    setSmsTouched(Boolean(draft.smsPhone.trim()));
+    setQuoteJitterBps(0);
+    setQuoteAt(new Date());
+    setQuoteAgeSec(0);
+    setLockedUnits(null);
+    setRefCopied(false);
+    setSummaryCopied(false);
+    setSubmitHint(null);
+  }
+
+  function restoreDraft() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftBanner(false);
+      setDraftHint("No saved draft in this browser.");
+      return;
+    }
+    applyDraft(draft);
+    setDraftBanner(false);
+    setDraftSavedAt(draft.savedAt);
+    setDraftHint("Draft restored — refresh quote if the tease looks stale.");
+  }
+
+  function clearDraft() {
+    try {
+      window.localStorage.removeItem(draftStorageKey);
+    } catch {
+      /* ignore */
+    }
+    setDraftAvailable(false);
+    setDraftBanner(false);
+    setDraftSavedAt(null);
+    setDraftHint("Draft cleared from this browser.");
+  }
+
+  function dismissDraftBanner() {
+    setDraftBanner(false);
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -749,6 +918,48 @@ export function OnrampTease() {
       <p className="mt-3 text-xl font-semibold">
         Fiat in. Crypto out — to your address.
       </p>
+      {draftBanner ? (
+        <div
+          className="mt-4 rounded-xl border border-sky-300/30 bg-sky-400/10 px-4 py-3 text-sm text-sky-50"
+          role="status"
+        >
+          <p>
+            Saved draft found
+            {draftSavedAt
+              ? ` (${new Date(draftSavedAt).toLocaleString("en-US")})`
+              : ""}{" "}
+            in this browser.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={restoreDraft}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              Restore draft
+            </button>
+            <button
+              type="button"
+              onClick={dismissDraftBanner}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              Dismiss
+            </button>
+            <button
+              type="button"
+              onClick={clearDraft}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              Clear draft
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {draftHint ? (
+        <p className="mt-3 text-xs text-sky-100/80" role="status">
+          {draftHint}
+        </p>
+      ) : null}
       <ul
         className="mt-4 flex flex-wrap gap-2 text-xs text-sky-100/75"
         aria-label="Preview readiness"
@@ -919,6 +1130,15 @@ export function OnrampTease() {
             : smsStatus === "invalid" || smsStatus === "long"
               ? "fix"
               : "optional"}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            draftAvailable
+              ? "bg-emerald-400/15 text-emerald-100"
+              : "bg-white/5 text-sky-100/70"
+          }`}
+        >
+          Draft {draftAvailable ? "saved" : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -1698,6 +1918,31 @@ export function OnrampTease() {
           >
             {summaryCopied ? "Shared" : "Share summary"}
           </button>
+          <button
+            type="button"
+            onClick={saveDraft}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            Save draft
+          </button>
+          {draftAvailable ? (
+            <button
+              type="button"
+              onClick={restoreDraft}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              Restore draft
+            </button>
+          ) : null}
+          {draftAvailable ? (
+            <button
+              type="button"
+              onClick={clearDraft}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              Clear draft
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={resetPreview}

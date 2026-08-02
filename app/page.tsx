@@ -139,7 +139,7 @@ const faqItems = [
   },
   {
     q: "What does Reset preview do?",
-    a: "Clears the on-ramp tease back to defaults (amount, wallet, soft-gates, promo, SMS, quote jitter) so you can start a clean preview session. The order ref stays for the page load.",
+    a: "Clears the on-ramp tease back to defaults (amount, wallet, soft-gates, promo, SMS, quote jitter) so you can start a clean preview session. The order ref stays for the page load. Saved drafts are left alone until you Clear draft.",
   },
   {
     q: "Can I get SMS settlement alerts?",
@@ -148,6 +148,10 @@ const faqItems = [
   {
     q: "What is the expected arrival window?",
     a: "Preview shows a clock window from the tease quote time based on Standard (~45–90s) or Priority (~10–30s) network speed. Live chain settlement still varies — this is not a locked Stripe ETA.",
+  },
+  {
+    q: "Can I save a preview draft?",
+    a: "Yes — Save draft stores the on-ramp tease in this browser’s localStorage (wallet + form fields). Restore draft reloads it after refresh; Clear draft removes it. Drafts never leave your browser and are not live Stripe orders.",
   },
 ] as const;
 
