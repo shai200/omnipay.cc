@@ -833,6 +833,27 @@ const sunflowerFieldWork = [
   },
 ] as const;
 
+const pumpkinPatchWork = [
+  {
+    name: "Vine rows",
+    rhythm: "After the sunflower field",
+    detail:
+      "A low belt of pie pumpkins on the warm gravel edge past the stalks — vines catch the same autumn light the sunflowers finish on, and the leaves shade the clay without crowding the orchard windbreak into damp.",
+  },
+  {
+    name: "Cure mornings",
+    rhythm: "Quiet dawn cuts",
+    detail:
+      "Hand cuts when the rind hardens and dew still holds. Mara shears ripe fruit before the stand opens — the pumpkin patch is a finish lane, not a hayride maze that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "Cellar weeks",
+    rhythm: "Early autumn board",
+    detail:
+      "A few cure racks for the farm table after the pack shed has done its quiet work — Leah chalks crates when the flesh is honest. No anonymous wholesale bin; just what the vine finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -967,6 +988,9 @@ export default function Home() {
             </a>
             <a href="#sunflower-field" className="transition hover:text-[var(--foreground)]">
               Sunflower field
+            </a>
+            <a href="#pumpkin-patch" className="transition hover:text-[var(--foreground)]">
+              Pumpkin patch
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2759,6 +2783,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the sunflower field
+            </a>
+          </div>
+        </section>
+
+        {/* Pumpkin patch — one job: vine rows after the sunflower field, cure mornings + cellar weeks */}
+        <section
+          id="pumpkin-patch"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Vine and autumn light
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A pumpkin patch that finishes the sunflower belt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Vine rows, cure mornings, and cellar weeks — a low belt of orange
+              after the sunflower field, then cure racks that find the farm table once
+              the pack-shed lane has done its quiet early-autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {pumpkinPatchWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20pumpkin%20patch"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the pumpkin patch
             </a>
           </div>
         </section>
