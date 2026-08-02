@@ -665,6 +665,27 @@ const rabbitWarrenWork = [
   },
 ] as const;
 
+const gooseYardWork = [
+  {
+    name: "Wet meadow",
+    rhythm: "After the rabbit warren",
+    detail:
+      "A shallow meadow between the clover lane and the creek — geese graze soft grass and weed seed so the next flood pulse finds cleaner banks, not a mat the ducks would choke on.",
+  },
+  {
+    name: "Guard flock",
+    rhythm: "Dawn and dusk watch",
+    detail:
+      "A small gaggle that announces fox and hawk before the henhouse wakes. They return to the wet meadow at first light — the yard is their beat, not a confinement pen.",
+  },
+  {
+    name: "Feather weeks",
+    rhythm: "Late summer board",
+    detail:
+      "A few birds and down for the stand after the pack shed has done its quiet work — Leah chalks names when the count is honest. No anonymous freezer truck; just what the yard grew on Northfield rain.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -775,6 +796,9 @@ export default function Home() {
             </a>
             <a href="#rabbit-warren" className="transition hover:text-[var(--foreground)]">
               Rabbit warren
+            </a>
+            <a href="#goose-yard" className="transition hover:text-[var(--foreground)]">
+              Goose yard
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2207,6 +2231,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the rabbit warren
+            </a>
+          </div>
+        </section>
+
+        {/* Goose yard — one job: wet meadow after the warren, guard flock + feather weeks */}
+        <section
+          id="goose-yard"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -right-20 top-8 h-80 w-80 rounded-full bg-[var(--sky)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Meadow and wing
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A goose yard that finishes the waterfowl lane.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Wet meadow, guard flock, and feather weeks — a small gaggle on soft
+              grass after the rabbit warren, then birds that find the stand once
+              the pack-shed lane has done its quiet summer work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {gooseYardWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20goose%20yard"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the goose yard
             </a>
           </div>
         </section>
