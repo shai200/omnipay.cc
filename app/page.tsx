@@ -560,6 +560,27 @@ const sheepfoldWork = [
   },
 ] as const;
 
+const goatYardWork = [
+  {
+    name: "Brush browse",
+    rhythm: "After the sheep fold",
+    detail:
+      "Goats take the woody edges the flock leaves — willow shoots, thistle, and fence-line scrub — so the next cover crop faces clean ground, not a thicket.",
+  },
+  {
+    name: "Kidding pen",
+    rhythm: "Late winter soft landings",
+    detail:
+      "A dry timber pen beside the sheepfold when the prairie is still hard. Does return to browse as soon as weather allows — the pen is the pause, not a barn factory.",
+  },
+  {
+    name: "Cheese days",
+    rhythm: "Small-batch weekends",
+    detail:
+      "Fresh chèvre and a few aged wheels for the stand — milk from browse, not a feedlot ration. Leah chalks the board when the wheels are ready; the waiting list is short on purpose.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -655,6 +676,9 @@ export default function Home() {
             </a>
             <a href="#sheepfold" className="transition hover:text-[var(--foreground)]">
               Sheepfold
+            </a>
+            <a href="#goat-yard" className="transition hover:text-[var(--foreground)]">
+              Goat yard
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1868,6 +1892,48 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the sheepfold
+            </a>
+          </div>
+        </section>
+
+        {/* Goat yard — one job: browse edges, soft landings, cheese for the stand */}
+        <section id="goat-yard" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(680px_360px_at_25%_40%,rgba(198,164,90,0.12),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Browse and chèvre
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A goat yard that finishes the fence line.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Brush browse, kidding pen, and cheese days — a small herd on the
+              woody edges after the sheepfold, then chèvre that finds the stand
+              once the dairy and pack-shed lanes have done their quiet work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {goatYardWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20goat%20yard"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the goat yard
             </a>
           </div>
         </section>
