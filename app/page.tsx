@@ -237,6 +237,10 @@ const faqItems = [
     q: "What is Verify draft vs pin / Diff draft vs pin?",
     a: "Verify draft vs pin compares the Save draft slot to the pin slot without writing anything — match means the two slots are equal; mismatch means Pin from draft or Draft from pin would change a slot. Diff draft vs pin lists which fields differ (draft → pin). The form stays untouched. Fingerprints never leave your browser.",
   },
+  {
+    q: "What is Save reminder / Restore reminder?",
+    a: "Save reminder stores your reminder tease prefs (cadence, send window, timezone, email, drop alerts) in this browser only. Restore reminder reloads them; Clear reminder removes the slot. Nothing uploads to Omnipay servers — live schedules still confirm after sign-in on Omnipay.cc.",
+  },
 ] as const;
 
 export default function Home() {

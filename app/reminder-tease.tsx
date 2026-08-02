@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 const cadences = [
   { id: "weekly", label: "Weekly", detail: "Steady habit" },
@@ -30,6 +30,77 @@ const timezones = [
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Preview-only reminder prefs in this browser — not a server-side schedule. */
+const reminderStorageKey = "omnipay-preview-reminder-v1";
+
+type ReminderDraftV1 = {
+  v: 1;
+  savedAt: string;
+  cadence: (typeof cadences)[number]["id"];
+  sendWindow: (typeof sendWindows)[number]["id"];
+  dropAlerts: boolean;
+  dropThreshold: (typeof dropThresholds)[number]["id"];
+  timezone: (typeof timezones)[number]["id"];
+  email: string;
+};
+
+function isCadenceId(value: unknown): value is (typeof cadences)[number]["id"] {
+  return typeof value === "string" && cadences.some((c) => c.id === value);
+}
+
+function isSendWindowId(
+  value: unknown,
+): value is (typeof sendWindows)[number]["id"] {
+  return typeof value === "string" && sendWindows.some((w) => w.id === value);
+}
+
+function isDropThresholdId(
+  value: unknown,
+): value is (typeof dropThresholds)[number]["id"] {
+  return (
+    typeof value === "string" && dropThresholds.some((t) => t.id === value)
+  );
+}
+
+function isTimezoneId(
+  value: unknown,
+): value is (typeof timezones)[number]["id"] {
+  return typeof value === "string" && timezones.some((t) => t.id === value);
+}
+
+function parseReminderDraft(raw: unknown): ReminderDraftV1 | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as Record<string, unknown>;
+  if (obj.v !== 1) return null;
+  if (typeof obj.savedAt !== "string" || !obj.savedAt) return null;
+  if (!isCadenceId(obj.cadence)) return null;
+  if (!isSendWindowId(obj.sendWindow)) return null;
+  if (typeof obj.dropAlerts !== "boolean") return null;
+  if (!isDropThresholdId(obj.dropThreshold)) return null;
+  if (!isTimezoneId(obj.timezone)) return null;
+  if (typeof obj.email !== "string") return null;
+  return {
+    v: 1,
+    savedAt: obj.savedAt,
+    cadence: obj.cadence,
+    sendWindow: obj.sendWindow,
+    dropAlerts: obj.dropAlerts,
+    dropThreshold: obj.dropThreshold,
+    timezone: obj.timezone,
+    email: obj.email,
+  };
+}
+
+function readReminderFromStorage(): ReminderDraftV1 | null {
+  try {
+    const raw = window.localStorage.getItem(reminderStorageKey);
+    if (!raw) return null;
+    return parseReminderDraft(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
 export function ReminderTease() {
   const [cadence, setCadence] =
     useState<(typeof cadences)[number]["id"]>("weekly");
@@ -43,6 +114,21 @@ export function ReminderTease() {
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [submitHint, setSubmitHint] = useState<string | null>(null);
+  const [reminderAvailable, setReminderAvailable] = useState(false);
+  const [reminderBanner, setReminderBanner] = useState(false);
+  const [reminderHint, setReminderHint] = useState<string | null>(null);
+  const [reminderSavedAt, setReminderSavedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = readReminderFromStorage();
+    if (!saved) return;
+    setReminderAvailable(true);
+    setReminderSavedAt(saved.savedAt);
+    setReminderBanner(true);
+    setReminderHint(
+      "Saved reminder prefs found in this browser — Restore reminder to reload them.",
+    );
+  }, []);
 
   const trimmedEmail = email.trim();
   const emailStatus = !trimmedEmail
@@ -60,6 +146,78 @@ export function ReminderTease() {
     dropThresholds[1];
   const selectedTimezone =
     timezones.find((option) => option.id === timezone) ?? timezones[0];
+
+  function buildReminderPayload(): ReminderDraftV1 {
+    return {
+      v: 1,
+      savedAt: new Date().toISOString(),
+      cadence,
+      sendWindow,
+      dropAlerts,
+      dropThreshold,
+      timezone,
+      email: trimmedEmail,
+    };
+  }
+
+  function applyReminder(draft: ReminderDraftV1) {
+    setCadence(draft.cadence);
+    setSendWindow(draft.sendWindow);
+    setDropAlerts(draft.dropAlerts);
+    setDropThreshold(draft.dropThreshold);
+    setTimezone(draft.timezone);
+    setEmail(draft.email);
+    setEmailTouched(Boolean(draft.email.trim()));
+    setSubmitHint(null);
+  }
+
+  function saveReminder() {
+    const payload = buildReminderPayload();
+    try {
+      window.localStorage.setItem(reminderStorageKey, JSON.stringify(payload));
+      setReminderAvailable(true);
+      setReminderBanner(false);
+      setReminderSavedAt(payload.savedAt);
+      setReminderHint(
+        "Reminder prefs saved in this browser — Restore reminder reloads them. Nothing uploads to Omnipay servers.",
+      );
+      setSubmitHint(null);
+    } catch {
+      setReminderHint(
+        "Save reminder failed — browser storage may be blocked in this preview.",
+      );
+    }
+  }
+
+  function restoreReminder() {
+    const draft = readReminderFromStorage();
+    if (!draft) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderHint("No saved reminder prefs in this browser.");
+      return;
+    }
+    applyReminder(draft);
+    setReminderAvailable(true);
+    setReminderBanner(false);
+    setReminderSavedAt(draft.savedAt);
+    setReminderHint(
+      "Reminder prefs restored — confirm on Omnipay.cc after sign-in to make them live.",
+    );
+  }
+
+  function clearReminder() {
+    try {
+      window.localStorage.removeItem(reminderStorageKey);
+    } catch {
+      /* ignore */
+    }
+    setReminderAvailable(false);
+    setReminderBanner(false);
+    setReminderSavedAt(null);
+    setReminderHint("Reminder prefs cleared from this browser.");
+  }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     setEmailTouched(true);
@@ -82,6 +240,25 @@ export function ReminderTease() {
       onSubmit={onSubmit}
       className="mt-12 max-w-xl"
     >
+      {reminderBanner ? (
+        <p
+          className="mb-4 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[var(--foreground)]"
+          role="status"
+        >
+          Saved reminder prefs found
+          {reminderSavedAt
+            ? ` (${new Date(reminderSavedAt).toLocaleString()})`
+            : ""}
+          .{" "}
+          <button
+            type="button"
+            onClick={restoreReminder}
+            className="font-semibold text-[var(--accent-deep)] underline underline-offset-2"
+          >
+            Restore reminder
+          </button>
+        </p>
+      ) : null}
       <fieldset>
         <legend className="text-sm font-medium text-[var(--foreground)]">
           Reminder cadence
@@ -261,6 +438,41 @@ export function ReminderTease() {
         {emailStatus === "valid" ? ` → ${trimmedEmail}` : ""} — confirm on
         Omnipay.cc after sign-in.
       </p>
+      <p
+        className="mt-3 flex flex-wrap gap-2"
+        aria-label="Reminder draft tools"
+      >
+        <button
+          type="button"
+          onClick={saveReminder}
+          className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+        >
+          Save reminder
+        </button>
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={restoreReminder}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            Restore reminder
+          </button>
+        ) : null}
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={clearReminder}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            Clear reminder
+          </button>
+        ) : null}
+      </p>
+      {reminderHint ? (
+        <p className="mt-2 text-xs text-[var(--muted)]" role="status">
+          {reminderHint}
+        </p>
+      ) : null}
       {submitHint ? (
         <p className="mt-3 text-xs text-amber-700" role="alert">
           {submitHint}
