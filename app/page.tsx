@@ -539,6 +539,27 @@ const henhouseWork = [
   },
 ] as const;
 
+const sheepfoldWork = [
+  {
+    name: "Fold gate",
+    rhythm: "After the cattle leave",
+    detail:
+      "A small flock works the paddock Jonah just rested — close grazing that cleans seed heads and leaves a tighter sward for the next cover. Gates stay quiet; dogs stay home.",
+  },
+  {
+    name: "Lambing shed",
+    rhythm: "Late winter nights",
+    detail:
+      "Timber stalls for soft landings when the prairie is still hard. Ewes go back to grass as soon as the weather allows — the shed is the pause, not a feedlot.",
+  },
+  {
+    name: "Wool weeks",
+    rhythm: "Spring shear, autumn felt",
+    detail:
+      "Fleece leaves for a local mill; a few blankets and yarn skeins return to the stand. No industrial clip — just what the flock grew on Northfield rain and rest paddocks.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -631,6 +652,9 @@ export default function Home() {
             </a>
             <a href="#henhouse" className="transition hover:text-[var(--foreground)]">
               Henhouse
+            </a>
+            <a href="#sheepfold" className="transition hover:text-[var(--foreground)]">
+              Sheepfold
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1799,6 +1823,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the henhouse
+            </a>
+          </div>
+        </section>
+
+        {/* Sheepfold — one job: flock after cattle, wool for the stand */}
+        <section
+          id="sheepfold"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--sky)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Fold and fleece
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A sheepfold that finishes what the cattle start.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Fold gate, lambing shed, and wool weeks — a small flock on rest
+              paddocks, then fleece that finds the stand after the mill and
+              pack-shed share lanes have done their work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {sheepfoldWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20sheepfold"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the sheepfold
             </a>
           </div>
         </section>
