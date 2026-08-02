@@ -587,6 +587,7 @@ export function OnrampTease() {
   const [pinFromDrafted, setPinFromDrafted] = useState(false);
   const [draftFromPinned, setDraftFromPinned] = useState(false);
   const [draftPinSwapped, setDraftPinSwapped] = useState(false);
+  const [formDraftSwapped, setFormDraftSwapped] = useState(false);
   const [draftSlotFingerprint, setDraftSlotFingerprint] = useState<
     string | null
   >(null);
@@ -1509,6 +1510,7 @@ export function OnrampTease() {
     setDraftLinkPasted(false);
     setDraftFromPinned(false);
     setDraftPinSwapped(false);
+    setFormDraftSwapped(false);
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
     setDraftDiffLines([]);
@@ -1527,7 +1529,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft / Verify form vs pin / Diff form vs pin. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft / Swap form ↔ draft / Verify form vs pin / Diff form vs pin. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -2122,6 +2124,7 @@ export function OnrampTease() {
     setPinFromDrafted(false);
     setDraftFromPinned(false);
     setDraftPinSwapped(true);
+    setFormDraftSwapped(false);
     window.setTimeout(() => setDraftPinSwapped(false), 2000);
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
@@ -2375,6 +2378,49 @@ export function OnrampTease() {
         `Diff form vs pin: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (form FP ${currentFp} ≠ pin FP ${pinFp}). Apply pin to load pinned values.`,
       );
     }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: swap live form ↔ Save draft slot (pin untouched). */
+  function swapFormDraft() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
+    const draftFp = fingerprintDraft(draft);
+    const nextDraft: PreviewDraftV1 = {
+      ...current,
+      savedAt: new Date().toISOString(),
+    };
+    const nextDraftFp = fingerprintDraft(nextDraft);
+    try {
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(nextDraft));
+    } catch {
+      setDraftHint(
+        "Swap form ↔ draft failed — browser storage may be blocked in this preview.",
+      );
+      return;
+    }
+    applyDraft(draft);
+    setDraftAvailable(true);
+    setDraftBanner(false);
+    setDraftSavedAt(nextDraft.savedAt);
+    setDraftSlotFingerprint(nextDraftFp);
+    setDraftFromPinned(false);
+    setDraftPinSwapped(false);
+    setFormDraftSwapped(true);
+    window.setTimeout(() => setFormDraftSwapped(false), 2000);
+    setDraftVerifyStatus("idle");
+    setVerifiedFormFp(null);
+    setDraftDiffLines([]);
+    setDraftHint(
+      `Swapped form ↔ draft (form was FP ${currentFp} → now FP ${draftFp}; Save draft holds previous form, FP ${nextDraftFp}). Pin untouched. Refresh quote if stale.`,
+    );
     setSubmitHint(null);
   }
 
@@ -2778,7 +2824,7 @@ export function OnrampTease() {
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
-            draftFromPinned || draftPinSwapped
+            draftFromPinned || draftPinSwapped || formDraftSwapped
               ? "bg-emerald-400/15 text-emerald-100"
               : draftAvailable
                 ? "bg-emerald-400/15 text-emerald-100"
@@ -2786,13 +2832,15 @@ export function OnrampTease() {
           }`}
         >
           Draft{" "}
-          {draftPinSwapped
-            ? "↔ pin"
-            : draftFromPinned
-              ? "from pin"
-              : draftAvailable
-                ? "saved"
-                : "none"}
+          {formDraftSwapped
+            ? "↔ form"
+            : draftPinSwapped
+              ? "↔ pin"
+              : draftFromPinned
+                ? "from pin"
+                : draftAvailable
+                  ? "saved"
+                  : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -3881,6 +3929,15 @@ export function OnrampTease() {
               liveVerifyStatus === "mismatch"
                 ? `Diff form/draft (${draftDiffLines.length})`
                 : "Diff form vs draft"}
+            </button>
+          ) : null}
+          {draftAvailable ? (
+            <button
+              type="button"
+              onClick={swapFormDraft}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {formDraftSwapped ? "Form ↔ draft ✓" : "Swap form ↔ draft"}
             </button>
           ) : null}
           {pinAvailable ? (
