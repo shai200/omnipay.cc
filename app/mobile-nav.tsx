@@ -80,6 +80,7 @@ const links = [
   { href: "#great-northern-bean-field", label: "Great northern bean field" },
   { href: "#cannellini-bean-field", label: "Cannellini bean field" },
   { href: "#cranberry-bean-field", label: "Cranberry bean field" },
+  { href: "#anasazi-bean-field", label: "Anasazi bean field" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
