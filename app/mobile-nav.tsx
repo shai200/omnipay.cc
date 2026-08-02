@@ -20,6 +20,7 @@ const links = [
   { href: "#mill", label: "Mill" },
   { href: "#creek", label: "Creek" },
   { href: "#barn", label: "Barn" },
+  { href: "#cellar", label: "Cellar" },
   { href: "#visit", label: "Visit" },
 ] as const;
 

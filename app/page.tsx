@@ -329,6 +329,27 @@ const barnWork = [
   },
 ] as const;
 
+const cellarWork = [
+  {
+    name: "Cold room",
+    rhythm: "Earth-cooled, dark",
+    detail:
+      "Roots, late apples, and cabbages rest below the frost line. No walk-in freezer hum — just stone, air, and patience until the stand needs them.",
+  },
+  {
+    name: "Winter jars",
+    rhythm: "Put up after harvest",
+    detail:
+      "Tomato sauce, pickled greens, and orchard butter line the shelves. Leah packs a few for full shares when the open field is quiet under snow.",
+  },
+  {
+    name: "Seed crates",
+    rhythm: "Labeled for spring",
+    detail:
+      "Saved wheat, bean, and brassica seed dry cool and dry. The cellar is next year’s field, stacked in crates before the prairie thaws.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -391,6 +412,9 @@ export default function Home() {
             </a>
             <a href="#barn" className="transition hover:text-[var(--foreground)]">
               Barn
+            </a>
+            <a href="#cellar" className="transition hover:text-[var(--foreground)]">
+              Cellar
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1134,6 +1158,47 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the barn
+            </a>
+          </div>
+        </section>
+
+        {/* Cellar — one job: hold harvest cool until winter needs it */}
+        <section id="cellar" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(680px_360px_at_20%_70%,rgba(198,164,90,0.12),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Below the frost
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A root cellar that keeps the harvest honest through winter.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Cold room, winter jars, and seed crates — the quiet hold between
+              autumn press weeks and the first soil walk in April.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {cellarWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20cellar"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the cellar
             </a>
           </div>
         </section>
