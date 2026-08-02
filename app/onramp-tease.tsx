@@ -39,10 +39,17 @@ const networks = [
   {
     id: "solana",
     label: "Solana",
-    assets: ["sol"],
+    assets: ["sol", "usdc"],
     placeholder: "Base58 Solana address",
     pattern: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
   },
+] as const;
+
+const paymentMethods = [
+  { id: "visa", label: "Visa" },
+  { id: "mastercard", label: "Mastercard" },
+  { id: "amex", label: "Amex" },
+  { id: "debit", label: "Debit" },
 ] as const;
 
 function formatReceive(amount: number, assetId: (typeof assets)[number]["id"]) {
@@ -54,6 +61,14 @@ function formatReceive(amount: number, assetId: (typeof assets)[number]["id"]) {
   return `~${units.toFixed(4)} SOL`;
 }
 
+function formatQuoteTime(date: Date) {
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 export function OnrampTease() {
   const [amount, setAmount] = useState("50");
   const [asset, setAsset] = useState<(typeof assets)[number]["id"]>("btc");
@@ -61,6 +76,10 @@ export function OnrampTease() {
   const [walletTouched, setWalletTouched] = useState(false);
   const [amountTouched, setAmountTouched] = useState(false);
   const [submitHint, setSubmitHint] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] =
+    useState<(typeof paymentMethods)[number]["id"]>("visa");
+  const [quoteAt, setQuoteAt] = useState(() => new Date());
+  const [quoteJitterBps, setQuoteJitterBps] = useState(0);
 
   const selectedAsset = useMemo(
     () => assets.find((option) => option.id === asset) ?? assets[0],
@@ -99,14 +118,17 @@ export function OnrampTease() {
     ? `$${parsedAmount.toLocaleString("en-US")}`
     : "your amount";
 
+  const adjustedAmount = amountValid
+    ? parsedAmount * (1 + quoteJitterBps / 10_000)
+    : 0;
   const feeEstimate = amountValid
-    ? `~$${(parsedAmount * 0.015).toFixed(2)}`
+    ? `~$${(adjustedAmount * 0.015).toFixed(2)}`
     : "—";
   const totalEstimate = amountValid
-    ? `~$${(parsedAmount * 1.015).toFixed(2)}`
+    ? `~$${(adjustedAmount * 1.015).toFixed(2)}`
     : "—";
   const receiveEstimate = amountValid
-    ? formatReceive(parsedAmount, selectedAsset.id)
+    ? formatReceive(adjustedAmount, selectedAsset.id)
     : "—";
 
   const trimmedWallet = wallet.trim();
@@ -118,6 +140,17 @@ export function OnrampTease() {
 
   const readyAmount = amountValid;
   const readyNetwork = Boolean(activeNetwork);
+  const selectedPayment =
+    paymentMethods.find((option) => option.id === paymentMethod) ??
+    paymentMethods[0];
+
+  function refreshQuote() {
+    // Preview-only ±15 bps wobble so "Refresh quote" feels alive without
+    // pretending to be a live market feed.
+    const next = Math.round((Math.random() * 30 - 15) * 10) / 10;
+    setQuoteJitterBps(next);
+    setQuoteAt(new Date());
+  }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     setAmountTouched(true);
@@ -196,6 +229,9 @@ export function OnrampTease() {
             : walletStatus === "invalid"
               ? "fix"
               : "optional"}
+        </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          Pay {selectedPayment.label}
         </li>
       </ul>
       <fieldset className="mt-6">
@@ -345,14 +381,50 @@ export function OnrampTease() {
           available after sign-in.
         </p>
       ) : null}
+      <fieldset className="mt-4">
+        <legend className="text-sm text-sky-100/80">Pay with</legend>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {paymentMethods.map((option) => {
+            const selected = paymentMethod === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setPaymentMethod(option.id)}
+                aria-pressed={selected}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="payment_method" value={paymentMethod} />
+      </fieldset>
       <div className="mt-4 rounded-xl border border-sky-300/25 bg-sky-400/10 px-4 py-3 text-sm leading-6 text-sky-50">
-        <p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs uppercase tracking-[0.12em] text-sky-200/80">
+            Tease quote as of {formatQuoteTime(quoteAt)}
+          </p>
+          <button
+            type="button"
+            onClick={refreshQuote}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            Refresh quote
+          </button>
+        </div>
+        <p className="mt-2">
           Order preview: {amountLabel} → {selectedAsset.label} on{" "}
           {activeNetwork?.label ?? selectedAsset.network}
           {trimmedWallet
             ? ` → ${trimmedWallet.slice(0, 6)}…${trimmedWallet.slice(-4)}`
-            : " → your wallet"}
-          .
+            : " → your wallet"}{" "}
+          via {selectedPayment.label}.
         </p>
         <p className="mt-2 text-sky-100/80">
           You&apos;ll receive about{" "}

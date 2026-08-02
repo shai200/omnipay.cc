@@ -54,8 +54,16 @@ const faqItems = [
     a: "Visa, Mastercard, Amex, and debit via Stripe Crypto Onramp. Final availability depends on your bank and region.",
   },
   {
+    q: "What networks are supported?",
+    a: "Bitcoin, Ethereum, and Solana for native assets — plus USDC on Ethereum or Solana. Checkout confirms the final route.",
+  },
+  {
+    q: "What fees should I expect?",
+    a: "Preview shows an estimate (~1.5% network + processing tease). Live checkout locks the Stripe quote before you pay.",
+  },
+  {
     q: "Are reminder emails required?",
-    a: "No. Reminders are optional discipline tools — weekly, bi-weekly, or monthly, with optional drop alerts.",
+    a: "No. Reminders are optional discipline tools — weekly, bi-weekly, or monthly, with preferred send windows and optional drop alerts.",
   },
 ] as const;
 
@@ -254,7 +262,7 @@ export default function Home() {
             Short answers for custody, cards, and reminders — full detail lives
             on Omnipay.cc after you sign in.
           </p>
-          <dl className="mt-12 grid gap-8 md:grid-cols-3">
+          <dl className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {faqItems.map((item) => (
               <div key={item.q} className="max-w-sm">
                 <dt className="text-lg font-semibold text-[var(--foreground)]">
