@@ -56,6 +56,7 @@ const links = [
   { href: "#quinoa-field", label: "Quinoa field" },
   { href: "#sorghum-field", label: "Sorghum field" },
   { href: "#amaranth-field", label: "Amaranth field" },
+  { href: "#teff-field", label: "Teff field" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
