@@ -139,7 +139,15 @@ const faqItems = [
   },
   {
     q: "What does Reset preview do?",
-    a: "Clears the on-ramp tease back to defaults (amount, wallet, soft-gates, promo, quote jitter) so you can start a clean preview session. The order ref stays for the page load.",
+    a: "Clears the on-ramp tease back to defaults (amount, wallet, soft-gates, promo, SMS, quote jitter) so you can start a clean preview session. The order ref stays for the page load.",
+  },
+  {
+    q: "Can I get SMS settlement alerts?",
+    a: "Preview accepts an optional E.164 phone (e.g. +15551234567) for settlement SMS teases. Invalid numbers soft-block Continue until fixed or cleared — live Twilio/Stripe SMS wiring finishes on Omnipay.cc.",
+  },
+  {
+    q: "What is the expected arrival window?",
+    a: "Preview shows a clock window from the tease quote time based on Standard (~45–90s) or Priority (~10–30s) network speed. Live chain settlement still varies — this is not a locked Stripe ETA.",
   },
 ] as const;
 

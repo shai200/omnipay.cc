@@ -172,8 +172,11 @@ const taxResidencies = [
 ] as const;
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Preview-only E.164-ish phone (digits, optional leading +). */
+const smsPattern = /^\+?[1-9]\d{7,14}$/;
 const memoMaxLen = 80;
 const promoMaxLen = 24;
+const smsMaxLen = 18;
 
 function makeOrderRef() {
   const n = Math.floor(Math.random() * 900_000) + 100_000;
@@ -195,6 +198,23 @@ function formatQuoteTime(date: Date) {
     minute: "2-digit",
     second: "2-digit",
   });
+}
+
+/** Preview-only settle window from speed tease (seconds after quote). */
+function arrivalBounds(speedId: (typeof networkSpeeds)[number]["id"]) {
+  return speedId === "priority"
+    ? ({ lo: 10, hi: 30 } as const)
+    : ({ lo: 45, hi: 90 } as const);
+}
+
+function formatArrivalWindow(
+  speedId: (typeof networkSpeeds)[number]["id"],
+  from: Date,
+) {
+  const { lo, hi } = arrivalBounds(speedId);
+  const start = new Date(from.getTime() + lo * 1000);
+  const end = new Date(from.getTime() + hi * 1000);
+  return `${formatQuoteTime(start)}–${formatQuoteTime(end)}`;
 }
 
 function formatUnitRate(
@@ -264,6 +284,8 @@ export function OnrampTease() {
   const [taxResidency, setTaxResidency] =
     useState<(typeof taxResidencies)[number]["id"]>("us");
   const [selfCustodyAccepted, setSelfCustodyAccepted] = useState(false);
+  const [smsPhone, setSmsPhone] = useState("");
+  const [smsTouched, setSmsTouched] = useState(false);
   const [quoteAt, setQuoteAt] = useState(() => new Date());
   const [quoteJitterBps, setQuoteJitterBps] = useState(0);
   const [quoteAgeSec, setQuoteAgeSec] = useState(0);
@@ -414,6 +436,16 @@ export function OnrampTease() {
   const memoStatus =
     trimmedMemo.length > memoMaxLen ? "long" : trimmedMemo ? "ok" : "empty";
 
+  const trimmedSms = smsPhone.replace(/[\s().-]/g, "");
+  const smsStatus = !trimmedSms
+    ? "empty"
+    : trimmedSms.length > smsMaxLen
+      ? "long"
+      : smsPattern.test(trimmedSms)
+        ? "valid"
+        : "invalid";
+  const arrivalWindow = formatArrivalWindow(selectedSpeed.id, quoteAt);
+
   const readyAmount = amountValid;
   const readyNetwork = Boolean(activeNetwork);
   const readyConfirm =
@@ -506,6 +538,8 @@ export function OnrampTease() {
       `${selectedCadence.label} · ${selectedSpeed.label}`,
       `funds ${selectedFundSource.label} · purpose ${selectedPurpose.label}`,
       `tax ${selectedTaxResidency.label}`,
+      `arrive ${arrivalWindow}`,
+      smsStatus === "valid" ? `sms ${trimmedSms}` : null,
       receiveEstimate !== "—" ? `receive ${receiveEstimate}` : null,
       totalEstimate !== "—" ? `card total ${totalEstimate}` : null,
     ]
@@ -554,6 +588,8 @@ export function OnrampTease() {
     setPrivacyAccepted(false);
     setTaxResidency("us");
     setSelfCustodyAccepted(false);
+    setSmsPhone("");
+    setSmsTouched(false);
     setQuoteJitterBps(0);
     setQuoteAt(new Date());
     setQuoteAgeSec(0);
@@ -609,6 +645,16 @@ export function OnrampTease() {
         receiptConfirmStatus === "empty"
           ? "Confirm the receipt email before continuing — it must match."
           : "Receipt confirmation does not match — fix it or clear both fields.",
+      );
+      return;
+    }
+
+    if (smsStatus === "invalid" || smsStatus === "long") {
+      event.preventDefault();
+      setSubmitHint(
+        smsStatus === "long"
+          ? `SMS phone is too long — keep it under ${smsMaxLen} characters.`
+          : "SMS phone looks invalid — use E.164 (e.g. +15551234567) or clear the field.",
       );
       return;
     }
@@ -854,6 +900,25 @@ export function OnrampTease() {
         </li>
         <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
           Tax {selectedTaxResidency.label}
+        </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          Arrive {selectedSpeed.label}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            smsStatus === "valid"
+              ? "bg-emerald-400/15 text-emerald-100"
+              : smsStatus === "invalid" || smsStatus === "long"
+                ? "bg-amber-400/15 text-amber-100"
+                : "bg-white/5 text-sky-100/70"
+          }`}
+        >
+          SMS{" "}
+          {smsStatus === "valid"
+            ? "ready"
+            : smsStatus === "invalid" || smsStatus === "long"
+              ? "fix"
+              : "optional"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -1398,6 +1463,40 @@ export function OnrampTease() {
         </p>
       ) : null}
       <label className="mt-4 block text-sm text-sky-100/80">
+        SMS for settlement alerts{" "}
+        <span className="text-sky-100/55">(optional)</span>
+        <input
+          name="sms_phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          value={smsPhone}
+          onChange={(event) => {
+            setSmsPhone(event.target.value);
+            setSubmitHint(null);
+          }}
+          onBlur={() => setSmsTouched(true)}
+          placeholder="+15551234567"
+          maxLength={smsMaxLen + 8}
+          aria-invalid={
+            smsTouched && (smsStatus === "invalid" || smsStatus === "long")
+          }
+          className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
+        />
+      </label>
+      {smsTouched && (smsStatus === "invalid" || smsStatus === "long") ? (
+        <p className="mt-2 text-xs text-amber-200/90" role="status">
+          Use E.164 (e.g. +15551234567), or clear the field to skip SMS in
+          preview.
+        </p>
+      ) : null}
+      {smsStatus === "valid" ? (
+        <p className="mt-2 text-xs text-emerald-200/90" role="status">
+          Settlement SMS tease → {trimmedSms} (preview only — live Twilio/Stripe
+          wiring finishes on Omnipay.cc).
+        </p>
+      ) : null}
+      <label className="mt-4 block text-sm text-sky-100/80">
         Promo code{" "}
         <span className="text-sky-100/55">(optional)</span>
         <input
@@ -1624,7 +1723,14 @@ export function OnrampTease() {
           {selectedTaxResidency.label.toLowerCase()}
           {trimmedMemo ? ` · memo “${trimmedMemo.slice(0, 24)}${trimmedMemo.length > 24 ? "…" : ""}”` : ""}
           {activePromo ? ` · promo ${trimmedPromo}` : ""}
+          {smsStatus === "valid" ? ` · sms ${trimmedSms}` : ""}
           .
+        </p>
+        <p className="mt-2 text-sky-100/80">
+          Expected arrival window{" "}
+          <span className="font-semibold text-white">{arrivalWindow}</span>{" "}
+          ({selectedSpeed.label.toLowerCase()} · {selectedSpeed.eta} tease from
+          quote time).
         </p>
         <p className="mt-2 text-sky-100/80">
           Tease unit rate{" "}
@@ -1652,8 +1758,9 @@ export function OnrampTease() {
             : ""}{" "}
           · card total {totalEstimate}
           {selectedFiat.id !== "usd" ? ` (${fiatTotalEstimate})` : ""} · ETA{" "}
-          {selectedSpeed.eta}
-          {receiptStatus === "valid" ? ` · receipt → ${trimmedReceipt}` : ""}.
+          {selectedSpeed.eta} · arrive {arrivalWindow}
+          {receiptStatus === "valid" ? ` · receipt → ${trimmedReceipt}` : ""}
+          {smsStatus === "valid" ? ` · sms → ${trimmedSms}` : ""}.
         </p>
         {quoteStale ? (
           <p className="mt-2 text-xs text-amber-100" role="status">
