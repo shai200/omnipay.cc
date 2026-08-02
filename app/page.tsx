@@ -749,6 +749,27 @@ const berryPatchWork = [
   },
 ] as const;
 
+const vineyardWork = [
+  {
+    name: "Trellis rows",
+    rhythm: "After the berry patch",
+    detail:
+      "A short belt of hybrid grapes on the warm south slope past the cane rows — leaves catch the same prairie light the berries finish on, and the vines drink deep without starving the orchard windbreak.",
+  },
+  {
+    name: "Cluster mornings",
+    rhythm: "Quiet dawn clips",
+    detail:
+      "Hand clips under the wire when dew still holds. Mara thins green clusters before the stand opens — the vineyard is a finish lane, not a tourist crush that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "Press weeks",
+    rhythm: "Early autumn board",
+    detail:
+      "A few small presses for the farm table after the pack shed has done its quiet work — Leah chalks batches when the sugar is honest. No anonymous tanker; just what the trellis finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -871,6 +892,9 @@ export default function Home() {
             </a>
             <a href="#berry-patch" className="transition hover:text-[var(--foreground)]">
               Berry patch
+            </a>
+            <a href="#vineyard" className="transition hover:text-[var(--foreground)]">
+              Vineyard
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2483,6 +2507,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the berry patch
+            </a>
+          </div>
+        </section>
+
+        {/* Vineyard — one job: trellis rows after the berry patch, cluster mornings + press weeks */}
+        <section
+          id="vineyard"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Wire and warm slope
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A vineyard that finishes the cane lane.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Trellis rows, cluster mornings, and press weeks — a short belt of
+              fruit after the berry patch, then small batches that find the farm
+              table once the pack-shed lane has done its quiet early-autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {vineyardWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20vineyard"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the vineyard
             </a>
           </div>
         </section>
