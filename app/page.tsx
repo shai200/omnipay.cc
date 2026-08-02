@@ -77,6 +77,14 @@ const faqItems = [
     q: "Can I schedule recurring buys from the preview?",
     a: "Choose Once, Weekly, or Monthly on the on-ramp tease. Recurring settlement and reminder wiring finish after sign-in on Omnipay.cc.",
   },
+  {
+    q: "What is network speed?",
+    a: "Standard (~60s, ~1.5% tease fee) or Priority (~15s, ~2.2% tease fee). Preview only — live Stripe settlement timing still depends on chain and bank.",
+  },
+  {
+    q: "Why accept a risk disclosure?",
+    a: "Preview quotes are soft teases, not locked prices. Accepting the disclosure is required before Continue — real risk language and terms still live on Omnipay.cc checkout.",
+  },
 ] as const;
 
 export default function Home() {

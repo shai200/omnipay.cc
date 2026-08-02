@@ -66,7 +66,25 @@ const slippageOptions = [
   { id: "2", label: "2%", detail: "Flexible" },
 ] as const;
 
+const networkSpeeds = [
+  {
+    id: "standard",
+    label: "Standard",
+    detail: "~60s settle",
+    feeRate: 0.015,
+    eta: "under 1 min",
+  },
+  {
+    id: "priority",
+    label: "Priority",
+    detail: "~15s settle",
+    feeRate: 0.022,
+    eta: "~15s after pay",
+  },
+] as const;
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const memoMaxLen = 80;
 
 function formatReceive(amount: number, assetId: (typeof assets)[number]["id"]) {
   const rate = teaseRatesUsd[assetId];
@@ -125,6 +143,10 @@ export function OnrampTease() {
     useState<(typeof buyCadences)[number]["id"]>("once");
   const [slippage, setSlippage] =
     useState<(typeof slippageOptions)[number]["id"]>("1");
+  const [networkSpeed, setNetworkSpeed] =
+    useState<(typeof networkSpeeds)[number]["id"]>("standard");
+  const [orderMemo, setOrderMemo] = useState("");
+  const [riskAccepted, setRiskAccepted] = useState(false);
   const [receiptEmail, setReceiptEmail] = useState("");
   const [receiptTouched, setReceiptTouched] = useState(false);
   const [quoteAt, setQuoteAt] = useState(() => new Date());
@@ -169,14 +191,17 @@ export function OnrampTease() {
     ? `$${parsedAmount.toLocaleString("en-US")}`
     : "your amount";
 
+  const selectedSpeed =
+    networkSpeeds.find((option) => option.id === networkSpeed) ??
+    networkSpeeds[0];
   const adjustedAmount = amountValid
     ? parsedAmount * (1 + quoteJitterBps / 10_000)
     : 0;
   const feeEstimate = amountValid
-    ? `~$${(adjustedAmount * 0.015).toFixed(2)}`
+    ? `~$${(adjustedAmount * selectedSpeed.feeRate).toFixed(2)}`
     : "—";
   const totalEstimate = amountValid
-    ? `~$${(adjustedAmount * 1.015).toFixed(2)}`
+    ? `~$${(adjustedAmount * (1 + selectedSpeed.feeRate)).toFixed(2)}`
     : "—";
   const receiveEstimate = amountValid
     ? formatReceive(adjustedAmount, selectedAsset.id)
@@ -213,6 +238,10 @@ export function OnrampTease() {
     : emailPattern.test(trimmedReceipt)
       ? "valid"
       : "invalid";
+
+  const trimmedMemo = orderMemo.trim();
+  const memoStatus =
+    trimmedMemo.length > memoMaxLen ? "long" : trimmedMemo ? "ok" : "empty";
 
   const readyAmount = amountValid;
   const readyNetwork = Boolean(activeNetwork);
@@ -326,6 +355,22 @@ export function OnrampTease() {
       return;
     }
 
+    if (memoStatus === "long") {
+      event.preventDefault();
+      setSubmitHint(
+        `Order memo is too long — keep it under ${memoMaxLen} characters.`,
+      );
+      return;
+    }
+
+    if (!riskAccepted) {
+      event.preventDefault();
+      setSubmitHint(
+        "Accept the preview risk disclosure before continuing to Omnipay.cc.",
+      );
+      return;
+    }
+
     setSubmitHint(null);
   }
 
@@ -415,6 +460,9 @@ export function OnrampTease() {
         >
           Slip {selectedSlippage.label}
         </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          {selectedSpeed.label}
+        </li>
         {receiptStatus === "valid" ? (
           <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
             Receipt ready
@@ -424,6 +472,15 @@ export function OnrampTease() {
             Receipt fix
           </li>
         ) : null}
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            riskAccepted
+              ? "bg-emerald-400/15 text-emerald-100"
+              : "bg-amber-400/15 text-amber-100"
+          }`}
+        >
+          Risk {riskAccepted ? "accepted" : "needed"}
+        </li>
       </ul>
       <fieldset className="mt-6">
         <legend className="text-sm text-sky-100/80">Buy frequency</legend>
@@ -724,6 +781,68 @@ export function OnrampTease() {
         </div>
         <input type="hidden" name="slippage" value={slippage} />
       </fieldset>
+      <fieldset className="mt-4">
+        <legend className="text-sm text-sky-100/80">Network speed</legend>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {networkSpeeds.map((option) => {
+            const selected = networkSpeed === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setNetworkSpeed(option.id);
+                  setSubmitHint(null);
+                }}
+                aria-pressed={selected}
+                className={`rounded-lg px-2 py-2.5 text-left transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                <span className="block text-sm font-semibold">
+                  {option.label}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[11px] ${
+                    selected ? "text-[#0b1b33]/70" : "text-sky-100/65"
+                  }`}
+                >
+                  {option.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="network_speed" value={networkSpeed} />
+      </fieldset>
+      <label className="mt-4 block text-sm text-sky-100/80">
+        Order memo{" "}
+        <span className="text-sky-100/55">(optional)</span>
+        <input
+          name="order_memo"
+          type="text"
+          maxLength={memoMaxLen + 20}
+          value={orderMemo}
+          onChange={(event) => {
+            setOrderMemo(event.target.value);
+            setSubmitHint(null);
+          }}
+          placeholder="Invoice #, client tag…"
+          autoComplete="off"
+          className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
+        />
+      </label>
+      {memoStatus === "long" ? (
+        <p className="mt-2 text-xs text-amber-200/90" role="status">
+          Memo max is {memoMaxLen} characters for preview.
+        </p>
+      ) : trimmedMemo ? (
+        <p className="mt-2 text-xs text-sky-100/65" role="status">
+          {trimmedMemo.length}/{memoMaxLen} · tagged on the order preview.
+        </p>
+      ) : null}
       <label className="mt-4 block text-sm text-sky-100/80">
         Receipt email{" "}
         <span className="text-sky-100/55">(optional)</span>
@@ -780,7 +899,10 @@ export function OnrampTease() {
           {trimmedWallet
             ? ` → ${trimmedWallet.slice(0, 6)}…${trimmedWallet.slice(-4)}`
             : " → your wallet"}{" "}
-          via {selectedPayment.label} · {selectedCadence.label.toLowerCase()}.
+          via {selectedPayment.label} · {selectedCadence.label.toLowerCase()} ·{" "}
+          {selectedSpeed.label.toLowerCase()}
+          {trimmedMemo ? ` · memo “${trimmedMemo.slice(0, 24)}${trimmedMemo.length > 24 ? "…" : ""}”` : ""}
+          .
         </p>
         <p className="mt-2 text-sky-100/80">
           Tease unit rate{" "}
@@ -803,7 +925,7 @@ export function OnrampTease() {
         </p>
         <p className="mt-2 text-sky-100/80">
           Est. network + processing {feeEstimate} · card total {totalEstimate} ·
-          ETA under 1 min after payment
+          ETA {selectedSpeed.eta}
           {receiptStatus === "valid" ? ` · receipt → ${trimmedReceipt}` : ""}.
         </p>
         {quoteStale ? (
@@ -821,6 +943,28 @@ export function OnrampTease() {
       <p className="mt-3 text-xs leading-5 text-sky-100/65">
         Pay with Visa, Mastercard, Amex, or debit — Stripe Crypto Onramp.
       </p>
+      <label className="mt-4 flex items-start gap-3 text-sm text-sky-100/90">
+        <input
+          type="checkbox"
+          name="risk_accepted"
+          value="1"
+          checked={riskAccepted}
+          onChange={(event) => {
+            setRiskAccepted(event.target.checked);
+            setSubmitHint(null);
+          }}
+          className="mt-1 h-4 w-4 rounded border-white/30 accent-[var(--accent)]"
+        />
+        <span>
+          <span className="font-semibold text-white">
+            Accept preview risk disclosure
+          </span>
+          <span className="mt-1 block text-xs text-sky-100/70">
+            Crypto prices move. Tease quotes are not live Stripe locks — final
+            amount and fees confirm on Omnipay.cc before you pay.
+          </span>
+        </span>
+      </label>
       {submitHint ? (
         <p className="mt-3 text-xs text-amber-200/90" role="alert">
           {submitHint}
