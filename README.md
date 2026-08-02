@@ -1,8 +1,7 @@
-# OmniPay (`omnipay.cc`)
+# Northfield (omnipay.cc Studio project)
 
-Fiat → crypto gateway focused on **recurring buys** and **smart reminders**.
-Crypto goes to the user’s wallet; card purchases via Stripe Crypto Onramp
-(live wiring needs Founder keys / App Hosting — static Hosting is v1).
+Regenerative farming site built for the OmniPay Studio project
+(`opensource_remote` → `https://github.com/shai200/omnipay.cc`).
 
 ## Local
 
@@ -17,7 +16,6 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
 - Firebase Hosting static export (`output: "export"`) for preview channels
-- Stripe packages present for future onramp (not wired on static preview)
 
 ## Deploy (Firebase Hosting preview)
 
@@ -36,6 +34,5 @@ Or: `npm run firebase:preview`.
 |---|---|
 | Preview channel | `https://omnipaycc-9e9cb--agent-smoke-*.web.app` |
 | Firebase live (untouched until FOUNDER_GO) | `https://omnipaycc-9e9cb.web.app` |
-| Current marketing host | `https://omnipay.cc` |
 
 Do **not** commit service-account JSON or `.env*` files.

@@ -15,16 +15,16 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Omnipay.cc — Fiat to Crypto Gateway",
+  title: "Northfield — Regenerative Farming",
   description:
-    "Buy crypto regularly with any credit or debit card — sent directly to your wallet. Recurring reminders that turn small purchases into lasting wealth.",
-  applicationName: "Omnipay",
+    "Northfield grows food the land can keep giving — soil-first farming, open fields, and harvest you can taste.",
+  applicationName: "Northfield",
   openGraph: {
-    title: "Omnipay.cc — Fiat to Crypto Gateway",
+    title: "Northfield — Regenerative Farming",
     description:
-      "Build wealth with recurring crypto buys. Card on-ramp, direct to your wallet.",
+      "Soil-first farming on open prairie. Visit the fields, meet the season, take home the harvest.",
     url: "https://omnipay.cc",
-    siteName: "Omnipay.cc",
+    siteName: "Northfield",
     type: "website",
   },
 };

@@ -1,14 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f3f6fb;
-  --foreground: #0f172a;
-  --muted: #5b6b7c;
-  --accent: #0670d2;
-  --accent-deep: #034f97;
-  --surface: rgba(255, 255, 255, 0.72);
-  --line: rgba(15, 23, 42, 0.08);
-  --glow: rgba(6, 112, 210, 0.22);
+  --background: #0f1f16;
+  --foreground: #f4f1e8;
+  --muted: #b7c4b0;
+  --accent: #c6a45a;
+  --accent-deep: #9a7a35;
+  --leaf: #3f7a52;
+  --leaf-bright: #5fa876;
+  --soil: #1a2b20;
+  --sky: #8fb4c9;
+  --line: rgba(244, 241, 232, 0.14);
+  --glow: rgba(198, 164, 90, 0.28);
 }
 
 @theme inline {
@@ -33,10 +36,7 @@ body {
   margin: 0;
   min-height: 100vh;
   color: var(--foreground);
-  background:
-    radial-gradient(1200px 600px at 12% -10%, rgba(6, 112, 210, 0.18), transparent 55%),
-    radial-gradient(900px 500px at 88% 8%, rgba(14, 165, 233, 0.14), transparent 50%),
-    linear-gradient(180deg, #eef3fa 0%, #f7f9fc 42%, #eef2f7 100%);
+  background: var(--soil);
   font-family: var(--font-sora), "Segoe UI", sans-serif;
 }
 
@@ -48,7 +48,7 @@ a {
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(22px);
   }
   to {
     opacity: 1;
@@ -59,39 +59,53 @@ a {
 @keyframes drift {
   0%,
   100% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: scale(1.02) translate3d(0, 0, 0);
   }
   50% {
-    transform: translate3d(2%, -1.5%, 0) scale(1.04);
+    transform: scale(1.08) translate3d(-1.2%, -0.8%, 0);
   }
 }
 
-@keyframes pulse-line {
+@keyframes sway {
   0%,
   100% {
-    opacity: 0.35;
+    transform: rotate(-0.4deg) translateY(0);
   }
   50% {
-    opacity: 0.8;
+    transform: rotate(0.5deg) translateY(-4px);
+  }
+}
+
+@keyframes harvest-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
   }
 }
 
 .animate-rise {
-  animation: rise-in 0.8s ease-out both;
+  animation: rise-in 0.85s ease-out both;
 }
 
 .animate-rise-delay {
-  animation: rise-in 0.9s ease-out 0.15s both;
+  animation: rise-in 0.95s ease-out 0.16s both;
 }
 
 .animate-rise-late {
-  animation: rise-in 1s ease-out 0.28s both;
+  animation: rise-in 1.05s ease-out 0.3s both;
 }
 
-.hero-orb {
-  animation: drift 14s ease-in-out infinite;
+.hero-pan {
+  animation: drift 22s ease-in-out infinite;
 }
 
-.hero-scan {
-  animation: pulse-line 4.5s ease-in-out infinite;
+.crop-sway {
+  animation: sway 7s ease-in-out infinite;
+}
+
+.harvest-glow {
+  animation: harvest-glow 5.5s ease-in-out infinite;
 }
