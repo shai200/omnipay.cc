@@ -189,6 +189,10 @@ const faqItems = [
     q: "What is Apply pin / Diff vs pin?",
     a: "Apply pin loads the pinned tease into the form without changing the pin slot (unlike Swap pin). Diff vs pin lists which fields differ between the form and the pin without applying anything. Both stay in your browser — never uploaded to Omnipay servers.",
   },
+  {
+    q: "What is Copy pin link / Export pin?",
+    a: "Copy pin link puts the pinned tease on the clipboard as a #omn-draft= URL (same format as Copy draft link) without changing the form or pin slot. Export pin downloads the pin as .json for Import draft elsewhere. Neither uploads to Omnipay servers.",
+  },
 ] as const;
 
 export default function Home() {

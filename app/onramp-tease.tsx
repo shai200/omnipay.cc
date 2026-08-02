@@ -579,6 +579,8 @@ export function OnrampTease() {
   const [pinFingerprint, setPinFingerprint] = useState<string | null>(null);
   const [pinSwapped, setPinSwapped] = useState(false);
   const [pinApplied, setPinApplied] = useState(false);
+  const [pinLinkCopied, setPinLinkCopied] = useState(false);
+  const [pinExported, setPinExported] = useState(false);
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
@@ -1491,7 +1493,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply pin / Swap pin / Diff vs pin. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy pin link / Export pin. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -1599,6 +1601,70 @@ export function OnrampTease() {
     setSubmitHint(null);
   }
 
+  /** Preview-only: copy pin slot as a #omn-draft= share URL (form untouched). */
+  async function copyPinLink() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const pinFp = fingerprintDraft(pinned);
+    try {
+      const encoded = encodeDraftForHash(pinned);
+      const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${draftHashPrefix}${encoded}`;
+      await navigator.clipboard.writeText(url);
+      setPinLinkCopied(true);
+      setPinExported(false);
+      window.setTimeout(() => setPinLinkCopied(false), 2000);
+      setDraftHint(
+        `Pin link copied (FP ${pinFp}) — open / Paste / Verify on another browser. Form and pin slot unchanged.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setDraftHint(
+        "Copy pin link failed — use Export pin .json instead.",
+      );
+    }
+  }
+
+  /** Preview-only: download pin slot as JSON (form / Save draft untouched). */
+  function exportPinJson() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const pinFp = fingerprintDraft(pinned);
+    const body = `${JSON.stringify(pinned, null, 2)}\n`;
+    try {
+      const blob = new Blob([body], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${orderRef.toLowerCase()}-pin.json`;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setPinExported(true);
+      setPinLinkCopied(false);
+      window.setTimeout(() => setPinExported(false), 2000);
+      setDraftHint(
+        `Pin JSON exported (FP ${pinFp}) — Import draft on another browser to restore. Form and pin slot unchanged.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setDraftHint(
+        "Export pin failed — use Copy pin link instead.",
+      );
+    }
+  }
+
   function clearPin() {
     try {
       window.localStorage.removeItem(pinStorageKey);
@@ -1609,6 +1675,8 @@ export function OnrampTease() {
     setPinFingerprint(null);
     setPinSwapped(false);
     setPinApplied(false);
+    setPinLinkCopied(false);
+    setPinExported(false);
     setDraftHint("Pin cleared from this browser (Save draft untouched).");
   }
 
@@ -2053,7 +2121,7 @@ export function OnrampTease() {
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
-            pinSwapped || pinApplied
+            pinSwapped || pinApplied || pinLinkCopied || pinExported
               ? "bg-emerald-400/15 text-emerald-100"
               : pinAvailable
                 ? "bg-sky-400/15 text-sky-100"
@@ -2065,11 +2133,15 @@ export function OnrampTease() {
             ? "swapped"
             : pinApplied
               ? "applied"
-              : pinAvailable
-                ? pinFingerprint
-                  ? `FP ${pinFingerprint}`
-                  : "ready"
-                : "none"}
+              : pinLinkCopied
+                ? "link copied"
+                : pinExported
+                  ? "exported"
+                  : pinAvailable
+                    ? pinFingerprint
+                      ? `FP ${pinFingerprint}`
+                      : "ready"
+                    : "none"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -2942,6 +3014,26 @@ export function OnrampTease() {
               {draftDiffLines.length > 0 && liveVerifyStatus === "mismatch"
                 ? `Diff pin (${draftDiffLines.length})`
                 : "Diff vs pin"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={() => {
+                void copyPinLink();
+              }}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {pinLinkCopied ? "Pin link copied" : "Copy pin link"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={exportPinJson}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {pinExported ? "Pin exported" : "Export pin"}
             </button>
           ) : null}
           {pinAvailable ? (
