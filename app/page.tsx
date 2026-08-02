@@ -266,6 +266,27 @@ const highTunnel = [
   },
 ] as const;
 
+const millWork = [
+  {
+    name: "Stone mill",
+    rhythm: "Slow grind, whole berry",
+    detail:
+      "Prairie wheat cracked on granite — bran stays in, heat stays low, and the flour still smells like the field.",
+  },
+  {
+    name: "Friday grind",
+    rhythm: "Bags for the weekend",
+    detail:
+      "We mill the week’s wheat on Friday so Saturday flour is fresh. Bread cut and a coarser pastry cut leave the stand together.",
+  },
+  {
+    name: "Loaf weeks",
+    rhythm: "When the wheat comes in",
+    detail:
+      "CSA full shares get flour weeks; neighbors bring starters. The mill is why prairie loaf tastes like Northfield, not a bin blend.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -319,6 +340,9 @@ export default function Home() {
             </a>
             <a href="#tunnels" className="transition hover:text-[var(--foreground)]">
               Tunnels
+            </a>
+            <a href="#mill" className="transition hover:text-[var(--foreground)]">
+              Mill
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -933,6 +957,50 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the high tunnels
+            </a>
+          </div>
+        </section>
+
+        {/* Mill — one job: grain to bag on the farm */}
+        <section
+          id="mill"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-12 h-80 w-80 rounded-full bg-[var(--accent)]/12 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              From grain to bag
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A mill that tastes like prairie wheat, not a warehouse blend.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Stone-milled on the farm — the same wheat in the rows becomes the
+              flour in prairie loaf, CSA weeks, and Saturday bags at the stand.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {millWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20mill%20flour"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about mill flour
             </a>
           </div>
         </section>
