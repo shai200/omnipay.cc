@@ -97,6 +97,18 @@ const faqItems = [
     q: "Why accept Terms of Service?",
     a: "Preview requires a ToS soft-gate before Continue. The binding Omnipay.cc Terms still apply at live checkout — this checkbox is not a substitute for signing in.",
   },
+  {
+    q: "Why ask source of funds?",
+    a: "Preview lets you pick Salary, Savings, Business, or Other as a compliance tease. Live Omnipay.cc KYC may ask again — this picker does not replace identity verification.",
+  },
+  {
+    q: "Why confirm age 18+?",
+    a: "Preview soft-gates Continue behind an 18+ confirmation. Live Omnipay.cc still enforces eligibility and regional rules at checkout.",
+  },
+  {
+    q: "What is the preview order ref?",
+    a: "Each preview session mints an OMN-###### reference on the order summary. Cite it if you continue into Omnipay.cc support — it is not a live Stripe payment id.",
+  },
 ] as const;
 
 export default function Home() {

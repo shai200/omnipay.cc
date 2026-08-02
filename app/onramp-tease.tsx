@@ -122,9 +122,22 @@ const promoCodes: Record<string, { label: string; discountPct: number }> = {
   ACCUMULATE: { label: "5% off fees", discountPct: 5 },
 };
 
+/** Preview-only compliance tease — not a live KYC answer. */
+const fundSources = [
+  { id: "salary", label: "Salary", detail: "Paycheck" },
+  { id: "savings", label: "Savings", detail: "Existing cash" },
+  { id: "business", label: "Business", detail: "Company funds" },
+  { id: "other", label: "Other", detail: "Tell us later" },
+] as const;
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const memoMaxLen = 80;
 const promoMaxLen = 24;
+
+function makeOrderRef() {
+  const n = Math.floor(Math.random() * 900_000) + 100_000;
+  return `OMN-${n}`;
+}
 
 function formatReceive(amount: number, assetId: (typeof assets)[number]["id"]) {
   const rate = teaseRatesUsd[assetId];
@@ -194,6 +207,10 @@ export function OnrampTease() {
     useState<(typeof billingCountries)[number]["id"]>("us");
   const [promoCode, setPromoCode] = useState("");
   const [promoTouched, setPromoTouched] = useState(false);
+  const [fundSource, setFundSource] =
+    useState<(typeof fundSources)[number]["id"]>("salary");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [orderRef] = useState(() => makeOrderRef());
   const [quoteAt, setQuoteAt] = useState(() => new Date());
   const [quoteJitterBps, setQuoteJitterBps] = useState(0);
   const [quoteAgeSec, setQuoteAgeSec] = useState(0);
@@ -331,6 +348,8 @@ export function OnrampTease() {
   const selectedSlippage =
     slippageOptions.find((option) => option.id === slippage) ??
     slippageOptions[1];
+  const selectedFundSource =
+    fundSources.find((option) => option.id === fundSource) ?? fundSources[0];
 
   useEffect(() => {
     const tick = () => {
@@ -472,6 +491,14 @@ export function OnrampTease() {
       return;
     }
 
+    if (!ageConfirmed) {
+      event.preventDefault();
+      setSubmitHint(
+        "Confirm you are 18+ before continuing to Omnipay.cc.",
+      );
+      return;
+    }
+
     setSubmitHint(null);
   }
 
@@ -602,6 +629,21 @@ export function OnrampTease() {
           }`}
         >
           ToS {tosAccepted ? "accepted" : "needed"}
+        </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          Funds {selectedFundSource.label}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            ageConfirmed
+              ? "bg-emerald-400/15 text-emerald-100"
+              : "bg-amber-400/15 text-amber-100"
+          }`}
+        >
+          Age {ageConfirmed ? "18+" : "needed"}
+        </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          Ref {orderRef}
         </li>
       </ul>
       <fieldset className="mt-6">
@@ -1072,6 +1114,45 @@ export function OnrampTease() {
           Promo {trimmedPromo} applied — {activePromo.label} (tease only).
         </p>
       ) : null}
+      <fieldset className="mt-4">
+        <legend className="text-sm text-sky-100/80">Source of funds</legend>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {fundSources.map((option) => {
+            const selected = fundSource === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setFundSource(option.id);
+                  setSubmitHint(null);
+                }}
+                aria-pressed={selected}
+                className={`rounded-lg px-2 py-2.5 text-left transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                <span className="block text-sm font-semibold">
+                  {option.label}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[11px] ${
+                    selected ? "text-[#0b1b33]/70" : "text-sky-100/65"
+                  }`}
+                >
+                  {option.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="fund_source" value={fundSource} />
+        <p className="mt-2 text-xs text-sky-100/65">
+          Compliance tease only — live Omnipay.cc may ask again at KYC.
+        </p>
+      </fieldset>
       <div
         className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-6 ${
           quoteStale || slippageBreach
@@ -1094,6 +1175,14 @@ export function OnrampTease() {
             Refresh quote
           </button>
         </div>
+        <p className="mt-2 text-xs text-sky-200/85">
+          Preview order ref{" "}
+          <span className="font-semibold tracking-wide text-white">
+            {orderRef}
+          </span>{" "}
+          — cite this if you continue to Omnipay.cc support (tease only).
+        </p>
+        <input type="hidden" name="order_ref" value={orderRef} />
         <p className="mt-2">
           Order preview: {amountLabel} → {selectedAsset.label} on{" "}
           {activeNetwork?.label ?? selectedAsset.network}
@@ -1102,7 +1191,8 @@ export function OnrampTease() {
             : " → your wallet"}{" "}
           via {selectedPayment.label} · {selectedCountry.label} ·{" "}
           {selectedCadence.label.toLowerCase()} ·{" "}
-          {selectedSpeed.label.toLowerCase()}
+          {selectedSpeed.label.toLowerCase()} · funds{" "}
+          {selectedFundSource.label.toLowerCase()}
           {trimmedMemo ? ` · memo “${trimmedMemo.slice(0, 24)}${trimmedMemo.length > 24 ? "…" : ""}”` : ""}
           {activePromo ? ` · promo ${trimmedPromo}` : ""}
           .
@@ -1198,6 +1288,28 @@ export function OnrampTease() {
               Omnipay.cc Terms
             </a>{" "}
             still apply at live checkout.
+          </span>
+        </span>
+      </label>
+      <label className="mt-3 flex items-start gap-3 text-sm text-sky-100/90">
+        <input
+          type="checkbox"
+          name="age_confirmed"
+          value="1"
+          checked={ageConfirmed}
+          onChange={(event) => {
+            setAgeConfirmed(event.target.checked);
+            setSubmitHint(null);
+          }}
+          className="mt-1 h-4 w-4 rounded border-white/30 accent-[var(--accent)]"
+        />
+        <span>
+          <span className="font-semibold text-white">
+            I confirm I am 18 or older
+          </span>
+          <span className="mt-1 block text-xs text-sky-100/70">
+            Preview soft-gate — live Omnipay.cc still enforces eligibility and
+            regional rules at checkout.
           </span>
         </span>
       </label>
