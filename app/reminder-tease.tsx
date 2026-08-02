@@ -279,7 +279,7 @@ export function ReminderTease() {
     "idle" | "match" | "mismatch" | "invalid"
   >("idle");
   const [reminderVerifyAnchor, setReminderVerifyAnchor] = useState<
-    "link" | "form" | "defaults"
+    "link" | "form" | "defaults" | "defaults-slot"
   >("link");
   const [reminderDiffLines, setReminderDiffLines] = useState<string[]>([]);
   const [reminderFormSwapped, setReminderFormSwapped] = useState(false);
@@ -1187,6 +1187,94 @@ export function ReminderTease() {
     setSubmitHint(null);
   }
 
+  /** Preview-only: compare Clear form defaults to Save reminder slot without writing. */
+  function verifyDefaultsVsSlot() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
+      setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("defaults-slot");
+      setReminderDiffLines([]);
+      setReminderHint(
+        "Verify defaults vs slot — no Save reminder slot in this browser. Save reminder first.",
+      );
+      return;
+    }
+    const defaults = defaultReminderDraft();
+    const defaultsFp = fingerprintReminder(defaults);
+    const slotFp = fingerprintReminder(slot);
+    setReminderAvailable(true);
+    setReminderSavedAt(slot.savedAt);
+    setReminderSlotFingerprint(slotFp);
+    setReminderVerifyAnchor("defaults-slot");
+    setReminderDefaultsSlotCompared(true);
+    setReminderFormDefaultsCompared(false);
+    setReminderFormSlotCompared(false);
+    window.setTimeout(() => setReminderDefaultsSlotCompared(false), 2000);
+    if (defaultsFp === slotFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `Defaults match Save reminder (FP ${slotFp}) — saved prefs equal Clear form targets. Form untouched.`,
+      );
+    } else {
+      const diffs = diffReminderFields(defaults, slot, "slot", "defaults");
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Defaults FP ${defaultsFp} ≠ Slot FP ${slotFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Form untouched.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: list field diffs between Clear form defaults and Save reminder slot. */
+  function diffDefaultsVsSlot() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
+      setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("defaults-slot");
+      setReminderDiffLines([]);
+      setReminderHint(
+        "Diff defaults vs slot — no Save reminder slot in this browser. Save reminder first.",
+      );
+      return;
+    }
+    const defaults = defaultReminderDraft();
+    const defaultsFp = fingerprintReminder(defaults);
+    const slotFp = fingerprintReminder(slot);
+    setReminderAvailable(true);
+    setReminderSavedAt(slot.savedAt);
+    setReminderSlotFingerprint(slotFp);
+    setReminderVerifyAnchor("defaults-slot");
+    setReminderDefaultsSlotCompared(true);
+    setReminderFormDefaultsCompared(false);
+    setReminderFormSlotCompared(false);
+    window.setTimeout(() => setReminderDefaultsSlotCompared(false), 2000);
+    if (defaultsFp === slotFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `No field diffs — defaults match Save reminder (FP ${slotFp}). Form untouched.`,
+      );
+    } else {
+      const diffs = diffReminderFields(defaults, slot, "slot", "defaults");
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Diff defaults vs slot: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (defaults FP ${defaultsFp} ≠ Slot FP ${slotFp}). Form untouched.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
   /** Preview-only: swap live reminder form ↔ Save reminder slot. */
   function swapReminderForm() {
     const slot = readReminderFromStorage();
@@ -1832,6 +1920,34 @@ export function ReminderTease() {
             ? `Diff form/defaults (${reminderDiffLines.length})`
             : "Diff form vs defaults"}
         </button>
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={verifyDefaultsVsSlot}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderVerifyAnchor === "defaults-slot" &&
+            reminderVerifyStatus === "match"
+              ? "Defaults=slot match"
+              : reminderVerifyAnchor === "defaults-slot" &&
+                  reminderVerifyStatus === "mismatch"
+                ? "Defaults≠slot"
+                : "Verify defaults vs slot"}
+          </button>
+        ) : null}
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={diffDefaultsVsSlot}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderVerifyAnchor === "defaults-slot" &&
+            reminderDiffLines.length > 0 &&
+            reminderVerifyStatus === "mismatch"
+              ? `Diff defaults/slot (${reminderDiffLines.length})`
+              : "Diff defaults vs slot"}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => {
