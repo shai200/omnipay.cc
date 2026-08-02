@@ -268,6 +268,7 @@ export function ReminderTease() {
     "link" | "form"
   >("link");
   const [reminderDiffLines, setReminderDiffLines] = useState<string[]>([]);
+  const [reminderFormSwapped, setReminderFormSwapped] = useState(false);
   const pasteReminderInputRef = useRef<HTMLInputElement>(null);
   const importReminderInputRef = useRef<HTMLInputElement>(null);
 
@@ -376,6 +377,7 @@ export function ReminderTease() {
     setReminderImported(false);
     setReminderVerifyStatus("idle");
     setReminderDiffLines([]);
+    setReminderFormSwapped(false);
     setReminderHint("Reminder prefs cleared from this browser.");
   }
 
@@ -689,6 +691,46 @@ export function ReminderTease() {
         `Diff reminder vs form: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (form FP ${formFp} ≠ Save reminder FP ${slotFp}). Restore reminder to load saved prefs.`,
       );
     }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: swap live reminder form ↔ Save reminder slot. */
+  function swapReminderForm() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
+      return;
+    }
+    const current = buildReminderPayload();
+    const currentFp = fingerprintReminder(current);
+    const slotFp = fingerprintReminder(slot);
+    const nextSlot: ReminderDraftV1 = {
+      ...current,
+      savedAt: new Date().toISOString(),
+    };
+    const nextSlotFp = fingerprintReminder(nextSlot);
+    try {
+      window.localStorage.setItem(reminderStorageKey, JSON.stringify(nextSlot));
+    } catch {
+      setReminderHint(
+        "Swap reminder ↔ form failed — browser storage may be blocked in this preview.",
+      );
+      return;
+    }
+    applyReminder(slot);
+    setReminderAvailable(true);
+    setReminderBanner(false);
+    setReminderSavedAt(nextSlot.savedAt);
+    setReminderFormSwapped(true);
+    window.setTimeout(() => setReminderFormSwapped(false), 2000);
+    setReminderVerifyStatus("idle");
+    setReminderDiffLines([]);
+    setReminderHint(
+      `Swapped reminder ↔ form (form was FP ${currentFp} → now FP ${slotFp}; Save reminder holds previous form, FP ${nextSlotFp}).`,
+    );
     setSubmitHint(null);
   }
 
@@ -1169,6 +1211,15 @@ export function ReminderTease() {
             reminderVerifyStatus === "mismatch"
               ? `Diff reminder/form (${reminderDiffLines.length})`
               : "Diff reminder vs form"}
+          </button>
+        ) : null}
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={swapReminderForm}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderFormSwapped ? "Reminder ↔ form ✓" : "Swap reminder ↔ form"}
           </button>
         ) : null}
         <input

@@ -257,6 +257,10 @@ const faqItems = [
     q: "What is Verify reminder vs form / Diff reminder vs form?",
     a: "Verify reminder vs form compares the live reminder form to the Save reminder localStorage slot without writing anything — match means Restore reminder would change nothing; mismatch means the form diverged from the saved prefs. Diff reminder vs form lists which fields differ (form → slot). Fingerprints never leave your browser.",
   },
+  {
+    q: "What is Swap reminder ↔ form?",
+    a: "Swap reminder ↔ form exchanges the live reminder form with the Save reminder localStorage slot — the previous form is written into the slot (fresh savedAt) and the prior slot loads into the form. Completes the reminder save/restore/verify/diff loop for preview hygiene. Nothing uploads to Omnipay servers; live schedules still confirm after sign-in on Omnipay.cc.",
+  },
 ] as const;
 
 export default function Home() {
