@@ -1,3 +1,5 @@
+import { OnrampTease } from "./onramp-tease";
+
 const features = [
   {
     title: "Your wallet, your control",
@@ -71,28 +73,31 @@ export default function Home() {
               Omnipay.cc
             </span>
           </a>
-          <nav className="flex items-center gap-2 sm:gap-3">
+          <nav
+            aria-label="Primary"
+            className="flex flex-wrap items-center justify-end gap-1 sm:gap-3"
+          >
             <a
               href="#onramp"
-              className="hidden rounded-lg px-3 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:inline"
+              className="rounded-lg px-2.5 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:px-3"
             >
               Buy crypto
             </a>
             <a
               href="#reminders"
-              className="hidden rounded-lg px-3 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:inline"
+              className="rounded-lg px-2.5 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:px-3"
             >
               Reminders
             </a>
             <a
               href="https://omnipay.cc/auth/register"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white"
+              className="rounded-lg px-2.5 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:px-3"
             >
               Register
             </a>
             <a
               href="https://omnipay.cc/auth/login"
-              className="rounded-lg border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20"
+              className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20 sm:px-4 sm:py-2.5"
             >
               Sign in
             </a>
@@ -155,47 +160,7 @@ export default function Home() {
               ))}
             </ol>
           </div>
-          <form
-            action="https://omnipay.cc/auth/register"
-            method="get"
-            className="rounded-2xl border border-white/15 bg-white/5 p-8 backdrop-blur"
-          >
-            <p className="text-sm font-medium uppercase tracking-[0.14em] text-sky-200/80">
-              Card on-ramp
-            </p>
-            <p className="mt-3 text-xl font-semibold">
-              Fiat in. Crypto out — to your address.
-            </p>
-            <label className="mt-6 block text-sm text-sky-100/80">
-              Destination wallet
-              <input
-                name="wallet"
-                type="text"
-                placeholder="0x… or your chain address"
-                className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
-              />
-            </label>
-            <label className="mt-4 block text-sm text-sky-100/80">
-              Buy amount (USD)
-              <input
-                name="amount"
-                type="number"
-                min="10"
-                step="1"
-                placeholder="50"
-                className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
-              />
-            </label>
-            <button
-              type="submit"
-              className="mt-6 w-full rounded-xl bg-[var(--accent)] px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-deep)]"
-            >
-              Continue to Omnipay.cc
-            </button>
-            <p className="mt-3 text-xs leading-5 text-sky-100/60">
-              Opens the live checkout flow on Omnipay.cc. Powered by Stripe.
-            </p>
-          </form>
+          <OnrampTease />
         </div>
       </section>
 
@@ -353,6 +318,9 @@ export default function Home() {
               Bank-grade encryption · Verified by Stripe · PCI-DSS compliant
             </p>
           </div>
+          <p className="text-xs text-[var(--muted)]">
+            Latest release: February 5, 2026
+          </p>
         </div>
       </footer>
     </div>
