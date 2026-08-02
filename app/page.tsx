@@ -263,7 +263,7 @@ const faqItems = [
   },
   {
     q: "What is Clear form / Reminder FP?",
-    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. When the form differs from defaults, Clear form arms a Confirm reset to defaults step (second click applies). Reminder FP chips show Form FP, Defaults FP, and Slot FP (ignores savedAt). Copy form FP / Copy defaults FP / Copy Slot FP put fingerprints on the clipboard. Compare Defaults FP ↔ Slot FP / Verify defaults vs slot report whether saved prefs equal Clear form targets. Fingerprints never leave your browser.",
+    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. When the form differs from defaults, Clear form arms a Confirm reset to defaults step (second click applies). Reminder FP chips show Form FP, Defaults FP, and Slot FP (ignores savedAt). Copy form FP / Copy defaults FP / Copy Slot FP put fingerprints on the clipboard. Compare Defaults FP ↔ Slot FP / Verify defaults vs slot report whether saved prefs equal Clear form targets. Apply defaults to slot / Reset slot to defaults write Clear form defaults into the slot (form untouched). Fingerprints never leave your browser.",
   },
   {
     q: "What is Defaults FP / Confirm reset to defaults?",
@@ -288,6 +288,10 @@ const faqItems = [
   {
     q: "What is Verify defaults vs slot / Diff defaults vs slot?",
     a: "Verify defaults vs slot compares Clear form defaults to the Save reminder localStorage slot without writing anything — match means saved prefs equal Clear form targets; mismatch means the slot diverged from defaults. Diff defaults vs slot lists which fields differ (defaults → slot). Live form stays untouched. Fingerprints never leave your browser.",
+  },
+  {
+    q: "What is Apply defaults to slot / Reset slot to defaults?",
+    a: "Apply defaults to slot writes Clear form defaults into the Save reminder localStorage slot (creates the slot if missing) without touching the live form. Reset slot to defaults requires an existing slot — if Slot FP already equals Defaults FP it is a no-op; otherwise it overwrites the slot with Clear form defaults. Use Verify/Diff defaults vs slot first to inspect. Fingerprints never leave your browser.",
   },
   {
     q: "What is Verify form vs defaults / Diff form vs defaults?",

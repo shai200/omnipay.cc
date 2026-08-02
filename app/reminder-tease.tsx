@@ -298,6 +298,10 @@ export function ReminderTease() {
     useState(false);
   const [reminderDefaultsSlotCompared, setReminderDefaultsSlotCompared] =
     useState(false);
+  const [reminderDefaultsAppliedToSlot, setReminderDefaultsAppliedToSlot] =
+    useState(false);
+  const [reminderSlotResetToDefaults, setReminderSlotResetToDefaults] =
+    useState(false);
   const [clearFormArmSecondsLeft, setClearFormArmSecondsLeft] = useState(0);
   const pasteReminderInputRef = useRef<HTMLInputElement>(null);
   const importReminderInputRef = useRef<HTMLInputElement>(null);
@@ -513,6 +517,8 @@ export function ReminderTease() {
     setReminderFormDefaultsCompared(false);
     setReminderFormSlotCompared(false);
     setReminderDefaultsSlotCompared(false);
+    setReminderDefaultsAppliedToSlot(false);
+    setReminderSlotResetToDefaults(false);
     setReminderHint("Reminder prefs cleared from this browser.");
   }
 
@@ -1275,6 +1281,121 @@ export function ReminderTease() {
     setSubmitHint(null);
   }
 
+  /** Preview-only: write Clear form defaults into Save reminder slot (creates if missing). Form untouched. */
+  function applyDefaultsToSlot() {
+    const prior = readReminderFromStorage();
+    const defaults = defaultReminderDraft();
+    const defaultsFp = fingerprintReminder(defaults);
+    const priorFp = prior ? fingerprintReminder(prior) : null;
+    try {
+      window.localStorage.setItem(reminderStorageKey, JSON.stringify(defaults));
+    } catch {
+      setReminderHint(
+        "Apply defaults to slot failed — browser storage may be blocked in this preview.",
+      );
+      return;
+    }
+    setReminderAvailable(true);
+    setReminderBanner(false);
+    setReminderSavedAt(defaults.savedAt);
+    setReminderSlotFingerprint(defaultsFp);
+    setReminderVerifyStatus("match");
+    setReminderVerifyAnchor("defaults-slot");
+    setReminderDiffLines([]);
+    setReminderFormDefaultsCompared(false);
+    setReminderFormSlotCompared(false);
+    setReminderDefaultsSlotCompared(true);
+    setReminderDefaultsAppliedToSlot(true);
+    setReminderSlotResetToDefaults(false);
+    window.setTimeout(() => {
+      setReminderDefaultsAppliedToSlot(false);
+      setReminderDefaultsSlotCompared(false);
+    }, 2000);
+    if (!prior) {
+      setReminderHint(
+        `Apply defaults to slot created Save reminder (FP ${defaultsFp}) — form untouched.`,
+      );
+    } else if (priorFp === defaultsFp) {
+      setReminderHint(
+        `Apply defaults to slot — Slot FP already ${defaultsFp}; refreshed savedAt. Form untouched.`,
+      );
+    } else {
+      const diffs = diffReminderFields(defaults, prior, "slot", "defaults");
+      setReminderHint(
+        `Apply defaults to slot (was FP ${priorFp} → ${defaultsFp}; ${diffs.length} field${diffs.length === 1 ? "" : "s"} changed). Form untouched.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: overwrite existing Save reminder slot with Clear form defaults. Form untouched. */
+  function resetSlotToDefaults() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
+      setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("defaults-slot");
+      setReminderDiffLines([]);
+      setReminderHint(
+        "Reset slot to defaults — no Save reminder slot in this browser. Save reminder or Apply defaults to slot first.",
+      );
+      return;
+    }
+    const defaults = defaultReminderDraft();
+    const defaultsFp = fingerprintReminder(defaults);
+    const slotFp = fingerprintReminder(slot);
+    setReminderVerifyAnchor("defaults-slot");
+    setReminderFormDefaultsCompared(false);
+    setReminderFormSlotCompared(false);
+    if (slotFp === defaultsFp) {
+      setReminderAvailable(true);
+      setReminderSavedAt(slot.savedAt);
+      setReminderSlotFingerprint(slotFp);
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderDefaultsSlotCompared(true);
+      setReminderSlotResetToDefaults(true);
+      window.setTimeout(() => {
+        setReminderSlotResetToDefaults(false);
+        setReminderDefaultsSlotCompared(false);
+      }, 2000);
+      setReminderHint(
+        `Reset slot to defaults — Slot FP already ${slotFp} (equals Defaults FP). Form untouched.`,
+      );
+      setSubmitHint(null);
+      return;
+    }
+    const diffs = diffReminderFields(defaults, slot, "slot", "defaults");
+    try {
+      window.localStorage.setItem(reminderStorageKey, JSON.stringify(defaults));
+    } catch {
+      setReminderHint(
+        "Reset slot to defaults failed — browser storage may be blocked in this preview.",
+      );
+      return;
+    }
+    setReminderAvailable(true);
+    setReminderBanner(false);
+    setReminderSavedAt(defaults.savedAt);
+    setReminderSlotFingerprint(defaultsFp);
+    setReminderVerifyStatus("match");
+    setReminderDiffLines([]);
+    setReminderDefaultsSlotCompared(true);
+    setReminderSlotResetToDefaults(true);
+    setReminderDefaultsAppliedToSlot(false);
+    window.setTimeout(() => {
+      setReminderSlotResetToDefaults(false);
+      setReminderDefaultsSlotCompared(false);
+    }, 2000);
+    setReminderHint(
+      `Reset slot to defaults (was FP ${slotFp} → ${defaultsFp}; ${diffs.length} field${diffs.length === 1 ? "" : "s"} reset). Form untouched.`,
+    );
+    setSubmitHint(null);
+  }
+
   /** Preview-only: swap live reminder form ↔ Save reminder slot. */
   function swapReminderForm() {
     const slot = readReminderFromStorage();
@@ -1946,6 +2067,34 @@ export function ReminderTease() {
             reminderVerifyStatus === "mismatch"
               ? `Diff defaults/slot (${reminderDiffLines.length})`
               : "Diff defaults vs slot"}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={applyDefaultsToSlot}
+          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+            reminderDefaultsAppliedToSlot
+              ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+              : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+          }`}
+        >
+          {reminderDefaultsAppliedToSlot
+            ? "Defaults applied to slot"
+            : "Apply defaults to slot"}
+        </button>
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={resetSlotToDefaults}
+            className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+              reminderSlotResetToDefaults
+                ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+                : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+            }`}
+          >
+            {reminderSlotResetToDefaults
+              ? "Slot reset to defaults"
+              : "Reset slot to defaults"}
           </button>
         ) : null}
         <button
