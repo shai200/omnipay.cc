@@ -83,8 +83,48 @@ const networkSpeeds = [
   },
 ] as const;
 
+const billingCountries = [
+  {
+    id: "us",
+    label: "United States",
+    detail: "Cards + debit",
+    payments: ["visa", "mastercard", "amex", "debit"] as const,
+  },
+  {
+    id: "uk",
+    label: "United Kingdom",
+    detail: "Visa / MC / debit",
+    payments: ["visa", "mastercard", "debit"] as const,
+  },
+  {
+    id: "eu",
+    label: "European Union",
+    detail: "Visa / MC",
+    payments: ["visa", "mastercard"] as const,
+  },
+  {
+    id: "ca",
+    label: "Canada",
+    detail: "Visa / MC / Amex",
+    payments: ["visa", "mastercard", "amex"] as const,
+  },
+  {
+    id: "other",
+    label: "Other",
+    detail: "Visa / MC only",
+    payments: ["visa", "mastercard"] as const,
+  },
+] as const;
+
+/** Preview-only tease promo codes (not live Stripe coupons). */
+const promoCodes: Record<string, { label: string; discountPct: number }> = {
+  OMNI10: { label: "10% off fees", discountPct: 10 },
+  ACCUMULATE: { label: "5% off fees", discountPct: 5 },
+};
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const memoMaxLen = 80;
+const promoMaxLen = 24;
 
 function formatReceive(amount: number, assetId: (typeof assets)[number]["id"]) {
   const rate = teaseRatesUsd[assetId];
@@ -147,8 +187,13 @@ export function OnrampTease() {
     useState<(typeof networkSpeeds)[number]["id"]>("standard");
   const [orderMemo, setOrderMemo] = useState("");
   const [riskAccepted, setRiskAccepted] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
   const [receiptEmail, setReceiptEmail] = useState("");
   const [receiptTouched, setReceiptTouched] = useState(false);
+  const [billingCountry, setBillingCountry] =
+    useState<(typeof billingCountries)[number]["id"]>("us");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoTouched, setPromoTouched] = useState(false);
   const [quoteAt, setQuoteAt] = useState(() => new Date());
   const [quoteJitterBps, setQuoteJitterBps] = useState(0);
   const [quoteAgeSec, setQuoteAgeSec] = useState(0);
@@ -194,14 +239,45 @@ export function OnrampTease() {
   const selectedSpeed =
     networkSpeeds.find((option) => option.id === networkSpeed) ??
     networkSpeeds[0];
+  const selectedCountry =
+    billingCountries.find((option) => option.id === billingCountry) ??
+    billingCountries[0];
+  const availablePayments = useMemo(
+    () =>
+      paymentMethods.filter((method) =>
+        (selectedCountry.payments as readonly string[]).includes(method.id),
+      ),
+    [selectedCountry],
+  );
+  const paymentAvailable = availablePayments.some(
+    (method) => method.id === paymentMethod,
+  );
+  const effectivePayment = paymentAvailable
+    ? paymentMethod
+    : (availablePayments[0]?.id ?? "visa");
+
+  const trimmedPromo = promoCode.trim().toUpperCase();
+  const promoStatus = !trimmedPromo
+    ? "empty"
+    : trimmedPromo.length > promoMaxLen
+      ? "long"
+      : promoCodes[trimmedPromo]
+        ? "valid"
+        : "invalid";
+  const activePromo =
+    promoStatus === "valid" ? promoCodes[trimmedPromo] : null;
+
   const adjustedAmount = amountValid
     ? parsedAmount * (1 + quoteJitterBps / 10_000)
     : 0;
-  const feeEstimate = amountValid
-    ? `~$${(adjustedAmount * selectedSpeed.feeRate).toFixed(2)}`
-    : "—";
+  const rawFee = amountValid ? adjustedAmount * selectedSpeed.feeRate : 0;
+  const feeDiscount = activePromo
+    ? rawFee * (activePromo.discountPct / 100)
+    : 0;
+  const feeAmount = Math.max(0, rawFee - feeDiscount);
+  const feeEstimate = amountValid ? `~$${feeAmount.toFixed(2)}` : "—";
   const totalEstimate = amountValid
-    ? `~$${(adjustedAmount * (1 + selectedSpeed.feeRate)).toFixed(2)}`
+    ? `~$${(adjustedAmount + feeAmount).toFixed(2)}`
     : "—";
   const receiveEstimate = amountValid
     ? formatReceive(adjustedAmount, selectedAsset.id)
@@ -248,7 +324,7 @@ export function OnrampTease() {
   const readyConfirm =
     walletStatus !== "valid" || confirmWallet;
   const selectedPayment =
-    paymentMethods.find((option) => option.id === paymentMethod) ??
+    paymentMethods.find((option) => option.id === effectivePayment) ??
     paymentMethods[0];
   const selectedCadence =
     buyCadences.find((option) => option.id === buyCadence) ?? buyCadences[0];
@@ -273,6 +349,13 @@ export function OnrampTease() {
       setLockedUnits(parsedAmount / teaseRatesUsd[selectedAsset.id]);
     }
   }, [amountValid, lockedUnits, parsedAmount, selectedAsset.id]);
+
+  useEffect(() => {
+    // Keep Pay with aligned to billing-country availability.
+    if (!paymentAvailable && availablePayments[0]) {
+      setPaymentMethod(availablePayments[0].id);
+    }
+  }, [paymentAvailable, availablePayments]);
 
   function lockQuoteUnits(
     nextAmount: number,
@@ -363,10 +446,28 @@ export function OnrampTease() {
       return;
     }
 
+    if (promoStatus === "long" || promoStatus === "invalid") {
+      event.preventDefault();
+      setSubmitHint(
+        promoStatus === "long"
+          ? `Promo code is too long — keep it under ${promoMaxLen} characters.`
+          : "Promo code not recognized in preview — try OMNI10 / ACCUMULATE, or clear the field.",
+      );
+      return;
+    }
+
     if (!riskAccepted) {
       event.preventDefault();
       setSubmitHint(
         "Accept the preview risk disclosure before continuing to Omnipay.cc.",
+      );
+      return;
+    }
+
+    if (!tosAccepted) {
+      event.preventDefault();
+      setSubmitHint(
+        "Accept the Terms of Service soft-gate before continuing to Omnipay.cc.",
       );
       return;
     }
@@ -463,6 +564,9 @@ export function OnrampTease() {
         <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
           {selectedSpeed.label}
         </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          {selectedCountry.label}
+        </li>
         {receiptStatus === "valid" ? (
           <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
             Receipt ready
@@ -470,6 +574,15 @@ export function OnrampTease() {
         ) : receiptStatus === "invalid" ? (
           <li className="rounded-full bg-amber-400/15 px-2.5 py-1 text-amber-100">
             Receipt fix
+          </li>
+        ) : null}
+        {promoStatus === "valid" ? (
+          <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+            Promo {activePromo?.discountPct}%
+          </li>
+        ) : promoStatus === "invalid" || promoStatus === "long" ? (
+          <li className="rounded-full bg-amber-400/15 px-2.5 py-1 text-amber-100">
+            Promo fix
           </li>
         ) : null}
         <li
@@ -480,6 +593,15 @@ export function OnrampTease() {
           }`}
         >
           Risk {riskAccepted ? "accepted" : "needed"}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            tosAccepted
+              ? "bg-emerald-400/15 text-emerald-100"
+              : "bg-amber-400/15 text-amber-100"
+          }`}
+        >
+          ToS {tosAccepted ? "accepted" : "needed"}
         </li>
       </ul>
       <fieldset className="mt-6">
@@ -720,10 +842,46 @@ export function OnrampTease() {
         </p>
       ) : null}
       <fieldset className="mt-4">
+        <legend className="text-sm text-sky-100/80">Billing country</legend>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {billingCountries.map((option) => {
+            const selected = billingCountry === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setBillingCountry(option.id);
+                  setSubmitHint(null);
+                }}
+                aria-pressed={selected}
+                className={`rounded-lg px-2 py-2.5 text-left transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                <span className="block text-sm font-semibold">
+                  {option.label}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[11px] ${
+                    selected ? "text-[#0b1b33]/70" : "text-sky-100/65"
+                  }`}
+                >
+                  {option.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="billing_country" value={billingCountry} />
+      </fieldset>
+      <fieldset className="mt-4">
         <legend className="text-sm text-sky-100/80">Pay with</legend>
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {paymentMethods.map((option) => {
-            const selected = paymentMethod === option.id;
+          {availablePayments.map((option) => {
+            const selected = effectivePayment === option.id;
             return (
               <button
                 key={option.id}
@@ -741,7 +899,11 @@ export function OnrampTease() {
             );
           })}
         </div>
-        <input type="hidden" name="payment_method" value={paymentMethod} />
+        <input type="hidden" name="payment_method" value={effectivePayment} />
+        <p className="mt-2 text-xs text-sky-100/65">
+          Card options follow billing country — live Stripe still confirms
+          bank/region at checkout.
+        </p>
       </fieldset>
       <fieldset className="mt-4">
         <legend className="text-sm text-sky-100/80">
@@ -871,6 +1033,45 @@ export function OnrampTease() {
           Receipt tease will go to {trimmedReceipt} after checkout.
         </p>
       ) : null}
+      <label className="mt-4 block text-sm text-sky-100/80">
+        Promo code{" "}
+        <span className="text-sky-100/55">(optional)</span>
+        <input
+          name="promo_code"
+          type="text"
+          maxLength={promoMaxLen + 8}
+          value={promoCode}
+          onChange={(event) => {
+            setPromoCode(event.target.value);
+            setSubmitHint(null);
+          }}
+          onBlur={() => setPromoTouched(true)}
+          placeholder="OMNI10"
+          autoComplete="off"
+          spellCheck={false}
+          aria-invalid={
+            promoTouched &&
+            (promoStatus === "invalid" || promoStatus === "long")
+          }
+          className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base uppercase text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
+        />
+      </label>
+      {promoTouched && promoStatus === "invalid" ? (
+        <p className="mt-2 text-xs text-amber-200/90" role="status">
+          Preview teases OMNI10 or ACCUMULATE — clear the field to continue
+          without a promo.
+        </p>
+      ) : null}
+      {promoTouched && promoStatus === "long" ? (
+        <p className="mt-2 text-xs text-amber-200/90" role="status">
+          Promo max is {promoMaxLen} characters for preview.
+        </p>
+      ) : null}
+      {promoStatus === "valid" && activePromo ? (
+        <p className="mt-2 text-xs text-emerald-200/90" role="status">
+          Promo {trimmedPromo} applied — {activePromo.label} (tease only).
+        </p>
+      ) : null}
       <div
         className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-6 ${
           quoteStale || slippageBreach
@@ -899,9 +1100,11 @@ export function OnrampTease() {
           {trimmedWallet
             ? ` → ${trimmedWallet.slice(0, 6)}…${trimmedWallet.slice(-4)}`
             : " → your wallet"}{" "}
-          via {selectedPayment.label} · {selectedCadence.label.toLowerCase()} ·{" "}
+          via {selectedPayment.label} · {selectedCountry.label} ·{" "}
+          {selectedCadence.label.toLowerCase()} ·{" "}
           {selectedSpeed.label.toLowerCase()}
           {trimmedMemo ? ` · memo “${trimmedMemo.slice(0, 24)}${trimmedMemo.length > 24 ? "…" : ""}”` : ""}
+          {activePromo ? ` · promo ${trimmedPromo}` : ""}
           .
         </p>
         <p className="mt-2 text-sky-100/80">
@@ -924,8 +1127,11 @@ export function OnrampTease() {
           at {selectedSlippage.label} slippage.
         </p>
         <p className="mt-2 text-sky-100/80">
-          Est. network + processing {feeEstimate} · card total {totalEstimate} ·
-          ETA {selectedSpeed.eta}
+          Est. network + processing {feeEstimate}
+          {activePromo
+            ? ` (−${activePromo.discountPct}% promo off fees)`
+            : ""}{" "}
+          · card total {totalEstimate} · ETA {selectedSpeed.eta}
           {receiptStatus === "valid" ? ` · receipt → ${trimmedReceipt}` : ""}.
         </p>
         {quoteStale ? (
@@ -962,6 +1168,36 @@ export function OnrampTease() {
           <span className="mt-1 block text-xs text-sky-100/70">
             Crypto prices move. Tease quotes are not live Stripe locks — final
             amount and fees confirm on Omnipay.cc before you pay.
+          </span>
+        </span>
+      </label>
+      <label className="mt-3 flex items-start gap-3 text-sm text-sky-100/90">
+        <input
+          type="checkbox"
+          name="tos_accepted"
+          value="1"
+          checked={tosAccepted}
+          onChange={(event) => {
+            setTosAccepted(event.target.checked);
+            setSubmitHint(null);
+          }}
+          className="mt-1 h-4 w-4 rounded border-white/30 accent-[var(--accent)]"
+        />
+        <span>
+          <span className="font-semibold text-white">
+            Accept Terms of Service
+          </span>
+          <span className="mt-1 block text-xs text-sky-100/70">
+            Preview soft-gate only — the binding{" "}
+            <a
+              href="https://omnipay.cc/TermsOfService"
+              className="underline decoration-sky-200/50 underline-offset-2 hover:text-white"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Omnipay.cc Terms
+            </a>{" "}
+            still apply at live checkout.
           </span>
         </span>
       </label>

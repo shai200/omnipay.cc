@@ -85,6 +85,18 @@ const faqItems = [
     q: "Why accept a risk disclosure?",
     a: "Preview quotes are soft teases, not locked prices. Accepting the disclosure is required before Continue — real risk language and terms still live on Omnipay.cc checkout.",
   },
+  {
+    q: "Does billing country change cards?",
+    a: "Yes in preview — US shows Visa/MC/Amex/debit; UK/EU/CA/Other narrow the tease set. Live Stripe still confirms bank and region availability at checkout.",
+  },
+  {
+    q: "Do promo codes work on preview?",
+    a: "Try OMNI10 (10% off fees) or ACCUMULATE (5% off fees) as teases. Invalid codes soft-block Continue until fixed or cleared — live coupons redeem only on Omnipay.cc.",
+  },
+  {
+    q: "Why accept Terms of Service?",
+    a: "Preview requires a ToS soft-gate before Continue. The binding Omnipay.cc Terms still apply at live checkout — this checkbox is not a substitute for signing in.",
+  },
 ] as const;
 
 export default function Home() {
