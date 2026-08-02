@@ -218,7 +218,21 @@ function formatReminderDiffValue(value: unknown): string {
   return String(value);
 }
 
-type ReminderDiffLabel = "link" | "form" | "slot";
+type ReminderDiffLabel = "link" | "form" | "slot" | "defaults";
+
+/** Preview-only: canonical Clear form defaults (fresh savedAt each call). */
+function defaultReminderDraft(): ReminderDraftV1 {
+  return {
+    v: 1,
+    savedAt: new Date().toISOString(),
+    cadence: "weekly",
+    sendWindow: "morning",
+    dropAlerts: true,
+    dropThreshold: "10",
+    timezone: "local",
+    email: "",
+  };
+}
 
 /** Preview-only: field-level diff, ignores v + savedAt. */
 function diffReminderFields(
@@ -265,7 +279,7 @@ export function ReminderTease() {
     "idle" | "match" | "mismatch" | "invalid"
   >("idle");
   const [reminderVerifyAnchor, setReminderVerifyAnchor] = useState<
-    "link" | "form"
+    "link" | "form" | "defaults"
   >("link");
   const [reminderDiffLines, setReminderDiffLines] = useState<string[]>([]);
   const [reminderFormSwapped, setReminderFormSwapped] = useState(false);
@@ -402,12 +416,13 @@ export function ReminderTease() {
   /** Preview-only: reset live form to defaults; Save reminder slot untouched. */
   function clearForm() {
     const slot = readReminderFromStorage();
-    setCadence("weekly");
-    setSendWindow("morning");
-    setDropAlerts(true);
-    setDropThreshold("10");
-    setTimezone("local");
-    setEmail("");
+    const defaults = defaultReminderDraft();
+    setCadence(defaults.cadence);
+    setSendWindow(defaults.sendWindow);
+    setDropAlerts(defaults.dropAlerts);
+    setDropThreshold(defaults.dropThreshold);
+    setTimezone(defaults.timezone);
+    setEmail(defaults.email);
     setEmailTouched(false);
     setSubmitHint(null);
     setReminderVerifyStatus("idle");
@@ -415,16 +430,6 @@ export function ReminderTease() {
     setReminderFormSwapped(false);
     setReminderFormCleared(true);
     window.setTimeout(() => setReminderFormCleared(false), 2000);
-    const defaults: ReminderDraftV1 = {
-      v: 1,
-      savedAt: new Date().toISOString(),
-      cadence: "weekly",
-      sendWindow: "morning",
-      dropAlerts: true,
-      dropThreshold: "10",
-      timezone: "local",
-      email: "",
-    };
     const formFp = fingerprintReminder(defaults);
     if (slot) {
       const slotFp = fingerprintReminder(slot);
@@ -786,6 +791,66 @@ export function ReminderTease() {
       setReminderDiffLines(diffs);
       setReminderHint(
         `Diff reminder vs form: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (form FP ${formFp} ≠ Save reminder FP ${slotFp}). Restore reminder to load saved prefs.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: compare live reminder form to Clear form defaults without writing. */
+  function verifyReminderVsDefaults() {
+    const form = buildReminderPayload();
+    const defaults = defaultReminderDraft();
+    const formFp = fingerprintReminder(form);
+    const defaultsFp = fingerprintReminder(defaults);
+    const slot = readReminderFromStorage();
+    if (slot) {
+      setReminderAvailable(true);
+      setReminderSavedAt(slot.savedAt);
+      setReminderSlotFingerprint(fingerprintReminder(slot));
+    }
+    setReminderVerifyAnchor("defaults");
+    if (formFp === defaultsFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `Form matches defaults (FP ${defaultsFp}) — Clear form would change nothing. Slot untouched.`,
+      );
+    } else {
+      const diffs = diffReminderFields(form, defaults, "defaults", "form");
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Form FP ${formFp} ≠ defaults FP ${defaultsFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Clear form resets to defaults; slot untouched.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: list field diffs between live reminder form and Clear form defaults. */
+  function diffReminderVsDefaults() {
+    const form = buildReminderPayload();
+    const defaults = defaultReminderDraft();
+    const formFp = fingerprintReminder(form);
+    const defaultsFp = fingerprintReminder(defaults);
+    const slot = readReminderFromStorage();
+    if (slot) {
+      setReminderAvailable(true);
+      setReminderSavedAt(slot.savedAt);
+      setReminderSlotFingerprint(fingerprintReminder(slot));
+    }
+    setReminderVerifyAnchor("defaults");
+    if (formFp === defaultsFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `No field diffs — form matches defaults (FP ${defaultsFp}). Slot untouched.`,
+      );
+    } else {
+      const diffs = diffReminderFields(form, defaults, "defaults", "form");
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Diff form vs defaults: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (form FP ${formFp} ≠ defaults FP ${defaultsFp}). Clear form resets to defaults; slot untouched.`,
       );
     }
     setSubmitHint(null);
@@ -1248,6 +1313,30 @@ export function ReminderTease() {
           className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
         >
           {reminderFormCleared ? "Form cleared" : "Clear form"}
+        </button>
+        <button
+          type="button"
+          onClick={verifyReminderVsDefaults}
+          className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+        >
+          {reminderVerifyAnchor === "defaults" &&
+          reminderVerifyStatus === "match"
+            ? "Form=defaults match"
+            : reminderVerifyAnchor === "defaults" &&
+                reminderVerifyStatus === "mismatch"
+              ? "Form≠defaults"
+              : "Verify form vs defaults"}
+        </button>
+        <button
+          type="button"
+          onClick={diffReminderVsDefaults}
+          className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+        >
+          {reminderVerifyAnchor === "defaults" &&
+          reminderDiffLines.length > 0 &&
+          reminderVerifyStatus === "mismatch"
+            ? `Diff form/defaults (${reminderDiffLines.length})`
+            : "Diff form vs defaults"}
         </button>
         <button
           type="button"
