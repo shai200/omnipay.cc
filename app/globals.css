@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f3f6fb;
+  --foreground: #0f172a;
+  --muted: #5b6b7c;
+  --accent: #0670d2;
+  --accent-deep: #034f97;
+  --surface: rgba(255, 255, 255, 0.72);
+  --line: rgba(15, 23, 42, 0.08);
+  --glow: rgba(6, 112, 210, 0.22);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --font-sans: var(--font-sora);
+  --font-display: var(--font-fraunces);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
+  margin: 0;
+  min-height: 100vh;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgba(6, 112, 210, 0.18), transparent 55%),
+    radial-gradient(900px 500px at 88% 8%, rgba(14, 165, 233, 0.14), transparent 50%),
+    linear-gradient(180deg, #eef3fa 0%, #f7f9fc 42%, #eef2f7 100%);
+  font-family: var(--font-sora), "Segoe UI", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, -1.5%, 0) scale(1.04);
+  }
+}
+
+@keyframes pulse-line {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-rise {
+  animation: rise-in 0.8s ease-out both;
+}
+
+.animate-rise-delay {
+  animation: rise-in 0.9s ease-out 0.15s both;
+}
+
+.animate-rise-late {
+  animation: rise-in 1s ease-out 0.28s both;
+}
+
+.hero-orb {
+  animation: drift 14s ease-in-out infinite;
+}
+
+.hero-scan {
+  animation: pulse-line 4.5s ease-in-out infinite;
 }
