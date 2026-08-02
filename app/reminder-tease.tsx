@@ -291,8 +291,34 @@ export function ReminderTease() {
   const [reminderFpCopied, setReminderFpCopied] = useState(false);
   const [reminderDefaultsFpCopied, setReminderDefaultsFpCopied] =
     useState(false);
+  const [reminderFormDefaultsCompared, setReminderFormDefaultsCompared] =
+    useState(false);
   const pasteReminderInputRef = useRef<HTMLInputElement>(null);
   const importReminderInputRef = useRef<HTMLInputElement>(null);
+  const clearFormArmTimerRef = useRef<number | null>(null);
+
+  function disarmClearFormArm(reason?: string) {
+    if (clearFormArmTimerRef.current != null) {
+      window.clearTimeout(clearFormArmTimerRef.current);
+      clearFormArmTimerRef.current = null;
+    }
+    if (!reminderClearFormArmed && !reason) return;
+    setReminderClearFormArmed(false);
+    if (reason) {
+      setReminderHint(reason);
+    }
+  }
+
+  /** Preview-only: edit while armed cancels Confirm reset (no apply). */
+  function touchReminderForm() {
+    if (reminderClearFormArmed) {
+      disarmClearFormArm(
+        "Confirm reset cancelled — form edited while armed. Slot untouched.",
+      );
+    }
+    setReminderFormCleared(false);
+    setReminderFormDefaultsCompared(false);
+  }
 
   useEffect(() => {
     const saved = readReminderFromStorage();
@@ -340,6 +366,8 @@ export function ReminderTease() {
   const reminderDefaultsFingerprint = fingerprintReminder(
     defaultReminderDraft(),
   );
+  const reminderFormMatchesDefaults =
+    reminderFormFingerprint === reminderDefaultsFingerprint;
 
   function applyReminder(draft: ReminderDraftV1) {
     setCadence(draft.cadence);
@@ -364,7 +392,8 @@ export function ReminderTease() {
       setReminderVerifyStatus("idle");
       setReminderDiffLines([]);
       setReminderFormCleared(false);
-      setReminderClearFormArmed(false);
+      disarmClearFormArm();
+      setReminderFormDefaultsCompared(false);
       setReminderHint(
         `Reminder prefs saved (FP ${fp}) — Restore reminder reloads them. Nothing uploads to Omnipay servers.`,
       );
@@ -393,7 +422,8 @@ export function ReminderTease() {
     setReminderSavedAt(draft.savedAt);
     setReminderSlotFingerprint(fp);
     setReminderFormCleared(false);
-    setReminderClearFormArmed(false);
+    disarmClearFormArm();
+    setReminderFormDefaultsCompared(false);
     setReminderHint(
       `Reminder prefs restored (FP ${fp}) — confirm on Omnipay.cc after sign-in to make them live.`,
     );
@@ -417,9 +447,10 @@ export function ReminderTease() {
     setReminderDiffLines([]);
     setReminderFormSwapped(false);
     setReminderFormCleared(false);
-    setReminderClearFormArmed(false);
+    disarmClearFormArm();
     setReminderFpCopied(false);
     setReminderDefaultsFpCopied(false);
+    setReminderFormDefaultsCompared(false);
     setReminderHint("Reminder prefs cleared from this browser.");
   }
 
@@ -430,8 +461,9 @@ export function ReminderTease() {
     const defaultsFp = fingerprintReminder(defaults);
     const formFp = fingerprintReminder(buildReminderPayload());
     if (formFp === defaultsFp) {
-      setReminderClearFormArmed(false);
+      disarmClearFormArm();
       setReminderFormCleared(false);
+      setReminderFormDefaultsCompared(false);
       setReminderHint(
         `Form already at defaults (FP ${defaultsFp}) — Clear form would change nothing. Slot untouched.`,
       );
@@ -444,11 +476,24 @@ export function ReminderTease() {
     }
     if (!reminderClearFormArmed) {
       setReminderClearFormArmed(true);
-      window.setTimeout(() => setReminderClearFormArmed(false), 4000);
+      if (clearFormArmTimerRef.current != null) {
+        window.clearTimeout(clearFormArmTimerRef.current);
+      }
+      clearFormArmTimerRef.current = window.setTimeout(() => {
+        clearFormArmTimerRef.current = null;
+        setReminderClearFormArmed(false);
+        setReminderHint(
+          `Confirm reset expired (form FP ${formFp} ≠ defaults FP ${defaultsFp}) — click Clear form again to re-arm. Slot untouched.`,
+        );
+      }, 4000);
       setReminderHint(
-        `Confirm reset to defaults (form FP ${formFp} → defaults FP ${defaultsFp}) — click Clear form again. Slot untouched.`,
+        `Confirm reset to defaults (form FP ${formFp} → defaults FP ${defaultsFp}) — click Clear form again, or Cancel reset. Slot untouched.`,
       );
       return;
+    }
+    if (clearFormArmTimerRef.current != null) {
+      window.clearTimeout(clearFormArmTimerRef.current);
+      clearFormArmTimerRef.current = null;
     }
     setCadence(defaults.cadence);
     setSendWindow(defaults.sendWindow);
@@ -462,6 +507,7 @@ export function ReminderTease() {
     setReminderDiffLines([]);
     setReminderFormSwapped(false);
     setReminderClearFormArmed(false);
+    setReminderFormDefaultsCompared(false);
     setReminderFormCleared(true);
     window.setTimeout(() => setReminderFormCleared(false), 2000);
     if (slot) {
@@ -482,6 +528,56 @@ export function ReminderTease() {
         `Form cleared to defaults (FP ${defaultsFp}) — no Save reminder slot in this browser.`,
       );
     }
+  }
+
+  /** Preview-only: disarm Confirm reset without applying defaults. */
+  function cancelClearFormReset() {
+    if (!reminderClearFormArmed) {
+      setReminderHint(
+        "Cancel reset — Clear form is not armed. Slot untouched.",
+      );
+      return;
+    }
+    const formFp = reminderFormFingerprint;
+    const defaultsFp = reminderDefaultsFingerprint;
+    disarmClearFormArm(
+      `Confirm reset cancelled (form FP ${formFp} ≠ defaults FP ${defaultsFp}) — form unchanged. Slot untouched.`,
+    );
+  }
+
+  /** Preview-only: highlight Form FP vs Defaults FP match without writing. */
+  function compareFormVsDefaultsFp() {
+    const formFp = reminderFormFingerprint;
+    const defaultsFp = reminderDefaultsFingerprint;
+    const slot = readReminderFromStorage();
+    if (slot) {
+      setReminderAvailable(true);
+      setReminderSavedAt(slot.savedAt);
+      setReminderSlotFingerprint(fingerprintReminder(slot));
+    }
+    setReminderVerifyAnchor("defaults");
+    setReminderFormDefaultsCompared(true);
+    window.setTimeout(() => setReminderFormDefaultsCompared(false), 2000);
+    if (formFp === defaultsFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `Form FP matches Defaults FP (${formFp}) — Clear form would change nothing. Slot untouched.`,
+      );
+    } else {
+      const diffs = diffReminderFields(
+        buildReminderPayload(),
+        defaultReminderDraft(),
+        "defaults",
+        "form",
+      );
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Form FP ${formFp} ≠ Defaults FP ${defaultsFp} — chips highlight diverge; ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Slot untouched.`,
+      );
+    }
+    setSubmitHint(null);
   }
 
   /** Preview-only: copy live form fingerprint (not a share URL). */
@@ -939,7 +1035,8 @@ export function ReminderTease() {
     setReminderSlotFingerprint(nextSlotFp);
     setReminderFormSwapped(true);
     setReminderFormCleared(false);
-    setReminderClearFormArmed(false);
+    disarmClearFormArm();
+    setReminderFormDefaultsCompared(false);
     window.setTimeout(() => setReminderFormSwapped(false), 2000);
     setReminderVerifyStatus("idle");
     setReminderDiffLines([]);
@@ -1143,7 +1240,10 @@ export function ReminderTease() {
               <button
                 key={option.id}
                 type="button"
-                onClick={() => setCadence(option.id)}
+                onClick={() => {
+                  touchReminderForm();
+                  setCadence(option.id);
+                }}
                 aria-pressed={selected}
                 className={`rounded-xl px-3 py-3 text-left transition-colors ${
                   selected
@@ -1178,7 +1278,10 @@ export function ReminderTease() {
               <button
                 key={option.id}
                 type="button"
-                onClick={() => setSendWindow(option.id)}
+                onClick={() => {
+                  touchReminderForm();
+                  setSendWindow(option.id);
+                }}
                 aria-pressed={selected}
                 className={`rounded-xl px-3 py-3 text-left transition-colors ${
                   selected
@@ -1207,9 +1310,10 @@ export function ReminderTease() {
         <select
           name="timezone"
           value={timezone}
-          onChange={(event) =>
-            setTimezone(event.target.value as (typeof timezones)[number]["id"])
-          }
+          onChange={(event) => {
+            touchReminderForm();
+            setTimezone(event.target.value as (typeof timezones)[number]["id"]);
+          }}
           className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
         >
           {timezones.map((option) => (
@@ -1227,6 +1331,7 @@ export function ReminderTease() {
           autoComplete="email"
           value={email}
           onChange={(event) => {
+            touchReminderForm();
             setEmail(event.target.value);
             setSubmitHint(null);
           }}
@@ -1252,7 +1357,10 @@ export function ReminderTease() {
           name="drop_alerts"
           value="1"
           checked={dropAlerts}
-          onChange={(event) => setDropAlerts(event.target.checked)}
+          onChange={(event) => {
+            touchReminderForm();
+            setDropAlerts(event.target.checked);
+          }}
           className="mt-1 h-4 w-4 rounded border-[var(--line)] accent-[var(--accent)]"
         />
         <span>
@@ -1275,7 +1383,10 @@ export function ReminderTease() {
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => setDropThreshold(option.id)}
+                  onClick={() => {
+                    touchReminderForm();
+                    setDropThreshold(option.id);
+                  }}
                   aria-pressed={selected}
                   className={`rounded-xl px-3 py-3 text-left transition-colors ${
                     selected
@@ -1315,10 +1426,29 @@ export function ReminderTease() {
         className="mt-3 flex flex-wrap gap-2 text-xs"
         aria-label="Reminder fingerprint chips"
       >
-        <li className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 font-mono text-[var(--foreground)]">
+        <li
+          className={`rounded-full border px-2.5 py-1 font-mono ${
+            reminderFormMatchesDefaults
+              ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+              : "border-amber-400/60 bg-amber-50 text-amber-950"
+          }`}
+          title={
+            reminderFormMatchesDefaults
+              ? "Form FP matches Defaults FP"
+              : "Form FP differs from Defaults FP"
+          }
+        >
           Form FP {reminderFormFingerprint}
+          {reminderFormMatchesDefaults ? " =" : " ≠"}
         </li>
-        <li className="rounded-full border border-[var(--line)] bg-[#f7f9fc] px-2.5 py-1 font-mono text-[var(--foreground)]">
+        <li
+          className={`rounded-full border px-2.5 py-1 font-mono ${
+            reminderFormMatchesDefaults
+              ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+              : "border-[var(--line)] bg-[#f7f9fc] text-[var(--foreground)]"
+          }`}
+          title="Clear form defaults fingerprint"
+        >
           Defaults FP {reminderDefaultsFingerprint}
         </li>
         <li
@@ -1374,6 +1504,32 @@ export function ReminderTease() {
             : reminderClearFormArmed
               ? "Confirm reset to defaults"
               : "Clear form"}
+        </button>
+        {reminderClearFormArmed ? (
+          <button
+            type="button"
+            onClick={cancelClearFormReset}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            Cancel reset
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={compareFormVsDefaultsFp}
+          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+            reminderFormDefaultsCompared
+              ? reminderFormMatchesDefaults
+                ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+                : "border-amber-400/60 bg-amber-50 text-amber-950"
+              : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+          }`}
+        >
+          {reminderFormDefaultsCompared
+            ? reminderFormMatchesDefaults
+              ? "Form FP = Defaults FP"
+              : "Form FP ≠ Defaults FP"
+            : "Compare Form FP ↔ Defaults FP"}
         </button>
         <button
           type="button"

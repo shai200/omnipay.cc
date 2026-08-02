@@ -267,7 +267,11 @@ const faqItems = [
   },
   {
     q: "What is Defaults FP / Confirm reset to defaults?",
-    a: "Defaults FP is the stable fingerprint of Clear form targets (weekly / morning / drop alerts on / ≥10 / local / empty email). Confirm reset to defaults is the armed Clear form state when the live form diverged — first click arms, second click applies defaults; if Form FP already equals Defaults FP, Clear form is a no-op. Save reminder slot stays untouched. Fingerprints never leave your browser.",
+    a: "Defaults FP is the stable fingerprint of Clear form targets (weekly / morning / drop alerts on / ≥10 / local / empty email). Confirm reset to defaults is the armed Clear form state when the live form diverged — first click arms, second click applies defaults; if Form FP already equals Defaults FP, Clear form is a no-op. Cancel reset (or editing the form while armed) disarms without applying. Save reminder slot stays untouched. Fingerprints never leave your browser.",
+  },
+  {
+    q: "What is Compare Form FP ↔ Defaults FP / Cancel reset?",
+    a: "Form FP and Defaults FP chips highlight green when they match and amber when they diverge (Form FP shows = or ≠). Compare Form FP ↔ Defaults FP reports the match without writing; Cancel reset disarms Confirm reset to defaults without applying Clear form. Slot stays untouched. Fingerprints never leave your browser.",
   },
   {
     q: "What is Verify form vs defaults / Diff form vs defaults?",
