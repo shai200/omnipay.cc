@@ -241,6 +241,10 @@ const faqItems = [
     q: "What is Save reminder / Restore reminder?",
     a: "Save reminder stores your reminder tease prefs (cadence, send window, timezone, email, drop alerts) in this browser only. Restore reminder reloads them; Clear reminder removes the slot. Nothing uploads to Omnipay servers — live schedules still confirm after sign-in on Omnipay.cc.",
   },
+  {
+    q: "What is Copy reminder link / Export reminder?",
+    a: "Copy reminder link puts the Save reminder localStorage slot on the clipboard as a #omn-reminder= URL without changing the form. Export reminder downloads that same slot as .json. Share or move prefs across browsers client-side only — nothing uploads to Omnipay servers; live schedules still confirm after sign-in on Omnipay.cc.",
+  },
 ] as const;
 
 export default function Home() {

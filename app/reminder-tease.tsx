@@ -32,6 +32,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Preview-only reminder prefs in this browser — not a server-side schedule. */
 const reminderStorageKey = "omnipay-preview-reminder-v1";
+const reminderHashPrefix = "omn-reminder=";
 
 type ReminderDraftV1 = {
   v: 1;
@@ -43,6 +44,20 @@ type ReminderDraftV1 = {
   timezone: (typeof timezones)[number]["id"];
   email: string;
 };
+
+/** Preview-only: base64url encode reminder prefs for URL hash (not a server schedule). */
+function encodeReminderForHash(draft: ReminderDraftV1): string {
+  const json = JSON.stringify(draft);
+  const bytes = new TextEncoder().encode(json);
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
 
 function isCadenceId(value: unknown): value is (typeof cadences)[number]["id"] {
   return typeof value === "string" && cadences.some((c) => c.id === value);
@@ -118,6 +133,8 @@ export function ReminderTease() {
   const [reminderBanner, setReminderBanner] = useState(false);
   const [reminderHint, setReminderHint] = useState<string | null>(null);
   const [reminderSavedAt, setReminderSavedAt] = useState<string | null>(null);
+  const [reminderLinkCopied, setReminderLinkCopied] = useState(false);
+  const [reminderExported, setReminderExported] = useState(false);
 
   useEffect(() => {
     const saved = readReminderFromStorage();
@@ -216,7 +233,77 @@ export function ReminderTease() {
     setReminderAvailable(false);
     setReminderBanner(false);
     setReminderSavedAt(null);
+    setReminderLinkCopied(false);
+    setReminderExported(false);
     setReminderHint("Reminder prefs cleared from this browser.");
+  }
+
+  /** Preview-only: copy Save reminder slot as a #omn-reminder= share URL (form untouched). */
+  async function copyReminderLink() {
+    const draft = readReminderFromStorage();
+    if (!draft) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
+      return;
+    }
+    try {
+      const encoded = encodeReminderForHash(draft);
+      const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${reminderHashPrefix}${encoded}`;
+      await navigator.clipboard.writeText(url);
+      setReminderAvailable(true);
+      setReminderSavedAt(draft.savedAt);
+      setReminderLinkCopied(true);
+      setReminderExported(false);
+      window.setTimeout(() => setReminderLinkCopied(false), 2000);
+      setReminderHint(
+        "Reminder link copied — open / Paste reminder link on another browser. Form unchanged. Nothing uploads to Omnipay servers.",
+      );
+      setSubmitHint(null);
+    } catch {
+      setReminderHint(
+        "Copy reminder link failed — use Export reminder .json instead.",
+      );
+    }
+  }
+
+  /** Preview-only: download Save reminder slot as JSON (form untouched). */
+  function exportReminderJson() {
+    const draft = readReminderFromStorage();
+    if (!draft) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
+      return;
+    }
+    const body = `${JSON.stringify(draft, null, 2)}\n`;
+    try {
+      const blob = new Blob([body], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "omnipay-reminder-prefs.json";
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setReminderAvailable(true);
+      setReminderSavedAt(draft.savedAt);
+      setReminderExported(true);
+      setReminderLinkCopied(false);
+      window.setTimeout(() => setReminderExported(false), 2000);
+      setReminderHint(
+        "Reminder JSON exported — Import reminder on another browser to restore the slot. Form unchanged.",
+      );
+      setSubmitHint(null);
+    } catch {
+      setReminderHint(
+        "Export reminder failed — use Copy reminder link instead.",
+      );
+    }
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -465,6 +552,26 @@ export function ReminderTease() {
             className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
           >
             Clear reminder
+          </button>
+        ) : null}
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={() => {
+              void copyReminderLink();
+            }}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderLinkCopied ? "Reminder link copied" : "Copy reminder link"}
+          </button>
+        ) : null}
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={exportReminderJson}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderExported ? "Reminder exported" : "Export reminder"}
           </button>
         ) : null}
       </p>
