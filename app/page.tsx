@@ -253,6 +253,10 @@ const faqItems = [
     q: "What is Verify reminder vs link / Diff reminder vs link?",
     a: "Verify reminder vs link compares a #omn-reminder= URL to the Save reminder localStorage slot without writing anything — match means the link equals the saved prefs; mismatch means Paste reminder link would change the slot (form stays untouched). Diff reminder vs link lists which fields differ (slot → link). Fingerprints never leave your browser.",
   },
+  {
+    q: "What is Verify reminder vs form / Diff reminder vs form?",
+    a: "Verify reminder vs form compares the live reminder form to the Save reminder localStorage slot without writing anything — match means Restore reminder would change nothing; mismatch means the form diverged from the saved prefs. Diff reminder vs form lists which fields differ (form → slot). Fingerprints never leave your browser.",
+  },
 ] as const;
 
 export default function Home() {

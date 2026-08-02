@@ -218,12 +218,14 @@ function formatReminderDiffValue(value: unknown): string {
   return String(value);
 }
 
+type ReminderDiffLabel = "link" | "form" | "slot";
+
 /** Preview-only: field-level diff, ignores v + savedAt. */
 function diffReminderFields(
   current: ReminderDraftV1,
   other: ReminderDraftV1,
-  otherLabel: "link" = "link",
-  currentLabel: "slot" = "slot",
+  otherLabel: ReminderDiffLabel = "link",
+  currentLabel: ReminderDiffLabel = "slot",
 ): string[] {
   const keys = Object.keys(reminderFieldLabels) as Array<
     keyof typeof reminderFieldLabels
@@ -262,6 +264,9 @@ export function ReminderTease() {
   const [reminderVerifyStatus, setReminderVerifyStatus] = useState<
     "idle" | "match" | "mismatch" | "invalid"
   >("idle");
+  const [reminderVerifyAnchor, setReminderVerifyAnchor] = useState<
+    "link" | "form"
+  >("link");
   const [reminderDiffLines, setReminderDiffLines] = useState<string[]>([]);
   const pasteReminderInputRef = useRef<HTMLInputElement>(null);
   const importReminderInputRef = useRef<HTMLInputElement>(null);
@@ -531,6 +536,7 @@ export function ReminderTease() {
       setReminderBanner(false);
       setReminderSavedAt(null);
       setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("link");
       setReminderDiffLines([]);
       setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
       return false;
@@ -538,6 +544,7 @@ export function ReminderTease() {
     const link = extractReminderFromPaste(raw);
     if (!link) {
       setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("link");
       setReminderDiffLines([]);
       setReminderHint(
         "Verify reminder vs link failed — need a #omn-reminder= URL/token (or paste into the field).",
@@ -548,6 +555,7 @@ export function ReminderTease() {
     const linkFp = fingerprintReminder(link);
     setReminderAvailable(true);
     setReminderSavedAt(slot.savedAt);
+    setReminderVerifyAnchor("link");
     if (slotFp === linkFp) {
       setReminderVerifyStatus("match");
       setReminderDiffLines([]);
@@ -574,6 +582,7 @@ export function ReminderTease() {
       setReminderBanner(false);
       setReminderSavedAt(null);
       setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("link");
       setReminderDiffLines([]);
       setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
       return false;
@@ -581,6 +590,7 @@ export function ReminderTease() {
     const link = extractReminderFromPaste(raw);
     if (!link) {
       setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("link");
       setReminderDiffLines([]);
       setReminderHint(
         "Diff reminder vs link failed — need a #omn-reminder= URL/token (or paste into the field).",
@@ -591,6 +601,7 @@ export function ReminderTease() {
     const linkFp = fingerprintReminder(link);
     setReminderAvailable(true);
     setReminderSavedAt(slot.savedAt);
+    setReminderVerifyAnchor("link");
     if (slotFp === linkFp) {
       setReminderVerifyStatus("match");
       setReminderDiffLines([]);
@@ -607,6 +618,78 @@ export function ReminderTease() {
     }
     setSubmitHint(null);
     return true;
+  }
+
+  /** Preview-only: compare live reminder form to the Save reminder slot without writing. */
+  function verifyReminderVsForm() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("form");
+      setReminderDiffLines([]);
+      setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
+      return;
+    }
+    const form = buildReminderPayload();
+    const formFp = fingerprintReminder(form);
+    const slotFp = fingerprintReminder(slot);
+    setReminderAvailable(true);
+    setReminderSavedAt(slot.savedAt);
+    setReminderVerifyAnchor("form");
+    if (formFp === slotFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `Form matches Save reminder (FP ${slotFp}) — nothing to restore.`,
+      );
+    } else {
+      const diffs = diffReminderFields(form, slot, "slot", "form");
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Form FP ${formFp} ≠ Save reminder FP ${slotFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Restore reminder to load saved prefs.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: list field diffs between live reminder form and Save reminder slot. */
+  function diffReminderVsForm() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("form");
+      setReminderDiffLines([]);
+      setReminderHint("No saved reminder prefs in this browser — Save reminder first.");
+      return;
+    }
+    const form = buildReminderPayload();
+    const formFp = fingerprintReminder(form);
+    const slotFp = fingerprintReminder(slot);
+    setReminderAvailable(true);
+    setReminderSavedAt(slot.savedAt);
+    setReminderVerifyAnchor("form");
+    if (formFp === slotFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `No field diffs — form matches Save reminder (FP ${slotFp}).`,
+      );
+    } else {
+      const diffs = diffReminderFields(form, slot, "slot", "form");
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Diff reminder vs form: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (form FP ${formFp} ≠ Save reminder FP ${slotFp}). Restore reminder to load saved prefs.`,
+      );
+    }
+    setSubmitHint(null);
   }
 
   async function verifyReminderVsLinkFromClipboard() {
@@ -1038,9 +1121,10 @@ export function ReminderTease() {
             }}
             className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
           >
-            {reminderVerifyStatus === "match"
+            {reminderVerifyAnchor === "link" && reminderVerifyStatus === "match"
               ? "Reminder=link match"
-              : reminderVerifyStatus === "mismatch"
+              : reminderVerifyAnchor === "link" &&
+                  reminderVerifyStatus === "mismatch"
                 ? "Reminder≠link"
                 : "Verify reminder vs link"}
           </button>
@@ -1053,9 +1137,38 @@ export function ReminderTease() {
             }}
             className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
           >
-            {reminderDiffLines.length > 0 && reminderVerifyStatus === "mismatch"
+            {reminderVerifyAnchor === "link" &&
+            reminderDiffLines.length > 0 &&
+            reminderVerifyStatus === "mismatch"
               ? `Diff reminder/link (${reminderDiffLines.length})`
               : "Diff reminder vs link"}
+          </button>
+        ) : null}
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={verifyReminderVsForm}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderVerifyAnchor === "form" && reminderVerifyStatus === "match"
+              ? "Reminder=form match"
+              : reminderVerifyAnchor === "form" &&
+                  reminderVerifyStatus === "mismatch"
+                ? "Reminder≠form"
+                : "Verify reminder vs form"}
+          </button>
+        ) : null}
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={diffReminderVsForm}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderVerifyAnchor === "form" &&
+            reminderDiffLines.length > 0 &&
+            reminderVerifyStatus === "mismatch"
+              ? `Diff reminder/form (${reminderDiffLines.length})`
+              : "Diff reminder vs form"}
           </button>
         ) : null}
         <input
