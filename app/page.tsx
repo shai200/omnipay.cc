@@ -44,6 +44,21 @@ const trustSignals = [
   { value: "0", label: "Fraud verified" },
 ] as const;
 
+const faqItems = [
+  {
+    q: "Where does the crypto go?",
+    a: "Straight to the wallet address you provide — Omnipay does not custody your assets after the buy settles.",
+  },
+  {
+    q: "What cards work?",
+    a: "Visa, Mastercard, Amex, and debit via Stripe Crypto Onramp. Final availability depends on your bank and region.",
+  },
+  {
+    q: "Are reminder emails required?",
+    a: "No. Reminders are optional discipline tools — weekly, bi-weekly, or monthly, with optional drop alerts.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -89,6 +104,12 @@ export default function Home() {
               className="rounded-lg px-2.5 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:px-3"
             >
               Reminders
+            </a>
+            <a
+              href="#faq"
+              className="hidden rounded-lg px-2.5 py-2 text-sm font-medium text-sky-100/90 transition-colors hover:text-white sm:inline-block sm:px-3"
+            >
+              FAQ
             </a>
             <a
               href="https://omnipay.cc/auth/register"
@@ -217,6 +238,34 @@ export default function Home() {
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section
+        id="faq"
+        className="relative z-10 border-t border-[var(--line)] bg-white py-20"
+        aria-label="Frequently asked questions"
+      >
+        <div className="mx-auto w-full max-w-6xl px-6 md:px-10">
+          <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-[var(--foreground)] md:text-4xl">
+            Questions before your first buy
+          </h2>
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-[var(--muted)]">
+            Short answers for custody, cards, and reminders — full detail lives
+            on Omnipay.cc after you sign in.
+          </p>
+          <dl className="mt-12 grid gap-8 md:grid-cols-3">
+            {faqItems.map((item) => (
+              <div key={item.q} className="max-w-sm">
+                <dt className="text-lg font-semibold text-[var(--foreground)]">
+                  {item.q}
+                </dt>
+                <dd className="mt-3 text-base leading-7 text-[var(--muted)]">
+                  {item.a}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
