@@ -153,6 +153,14 @@ const faqItems = [
     q: "Can I save a preview draft?",
     a: "Yes — Save draft stores the on-ramp tease in this browser’s localStorage (wallet + form fields). Restore draft reloads it after refresh; Clear draft removes it. Drafts never leave your browser and are not live Stripe orders.",
   },
+  {
+    q: "What is Autosave?",
+    a: "Optional preview toggle that debounces localStorage writes (~800ms) as you edit. Preference sticks in this browser. Autosave never uploads to Omnipay servers — turn it off anytime and use Save draft manually.",
+  },
+  {
+    q: "Can I download the order summary?",
+    a: "Yes — Download summary saves a plain-text .txt (OMN-######-preview.txt) with the tease line. Share summary still copies to clipboard. Neither is a live Stripe receipt.",
+  },
 ] as const;
 
 export default function Home() {

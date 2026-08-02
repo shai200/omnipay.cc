@@ -1,6 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const presets = [25, 50, 100, 250] as const;
 const minAmount = 10;
@@ -179,6 +185,10 @@ const promoMaxLen = 24;
 const smsMaxLen = 18;
 /** Preview-only draft in this browser — not a server-side order. */
 const draftStorageKey = "omnipay-preview-draft-v1";
+/** Preview-only autosave preference (this browser). */
+const autosavePrefKey = "omnipay-preview-autosave-v1";
+/** Debounce for preview autosave writes. */
+const autosaveDebounceMs = 800;
 
 type PreviewDraftV1 = {
   v: 1;
@@ -337,6 +347,10 @@ export function OnrampTease() {
   const [draftBanner, setDraftBanner] = useState(false);
   const [draftHint, setDraftHint] = useState<string | null>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [autosaveOn, setAutosaveOn] = useState(false);
+  const [summaryDownloaded, setSummaryDownloaded] = useState(false);
+  const autosaveSkipRef = useRef(true);
+  const autosaveTimerRef = useRef<number | null>(null);
 
   const selectedAsset = useMemo(
     () => assets.find((option) => option.id === asset) ?? assets[0],
@@ -527,10 +541,17 @@ export function OnrampTease() {
 
   useEffect(() => {
     const existing = readDraftFromStorage();
-    if (!existing) return;
-    setDraftAvailable(true);
-    setDraftBanner(true);
-    setDraftSavedAt(existing.savedAt);
+    if (existing) {
+      setDraftAvailable(true);
+      setDraftBanner(true);
+      setDraftSavedAt(existing.savedAt);
+    }
+    try {
+      const pref = window.localStorage.getItem(autosavePrefKey);
+      if (pref === "1") setAutosaveOn(true);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
@@ -546,6 +567,55 @@ export function OnrampTease() {
       setPaymentMethod(availablePayments[0].id);
     }
   }, [paymentAvailable, availablePayments]);
+
+  useEffect(() => {
+    if (!autosaveOn) {
+      autosaveSkipRef.current = true;
+      return;
+    }
+    if (autosaveSkipRef.current) {
+      autosaveSkipRef.current = false;
+      return;
+    }
+    if (autosaveTimerRef.current !== null) {
+      window.clearTimeout(autosaveTimerRef.current);
+    }
+    autosaveTimerRef.current = window.setTimeout(() => {
+      persistDraft({ silent: true });
+    }, autosaveDebounceMs);
+    return () => {
+      if (autosaveTimerRef.current !== null) {
+        window.clearTimeout(autosaveTimerRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- draft fields listed below
+  }, [
+    autosaveOn,
+    amount,
+    asset,
+    network,
+    wallet,
+    confirmWallet,
+    paymentMethod,
+    buyCadence,
+    slippage,
+    networkSpeed,
+    orderMemo,
+    riskAccepted,
+    tosAccepted,
+    privacyAccepted,
+    selfCustodyAccepted,
+    ageConfirmed,
+    receiptEmail,
+    receiptConfirm,
+    billingCountry,
+    promoCode,
+    fundSource,
+    purchasePurpose,
+    fiatCurrency,
+    taxResidency,
+    smsPhone,
+  ]);
 
   function lockQuoteUnits(
     nextAmount: number,
@@ -585,7 +655,52 @@ export function OnrampTease() {
   }
 
   async function shareSummary() {
-    const line = [
+    const line = buildSummaryLine();
+    try {
+      await navigator.clipboard.writeText(line);
+      setSummaryCopied(true);
+      window.setTimeout(() => setSummaryCopied(false), 2000);
+      setSubmitHint(null);
+    } catch {
+      setSubmitHint(
+        "Share summary copy failed — select the order preview text manually.",
+      );
+    }
+  }
+
+  function downloadSummary() {
+    const line = buildSummaryLine();
+    const body = [
+      "Omnipay.cc preview order summary",
+      "(tease only — not a live Stripe receipt)",
+      "",
+      line,
+      "",
+      `Generated: ${new Date().toISOString()}`,
+    ].join("\n");
+    try {
+      const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${orderRef.toLowerCase()}-preview.txt`;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setSummaryDownloaded(true);
+      window.setTimeout(() => setSummaryDownloaded(false), 2000);
+      setSubmitHint(null);
+    } catch {
+      setSubmitHint(
+        "Download summary failed — use Share summary to copy instead.",
+      );
+    }
+  }
+
+  function buildSummaryLine() {
+    return [
       `Omnipay preview ${orderRef}`,
       `${amountLabel} (${selectedFiat.label}${selectedFiat.id !== "usd" ? ` ${amountUsdLabel}` : ""}) → ${selectedAsset.label}`,
       `on ${activeNetwork?.label ?? selectedAsset.network}`,
@@ -600,16 +715,6 @@ export function OnrampTease() {
     ]
       .filter(Boolean)
       .join(" · ");
-    try {
-      await navigator.clipboard.writeText(line);
-      setSummaryCopied(true);
-      window.setTimeout(() => setSummaryCopied(false), 2000);
-      setSubmitHint(null);
-    } catch {
-      setSubmitHint(
-        "Share summary copy failed — select the order preview text manually.",
-      );
-    }
   }
 
   function resetPreview() {
@@ -639,6 +744,7 @@ export function OnrampTease() {
     setReceiptConfirmTouched(false);
     setRefCopied(false);
     setSummaryCopied(false);
+    setSummaryDownloaded(false);
     setFiatCurrency("usd");
     setPrivacyAccepted(false);
     setTaxResidency("us");
@@ -651,10 +757,11 @@ export function OnrampTease() {
     setLockedUnits(null);
     setNetwork("bitcoin");
     setDraftHint(null);
+    autosaveSkipRef.current = true;
   }
 
-  function saveDraft() {
-    const payload: PreviewDraftV1 = {
+  function buildDraftPayload(): PreviewDraftV1 {
+    return {
       v: 1,
       savedAt: new Date().toISOString(),
       amount,
@@ -682,12 +789,22 @@ export function OnrampTease() {
       taxResidency,
       smsPhone,
     };
+  }
+
+  function persistDraft(opts?: { silent?: boolean }) {
+    const payload = buildDraftPayload();
     try {
       window.localStorage.setItem(draftStorageKey, JSON.stringify(payload));
       setDraftAvailable(true);
       setDraftBanner(false);
       setDraftSavedAt(payload.savedAt);
-      setDraftHint("Draft saved in this browser — Restore after refresh.");
+      if (!opts?.silent) {
+        setDraftHint("Draft saved in this browser — Restore after refresh.");
+      } else {
+        setDraftHint(
+          `Autosaved ${new Date(payload.savedAt).toLocaleTimeString("en-US")} — stays in this browser.`,
+        );
+      }
       setSubmitHint(null);
     } catch {
       setDraftHint(
@@ -696,7 +813,28 @@ export function OnrampTease() {
     }
   }
 
+  function saveDraft() {
+    persistDraft({ silent: false });
+  }
+
+  function toggleAutosave(next: boolean) {
+    setAutosaveOn(next);
+    autosaveSkipRef.current = true;
+    try {
+      window.localStorage.setItem(autosavePrefKey, next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+    if (next) {
+      persistDraft({ silent: true });
+      setDraftHint("Autosave on — drafts write as you edit (this browser).");
+    } else {
+      setDraftHint("Autosave off — use Save draft to persist manually.");
+    }
+  }
+
   function applyDraft(draft: PreviewDraftV1) {
+    autosaveSkipRef.current = true;
     setAmount(draft.amount);
     setAsset(draft.asset);
     setNetwork(draft.network);
@@ -733,6 +871,7 @@ export function OnrampTease() {
     setLockedUnits(null);
     setRefCopied(false);
     setSummaryCopied(false);
+    setSummaryDownloaded(false);
     setSubmitHint(null);
   }
 
@@ -756,6 +895,7 @@ export function OnrampTease() {
     } catch {
       /* ignore */
     }
+    autosaveSkipRef.current = true;
     setDraftAvailable(false);
     setDraftBanner(false);
     setDraftSavedAt(null);
@@ -1139,6 +1279,15 @@ export function OnrampTease() {
           }`}
         >
           Draft {draftAvailable ? "saved" : "none"}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            autosaveOn
+              ? "bg-emerald-400/15 text-emerald-100"
+              : "bg-white/5 text-sky-100/70"
+          }`}
+        >
+          Autosave {autosaveOn ? "on" : "off"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -1920,11 +2069,27 @@ export function OnrampTease() {
           </button>
           <button
             type="button"
+            onClick={downloadSummary}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {summaryDownloaded ? "Downloaded" : "Download summary"}
+          </button>
+          <button
+            type="button"
             onClick={saveDraft}
             className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
           >
             Save draft
           </button>
+          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white">
+            <input
+              type="checkbox"
+              checked={autosaveOn}
+              onChange={(event) => toggleAutosave(event.target.checked)}
+              className="h-3.5 w-3.5 rounded border-white/30 accent-[var(--accent)]"
+            />
+            Autosave
+          </label>
           {draftAvailable ? (
             <button
               type="button"
