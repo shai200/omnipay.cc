@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "firebase:preview": "npm run build && firebase hosting:channel:deploy agent-smoke --expires 7d"
   },
   "dependencies": {
     "@stripe/crypto": "^0.0.4",

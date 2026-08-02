@@ -35,8 +35,21 @@ To learn more about Next.js, take a look at the following resources:
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Deploy on Vercel
+## Deploy (Firebase Hosting)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Firebase project: `omnipaycc-9e9cb`. This app currently uses Next.js
+`output: "export"` so the static `out/` directory can be published to
+Firebase Hosting (App Hosting IAM is not yet available to the agent SA).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm ci --legacy-peer-deps
+npm run build
+npx firebase-tools hosting:channel:deploy <channel-name> --expires 7d
+```
+
+Prefer preview channels until production cutover is explicit. Do not commit
+service-account JSON or `.env*` files.
+
+Live marketing site today may still be served from another host
+(`https://omnipay.cc`); Firebase default site is
+`https://omnipaycc-9e9cb.web.app`.
