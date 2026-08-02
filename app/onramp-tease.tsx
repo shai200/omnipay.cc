@@ -190,6 +190,8 @@ const draftStorageKey = "omnipay-preview-draft-v1";
 const autosavePrefKey = "omnipay-preview-autosave-v1";
 /** Debounce for preview autosave writes. */
 const autosaveDebounceMs = 800;
+/** Preview-only shareable draft hash prefix (client-side only). */
+const draftHashPrefix = "omn-draft=";
 
 type PreviewDraftV1 = {
   v: 1;
@@ -278,6 +280,48 @@ function readDraftFromStorage(): PreviewDraftV1 | null {
   } catch {
     return null;
   }
+}
+
+/** Preview-only: base64url encode draft for URL hash (not a server order). */
+function encodeDraftForHash(draft: PreviewDraftV1): string {
+  const json = JSON.stringify(draft);
+  const bytes = new TextEncoder().encode(json);
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function decodeDraftFromHash(token: string): PreviewDraftV1 | null {
+  try {
+    const b64 = token.replace(/-/g, "+").replace(/_/g, "/");
+    const pad =
+      b64.length % 4 === 0 ? "" : "=".repeat(4 - (b64.length % 4));
+    const binary = atob(b64 + pad);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    return parseDraftPayload(JSON.parse(json));
+  } catch {
+    return null;
+  }
+}
+
+function readDraftFromHash(): PreviewDraftV1 | null {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (!hash.startsWith(draftHashPrefix)) return null;
+  return decodeDraftFromHash(
+    decodeURIComponent(hash.slice(draftHashPrefix.length)),
+  );
+}
+
+function clearDraftHash() {
+  if (!window.location.hash.startsWith(`#${draftHashPrefix}`)) return;
+  const { pathname, search } = window.location;
+  window.history.replaceState(null, "", `${pathname}${search}`);
 }
 
 function makeOrderRef() {
@@ -400,6 +444,7 @@ export function OnrampTease() {
   const [summaryDownloaded, setSummaryDownloaded] = useState(false);
   const [draftExported, setDraftExported] = useState(false);
   const [draftImported, setDraftImported] = useState(false);
+  const [draftLinkCopied, setDraftLinkCopied] = useState(false);
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
@@ -592,11 +637,30 @@ export function OnrampTease() {
   }, [quoteAt]);
 
   useEffect(() => {
-    const existing = readDraftFromStorage();
-    if (existing) {
-      setDraftAvailable(true);
-      setDraftBanner(true);
-      setDraftSavedAt(existing.savedAt);
+    const fromHash = readDraftFromHash();
+    if (fromHash) {
+      applyDraft(fromHash);
+      try {
+        window.localStorage.setItem(
+          draftStorageKey,
+          JSON.stringify(fromHash),
+        );
+        setDraftAvailable(true);
+        setDraftSavedAt(fromHash.savedAt);
+      } catch {
+        /* form applied even if storage blocked */
+      }
+      setDraftBanner(false);
+      setDraftHint(
+        "Draft loaded from shared link — refresh quote if the tease looks stale.",
+      );
+    } else {
+      const existing = readDraftFromStorage();
+      if (existing) {
+        setDraftAvailable(true);
+        setDraftBanner(true);
+        setDraftSavedAt(existing.savedAt);
+      }
     }
     try {
       const pref = window.localStorage.getItem(autosavePrefKey);
@@ -604,6 +668,8 @@ export function OnrampTease() {
     } catch {
       /* ignore */
     }
+    // Mount-only: apply hash draft or surface localStorage banner.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -799,6 +865,7 @@ export function OnrampTease() {
     setSummaryDownloaded(false);
     setDraftExported(false);
     setDraftImported(false);
+    setDraftLinkCopied(false);
     setFiatCurrency("usd");
     setPrivacyAccepted(false);
     setTaxResidency("us");
@@ -928,6 +995,7 @@ export function OnrampTease() {
     setSummaryDownloaded(false);
     setDraftExported(false);
     setDraftImported(false);
+    setDraftLinkCopied(false);
     setSubmitHint(null);
   }
 
@@ -1007,6 +1075,26 @@ export function OnrampTease() {
     reader.readAsText(file);
   }
 
+  async function copyDraftLink() {
+    const payload = buildDraftPayload();
+    try {
+      const encoded = encodeDraftForHash(payload);
+      const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${draftHashPrefix}${encoded}`;
+      await navigator.clipboard.writeText(url);
+      window.history.replaceState(null, "", url);
+      setDraftLinkCopied(true);
+      window.setTimeout(() => setDraftLinkCopied(false), 2000);
+      setDraftHint(
+        "Draft link copied — open it in another browser to restore this tease.",
+      );
+      setSubmitHint(null);
+    } catch {
+      setDraftHint(
+        "Copy draft link failed — use Export draft .json instead.",
+      );
+    }
+  }
+
   function restoreDraft() {
     const draft = readDraftFromStorage();
     if (!draft) {
@@ -1027,10 +1115,12 @@ export function OnrampTease() {
     } catch {
       /* ignore */
     }
+    clearDraftHash();
     autosaveSkipRef.current = true;
     setDraftAvailable(false);
     setDraftBanner(false);
     setDraftSavedAt(null);
+    setDraftLinkCopied(false);
     setDraftHint("Draft cleared from this browser.");
   }
 
@@ -1420,6 +1510,15 @@ export function OnrampTease() {
           }`}
         >
           Autosave {autosaveOn ? "on" : "off"}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            draftLinkCopied
+              ? "bg-emerald-400/15 text-emerald-100"
+              : "bg-white/5 text-sky-100/70"
+          }`}
+        >
+          Link {draftLinkCopied ? "copied" : "share"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -2219,6 +2318,13 @@ export function OnrampTease() {
             className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
           >
             {draftImported ? "Imported" : "Import draft"}
+          </button>
+          <button
+            type="button"
+            onClick={copyDraftLink}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {draftLinkCopied ? "Link copied" : "Copy draft link"}
           </button>
           <input
             ref={importDraftInputRef}

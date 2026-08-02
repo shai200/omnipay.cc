@@ -165,6 +165,10 @@ const faqItems = [
     q: "Can I export or import a draft?",
     a: "Yes — Export draft downloads a preview draft v1 .json you can move between browsers. Import draft validates the file, applies fields, and optionally writes localStorage. Export/import never hits Omnipay servers.",
   },
+  {
+    q: "Can I share a draft link?",
+    a: "Yes — Copy draft link puts a preview-only URL hash (#omn-draft=…) on your clipboard. Opening that link restores the tease client-side. The hash never uploads to Omnipay servers; Clear draft removes it from the address bar.",
+  },
 ] as const;
 
 export default function Home() {
