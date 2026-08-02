@@ -302,6 +302,10 @@ export function ReminderTease() {
     useState(false);
   const [reminderSlotResetToDefaults, setReminderSlotResetToDefaults] =
     useState(false);
+  const [reminderDefaultsSlotPairCopied, setReminderDefaultsSlotPairCopied] =
+    useState(false);
+  const [reminderDefaultsExported, setReminderDefaultsExported] =
+    useState(false);
   const [clearFormArmSecondsLeft, setClearFormArmSecondsLeft] = useState(0);
   const pasteReminderInputRef = useRef<HTMLInputElement>(null);
   const importReminderInputRef = useRef<HTMLInputElement>(null);
@@ -1396,6 +1400,91 @@ export function ReminderTease() {
     setSubmitHint(null);
   }
 
+  /** Preview-only: copy Defaults FP ↔ Slot FP citation pair (form untouched). */
+  async function copyDefaultsSlotFpPair() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
+      setReminderHint(
+        "Copy Defaults↔Slot pair — no Save reminder slot in this browser. Save reminder first.",
+      );
+      return;
+    }
+    const defaultsFp = reminderDefaultsFingerprint;
+    const slotFp = fingerprintReminder(slot);
+    const matchMark = defaultsFp === slotFp ? "=" : "≠";
+    const pair = `Defaults FP ${defaultsFp} ↔ Slot FP ${slotFp} (${matchMark})`;
+    try {
+      await navigator.clipboard.writeText(pair);
+      setReminderAvailable(true);
+      setReminderSavedAt(slot.savedAt);
+      setReminderSlotFingerprint(slotFp);
+      setReminderDefaultsSlotCompared(true);
+      setReminderDefaultsSlotPairCopied(true);
+      setReminderDefaultsExported(false);
+      setReminderVerifyAnchor("defaults-slot");
+      setReminderVerifyStatus(defaultsFp === slotFp ? "match" : "mismatch");
+      if (defaultsFp === slotFp) {
+        setReminderDiffLines([]);
+      } else {
+        setReminderDiffLines(
+          diffReminderFields(
+            defaultReminderDraft(),
+            slot,
+            "slot",
+            "defaults",
+          ),
+        );
+      }
+      window.setTimeout(() => {
+        setReminderDefaultsSlotPairCopied(false);
+        setReminderDefaultsSlotCompared(false);
+      }, 2000);
+      setReminderHint(
+        `Copied ${pair} — cite when verifying Clear form targets vs Save reminder. Form untouched.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setReminderHint(
+        "Copy Defaults↔Slot pair failed — clipboard may be blocked in this preview.",
+      );
+    }
+  }
+
+  /** Preview-only: download Clear form defaults as JSON (form + slot untouched). */
+  function exportDefaultsJson() {
+    const defaults = defaultReminderDraft();
+    const defaultsFp = fingerprintReminder(defaults);
+    const body = `${JSON.stringify(defaults, null, 2)}\n`;
+    try {
+      const blob = new Blob([body], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "omnipay-reminder-defaults.json";
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setReminderDefaultsExported(true);
+      setReminderDefaultsSlotPairCopied(false);
+      setReminderExported(false);
+      window.setTimeout(() => setReminderDefaultsExported(false), 2000);
+      setReminderHint(
+        `Defaults JSON exported (FP ${defaultsFp}) — Import reminder / Apply defaults to slot on another browser. Form + slot untouched.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setReminderHint(
+        "Export defaults failed — use Copy defaults FP instead.",
+      );
+    }
+  }
+
   /** Preview-only: swap live reminder form ↔ Save reminder slot. */
   function swapReminderForm() {
     const slot = readReminderFromStorage();
@@ -2097,6 +2186,36 @@ export function ReminderTease() {
               : "Reset slot to defaults"}
           </button>
         ) : null}
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={() => {
+              void copyDefaultsSlotFpPair();
+            }}
+            className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+              reminderDefaultsSlotPairCopied
+                ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+                : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+            }`}
+          >
+            {reminderDefaultsSlotPairCopied
+              ? "Defaults↔Slot pair copied"
+              : "Copy Defaults↔Slot pair"}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={exportDefaultsJson}
+          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+            reminderDefaultsExported
+              ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+              : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+          }`}
+        >
+          {reminderDefaultsExported
+            ? "Defaults exported"
+            : "Export defaults"}
+        </button>
         <button
           type="button"
           onClick={() => {
