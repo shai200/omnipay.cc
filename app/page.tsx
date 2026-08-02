@@ -177,6 +177,10 @@ const faqItems = [
     q: "What is draft FP / Verify draft link?",
     a: "Draft FP is a short client-side fingerprint of the tease fields (ignores savedAt). Verify draft link compares a #omn-draft= URL to the current form without applying it — match means the link equals this tease; mismatch means Paste would change fields. Fingerprints never leave your browser.",
   },
+  {
+    q: "Can I Diff a draft link?",
+    a: "Yes — Diff draft link (or Verify on mismatch) lists which tease fields differ between the form and a #omn-draft= URL without applying it. Paste draft link still applies the link. Diffs stay in your browser.",
+  },
 ] as const;
 
 export default function Home() {

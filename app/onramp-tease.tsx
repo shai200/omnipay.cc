@@ -239,6 +239,66 @@ function fingerprintDraft(draft: PreviewDraftV1): string {
   return (h >>> 0).toString(16).padStart(8, "0").toUpperCase();
 }
 
+/** Human labels for preview draft field diffs (ignores savedAt). */
+const draftFieldLabels: Record<
+  Exclude<keyof PreviewDraftV1, "v" | "savedAt">,
+  string
+> = {
+  amount: "Amount",
+  asset: "Asset",
+  network: "Network",
+  wallet: "Wallet",
+  confirmWallet: "Confirm wallet",
+  paymentMethod: "Pay method",
+  buyCadence: "Buy frequency",
+  slippage: "Slippage",
+  networkSpeed: "Network speed",
+  orderMemo: "Order memo",
+  riskAccepted: "Risk disclosure",
+  tosAccepted: "Terms of Service",
+  privacyAccepted: "Privacy Policy",
+  selfCustodyAccepted: "Self-custody",
+  ageConfirmed: "Age 18+",
+  receiptEmail: "Receipt email",
+  receiptConfirm: "Receipt confirm",
+  billingCountry: "Billing country",
+  promoCode: "Promo code",
+  fundSource: "Source of funds",
+  purchasePurpose: "Purchase purpose",
+  fiatCurrency: "Fiat currency",
+  taxResidency: "Tax residency",
+  smsPhone: "SMS phone",
+};
+
+function formatDraftDiffValue(value: unknown): string {
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return "(empty)";
+    if (trimmed.length > 28) return `${trimmed.slice(0, 24)}…`;
+    return trimmed;
+  }
+  return String(value);
+}
+
+/** Preview-only: field-level diff, ignores v + savedAt. */
+function diffDraftFields(
+  current: PreviewDraftV1,
+  link: PreviewDraftV1,
+): string[] {
+  const keys = Object.keys(draftFieldLabels) as Array<
+    keyof typeof draftFieldLabels
+  >;
+  const lines: string[] = [];
+  for (const key of keys) {
+    if (current[key] === link[key]) continue;
+    lines.push(
+      `${draftFieldLabels[key]}: form ${formatDraftDiffValue(current[key])} → link ${formatDraftDiffValue(link[key])}`,
+    );
+  }
+  return lines;
+}
+
 function isDraftEnum<T extends string>(
   value: unknown,
   allowed: readonly { id: T }[],
@@ -501,6 +561,7 @@ export function OnrampTease() {
     "idle" | "match" | "mismatch" | "invalid"
   >("idle");
   const [verifiedFormFp, setVerifiedFormFp] = useState<string | null>(null);
+  const [draftDiffLines, setDraftDiffLines] = useState<string[]>([]);
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
@@ -926,6 +987,7 @@ export function OnrampTease() {
     setDraftLinkPasted(false);
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
+    setDraftDiffLines([]);
     setFiatCurrency("usd");
     setPrivacyAccepted(false);
     setTaxResidency("us");
@@ -1067,6 +1129,7 @@ export function OnrampTease() {
     setDraftLinkPasted(false);
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
+    setDraftDiffLines([]);
     setSubmitHint(null);
   }
 
@@ -1157,6 +1220,7 @@ export function OnrampTease() {
       window.setTimeout(() => setDraftLinkCopied(false), 2000);
       setDraftVerifyStatus("idle");
       setVerifiedFormFp(null);
+      setDraftDiffLines([]);
       setDraftHint(
         `Draft link copied (FP ${fingerprintDraft(payload)}) — open or Verify on another browser.`,
       );
@@ -1196,6 +1260,7 @@ export function OnrampTease() {
     window.setTimeout(() => setDraftLinkPasted(false), 2000);
     setDraftVerifyStatus("match");
     setVerifiedFormFp(fingerprintDraft(draft));
+    setDraftDiffLines([]);
     setDraftHint(
       `Draft pasted from link (FP ${fingerprintDraft(draft)}) — refresh quote if the tease looks stale.`,
     );
@@ -1238,23 +1303,62 @@ export function OnrampTease() {
     if (!draft) {
       setDraftVerifyStatus("invalid");
       setVerifiedFormFp(null);
+      setDraftDiffLines([]);
       setDraftHint(
         "Verify failed — need a #omn-draft= URL/token (or paste into the field).",
       );
       return false;
     }
-    const currentFp = fingerprintDraft(buildDraftPayload());
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
     const linkFp = fingerprintDraft(draft);
     setVerifiedFormFp(currentFp);
     if (currentFp === linkFp) {
       setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
       setDraftHint(
         `Draft link matches this form (FP ${currentFp}) — safe to share or Paste.`,
       );
     } else {
+      const diffs = diffDraftFields(current, draft);
       setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
       setDraftHint(
-        `Draft link FP ${linkFp} ≠ form FP ${currentFp} — Paste to apply, or edit to match.`,
+        `Draft link FP ${linkFp} ≠ form FP ${currentFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Paste to apply.`,
+      );
+    }
+    setSubmitHint(null);
+    return true;
+  }
+
+  /** Preview-only: list field diffs vs a #omn-draft= link without applying. */
+  function diffDraftAgainstCurrent(raw: string): boolean {
+    const draft = extractDraftFromPaste(raw);
+    if (!draft) {
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setDraftHint(
+        "Diff failed — need a #omn-draft= URL/token (or paste into the field).",
+      );
+      return false;
+    }
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
+    const linkFp = fingerprintDraft(draft);
+    setVerifiedFormFp(currentFp);
+    if (currentFp === linkFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `No field diffs — draft link matches this form (FP ${currentFp}).`,
+      );
+    } else {
+      const diffs = diffDraftFields(current, draft);
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Diff draft link: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (FP ${linkFp} ≠ ${currentFp}). Paste to apply link values.`,
       );
     }
     setSubmitHint(null);
@@ -1266,6 +1370,7 @@ export function OnrampTease() {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) {
         setDraftVerifyStatus("invalid");
+        setDraftDiffLines([]);
         setDraftHint(
           "Clipboard is empty — paste a #omn-draft= link into the field, then Verify.",
         );
@@ -1282,8 +1387,39 @@ export function OnrampTease() {
         return;
       }
       setDraftVerifyStatus("invalid");
+      setDraftDiffLines([]);
       setDraftHint(
         "Clipboard read blocked — paste the #omn-draft= link into the field, then Verify.",
+      );
+      pasteDraftInputRef.current?.focus();
+    }
+  }
+
+  async function diffDraftLinkFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setDraftVerifyStatus("invalid");
+        setDraftDiffLines([]);
+        setDraftHint(
+          "Clipboard is empty — paste a #omn-draft= link into the field, then Diff.",
+        );
+        pasteDraftInputRef.current?.focus();
+        return;
+      }
+      if (!diffDraftAgainstCurrent(text)) {
+        pasteDraftInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteDraftInputRef.current?.value ?? "";
+      if (field.trim()) {
+        diffDraftAgainstCurrent(field);
+        return;
+      }
+      setDraftVerifyStatus("invalid");
+      setDraftDiffLines([]);
+      setDraftHint(
+        "Clipboard read blocked — paste the #omn-draft= link into the field, then Diff.",
       );
       pasteDraftInputRef.current?.focus();
     }
@@ -1318,6 +1454,7 @@ export function OnrampTease() {
     setDraftLinkPasted(false);
     setDraftVerifyStatus("idle");
     setVerifiedFormFp(null);
+    setDraftDiffLines([]);
     setDraftHint("Draft cleared from this browser.");
   }
 
@@ -1747,6 +1884,18 @@ export function OnrampTease() {
               : liveVerifyStatus === "invalid"
                 ? "invalid"
                 : "idle"}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            draftDiffLines.length > 0 && liveVerifyStatus === "mismatch"
+              ? "bg-amber-400/15 text-amber-100"
+              : "bg-white/5 text-sky-100/70"
+          }`}
+        >
+          Diff{" "}
+          {draftDiffLines.length > 0 && liveVerifyStatus === "mismatch"
+            ? `${draftDiffLines.length}`
+            : "idle"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -2576,6 +2725,15 @@ export function OnrampTease() {
                 ? "Link mismatch"
                 : "Verify draft link"}
           </button>
+          <button
+            type="button"
+            onClick={diffDraftLinkFromClipboard}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {draftDiffLines.length > 0 && liveVerifyStatus === "mismatch"
+              ? `Diff (${draftDiffLines.length})`
+              : "Diff draft link"}
+          </button>
           <input
             ref={pasteDraftInputRef}
             type="text"
@@ -2650,6 +2808,19 @@ export function OnrampTease() {
             Reset preview
           </button>
         </p>
+        {draftDiffLines.length > 0 && liveVerifyStatus === "mismatch" ? (
+          <ul
+            className="mt-2 max-h-40 list-disc space-y-1 overflow-y-auto rounded-lg border border-amber-300/35 bg-amber-400/10 px-4 py-2 text-xs text-amber-50"
+            aria-label="Draft link field diffs"
+          >
+            {draftDiffLines.slice(0, 12).map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+            {draftDiffLines.length > 12 ? (
+              <li>+{draftDiffLines.length - 12} more fields</li>
+            ) : null}
+          </ul>
+        ) : null}
         <input type="hidden" name="order_ref" value={orderRef} />
         <p className="mt-2">
           Order preview: {amountLabel}
