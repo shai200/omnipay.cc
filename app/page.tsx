@@ -107,7 +107,15 @@ const faqItems = [
   },
   {
     q: "What is the preview order ref?",
-    a: "Each preview session mints an OMN-###### reference on the order summary. Cite it if you continue into Omnipay.cc support — it is not a live Stripe payment id.",
+    a: "Each preview session mints an OMN-###### reference on the order summary. Use Copy ref to clipboard, then cite it if you continue into Omnipay.cc support — it is not a live Stripe payment id.",
+  },
+  {
+    q: "Why ask purchase purpose?",
+    a: "Preview lets you pick Invest, Spend, Remit, or Gift as a compliance tease. Live Omnipay.cc may collect purpose again — this picker does not replace KYC.",
+  },
+  {
+    q: "Why confirm the receipt email?",
+    a: "When you enter a receipt email, preview requires a matching confirmation before Continue. Clear both fields to skip receipts in the tease.",
   },
 ] as const;
 

@@ -130,6 +130,14 @@ const fundSources = [
   { id: "other", label: "Other", detail: "Tell us later" },
 ] as const;
 
+/** Preview-only purchase purpose tease — not a live KYC answer. */
+const purchasePurposes = [
+  { id: "invest", label: "Invest", detail: "Accumulate" },
+  { id: "spend", label: "Spend", detail: "Pay / use" },
+  { id: "remit", label: "Remit", detail: "Send abroad" },
+  { id: "gift", label: "Gift", detail: "Someone else" },
+] as const;
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const memoMaxLen = 80;
 const promoMaxLen = 24;
@@ -209,8 +217,13 @@ export function OnrampTease() {
   const [promoTouched, setPromoTouched] = useState(false);
   const [fundSource, setFundSource] =
     useState<(typeof fundSources)[number]["id"]>("salary");
+  const [purchasePurpose, setPurchasePurpose] =
+    useState<(typeof purchasePurposes)[number]["id"]>("invest");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [receiptConfirm, setReceiptConfirm] = useState("");
+  const [receiptConfirmTouched, setReceiptConfirmTouched] = useState(false);
   const [orderRef] = useState(() => makeOrderRef());
+  const [refCopied, setRefCopied] = useState(false);
   const [quoteAt, setQuoteAt] = useState(() => new Date());
   const [quoteJitterBps, setQuoteJitterBps] = useState(0);
   const [quoteAgeSec, setQuoteAgeSec] = useState(0);
@@ -332,6 +345,16 @@ export function OnrampTease() {
       ? "valid"
       : "invalid";
 
+  const trimmedReceiptConfirm = receiptConfirm.trim();
+  const receiptConfirmStatus =
+    receiptStatus !== "valid"
+      ? "skipped"
+      : !trimmedReceiptConfirm
+        ? "empty"
+        : trimmedReceiptConfirm.toLowerCase() === trimmedReceipt.toLowerCase()
+          ? "match"
+          : "mismatch";
+
   const trimmedMemo = orderMemo.trim();
   const memoStatus =
     trimmedMemo.length > memoMaxLen ? "long" : trimmedMemo ? "ok" : "empty";
@@ -350,6 +373,9 @@ export function OnrampTease() {
     slippageOptions[1];
   const selectedFundSource =
     fundSources.find((option) => option.id === fundSource) ?? fundSources[0];
+  const selectedPurpose =
+    purchasePurposes.find((option) => option.id === purchasePurpose) ??
+    purchasePurposes[0];
 
   useEffect(() => {
     const tick = () => {
@@ -400,10 +426,24 @@ export function OnrampTease() {
     setSubmitHint(null);
   }
 
+  async function copyOrderRef() {
+    try {
+      await navigator.clipboard.writeText(orderRef);
+      setRefCopied(true);
+      window.setTimeout(() => setRefCopied(false), 2000);
+      setSubmitHint(null);
+    } catch {
+      setSubmitHint(
+        `Copy failed — select ${orderRef} manually if you need the preview ref.`,
+      );
+    }
+  }
+
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     setAmountTouched(true);
     if (trimmedWallet) setWalletTouched(true);
     if (trimmedReceipt) setReceiptTouched(true);
+    if (trimmedReceipt) setReceiptConfirmTouched(true);
 
     if (!amountValid) {
       event.preventDefault();
@@ -437,6 +477,16 @@ export function OnrampTease() {
       event.preventDefault();
       setSubmitHint(
         "Receipt email looks invalid — fix it or clear the field to continue.",
+      );
+      return;
+    }
+
+    if (receiptStatus === "valid" && receiptConfirmStatus !== "match") {
+      event.preventDefault();
+      setSubmitHint(
+        receiptConfirmStatus === "empty"
+          ? "Confirm the receipt email before continuing — it must match."
+          : "Receipt confirmation does not match — fix it or clear both fields.",
       );
       return;
     }
@@ -595,8 +645,15 @@ export function OnrampTease() {
           {selectedCountry.label}
         </li>
         {receiptStatus === "valid" ? (
-          <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
-            Receipt ready
+          <li
+            className={`rounded-full px-2.5 py-1 ${
+              receiptConfirmStatus === "match"
+                ? "bg-emerald-400/15 text-emerald-100"
+                : "bg-amber-400/15 text-amber-100"
+            }`}
+          >
+            Receipt{" "}
+            {receiptConfirmStatus === "match" ? "confirmed" : "confirm"}
           </li>
         ) : receiptStatus === "invalid" ? (
           <li className="rounded-full bg-amber-400/15 px-2.5 py-1 text-amber-100">
@@ -632,6 +689,9 @@ export function OnrampTease() {
         </li>
         <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
           Funds {selectedFundSource.label}
+        </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          Purpose {selectedPurpose.label}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -1056,7 +1116,12 @@ export function OnrampTease() {
           autoComplete="email"
           value={receiptEmail}
           onChange={(event) => {
-            setReceiptEmail(event.target.value);
+            const next = event.target.value;
+            setReceiptEmail(next);
+            if (!next.trim()) {
+              setReceiptConfirm("");
+              setReceiptConfirmTouched(false);
+            }
             setSubmitHint(null);
           }}
           onBlur={() => setReceiptTouched(true)}
@@ -1072,7 +1137,40 @@ export function OnrampTease() {
       ) : null}
       {receiptStatus === "valid" ? (
         <p className="mt-2 text-xs text-emerald-200/90" role="status">
-          Receipt tease will go to {trimmedReceipt} after checkout.
+          Receipt tease will go to {trimmedReceipt} after checkout — confirm it
+          below.
+        </p>
+      ) : null}
+      {receiptStatus === "valid" ? (
+        <label className="mt-3 block text-sm text-sky-100/80">
+          Confirm receipt email
+          <input
+            name="receipt_email_confirm"
+            type="email"
+            autoComplete="email"
+            value={receiptConfirm}
+            onChange={(event) => {
+              setReceiptConfirm(event.target.value);
+              setSubmitHint(null);
+            }}
+            onBlur={() => setReceiptConfirmTouched(true)}
+            placeholder="Re-enter email"
+            aria-invalid={
+              receiptConfirmTouched && receiptConfirmStatus === "mismatch"
+            }
+            className="mt-2 w-full rounded-xl border border-white/20 bg-[#071222]/70 px-4 py-3 text-base text-white placeholder:text-sky-200/40 outline-none transition focus:border-sky-300/60"
+          />
+        </label>
+      ) : null}
+      {receiptConfirmTouched && receiptConfirmStatus === "mismatch" ? (
+        <p className="mt-2 text-xs text-amber-200/90" role="status">
+          Confirmation does not match — emails must be identical (case
+          insensitive).
+        </p>
+      ) : null}
+      {receiptConfirmStatus === "match" ? (
+        <p className="mt-2 text-xs text-emerald-200/90" role="status">
+          Receipt email confirmed for preview.
         </p>
       ) : null}
       <label className="mt-4 block text-sm text-sky-100/80">
@@ -1153,6 +1251,46 @@ export function OnrampTease() {
           Compliance tease only — live Omnipay.cc may ask again at KYC.
         </p>
       </fieldset>
+      <fieldset className="mt-4">
+        <legend className="text-sm text-sky-100/80">Purchase purpose</legend>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {purchasePurposes.map((option) => {
+            const selected = purchasePurpose === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setPurchasePurpose(option.id);
+                  setSubmitHint(null);
+                }}
+                aria-pressed={selected}
+                className={`rounded-lg px-2 py-2.5 text-left transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                <span className="block text-sm font-semibold">
+                  {option.label}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[11px] ${
+                    selected ? "text-[#0b1b33]/70" : "text-sky-100/65"
+                  }`}
+                >
+                  {option.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="purchase_purpose" value={purchasePurpose} />
+        <p className="mt-2 text-xs text-sky-100/65">
+          Preview only — live Omnipay.cc may collect purpose again for
+          compliance.
+        </p>
+      </fieldset>
       <div
         className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-6 ${
           quoteStale || slippageBreach
@@ -1175,12 +1313,21 @@ export function OnrampTease() {
             Refresh quote
           </button>
         </div>
-        <p className="mt-2 text-xs text-sky-200/85">
-          Preview order ref{" "}
-          <span className="font-semibold tracking-wide text-white">
-            {orderRef}
-          </span>{" "}
-          — cite this if you continue to Omnipay.cc support (tease only).
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-sky-200/85">
+          <span>
+            Preview order ref{" "}
+            <span className="font-semibold tracking-wide text-white">
+              {orderRef}
+            </span>{" "}
+            — cite this if you continue to Omnipay.cc support (tease only).
+          </span>
+          <button
+            type="button"
+            onClick={copyOrderRef}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {refCopied ? "Copied" : "Copy ref"}
+          </button>
         </p>
         <input type="hidden" name="order_ref" value={orderRef} />
         <p className="mt-2">
@@ -1192,7 +1339,8 @@ export function OnrampTease() {
           via {selectedPayment.label} · {selectedCountry.label} ·{" "}
           {selectedCadence.label.toLowerCase()} ·{" "}
           {selectedSpeed.label.toLowerCase()} · funds{" "}
-          {selectedFundSource.label.toLowerCase()}
+          {selectedFundSource.label.toLowerCase()} · purpose{" "}
+          {selectedPurpose.label.toLowerCase()}
           {trimmedMemo ? ` · memo “${trimmedMemo.slice(0, 24)}${trimmedMemo.length > 24 ? "…" : ""}”` : ""}
           {activePromo ? ` · promo ${trimmedPromo}` : ""}
           .
