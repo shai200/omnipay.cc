@@ -222,6 +222,23 @@ type PreviewDraftV1 = {
   smsPhone: string;
 };
 
+/** Preview-only: stable fingerprint ignores savedAt so copy/verify compares fields. */
+function canonicalDraftForFingerprint(draft: PreviewDraftV1): string {
+  const { savedAt: _savedAt, ...rest } = draft;
+  return JSON.stringify(rest);
+}
+
+/** Preview-only FNV-1a 32-bit hex — not a cryptographic hash. */
+function fingerprintDraft(draft: PreviewDraftV1): string {
+  const s = canonicalDraftForFingerprint(draft);
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0").toUpperCase();
+}
+
 function isDraftEnum<T extends string>(
   value: unknown,
   allowed: readonly { id: T }[],
@@ -480,6 +497,10 @@ export function OnrampTease() {
   const [draftImported, setDraftImported] = useState(false);
   const [draftLinkCopied, setDraftLinkCopied] = useState(false);
   const [draftLinkPasted, setDraftLinkPasted] = useState(false);
+  const [draftVerifyStatus, setDraftVerifyStatus] = useState<
+    "idle" | "match" | "mismatch" | "invalid"
+  >("idle");
+  const [verifiedFormFp, setVerifiedFormFp] = useState<string | null>(null);
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
   const importDraftInputRef = useRef<HTMLInputElement | null>(null);
@@ -903,6 +924,8 @@ export function OnrampTease() {
     setDraftImported(false);
     setDraftLinkCopied(false);
     setDraftLinkPasted(false);
+    setDraftVerifyStatus("idle");
+    setVerifiedFormFp(null);
     setFiatCurrency("usd");
     setPrivacyAccepted(false);
     setTaxResidency("us");
@@ -948,6 +971,14 @@ export function OnrampTease() {
       smsPhone,
     };
   }
+
+  const draftFingerprint = fingerprintDraft(buildDraftPayload());
+  const liveVerifyStatus =
+    draftVerifyStatus === "invalid"
+      ? "invalid"
+      : draftVerifyStatus !== "idle" && verifiedFormFp === draftFingerprint
+        ? draftVerifyStatus
+        : "idle";
 
   function persistDraft(opts?: { silent?: boolean }) {
     const payload = buildDraftPayload();
@@ -1034,6 +1065,8 @@ export function OnrampTease() {
     setDraftImported(false);
     setDraftLinkCopied(false);
     setDraftLinkPasted(false);
+    setDraftVerifyStatus("idle");
+    setVerifiedFormFp(null);
     setSubmitHint(null);
   }
 
@@ -1122,8 +1155,10 @@ export function OnrampTease() {
       window.history.replaceState(null, "", url);
       setDraftLinkCopied(true);
       window.setTimeout(() => setDraftLinkCopied(false), 2000);
+      setDraftVerifyStatus("idle");
+      setVerifiedFormFp(null);
       setDraftHint(
-        "Draft link copied — open it in another browser to restore this tease.",
+        `Draft link copied (FP ${fingerprintDraft(payload)}) — open or Verify on another browser.`,
       );
       setSubmitHint(null);
     } catch {
@@ -1159,8 +1194,10 @@ export function OnrampTease() {
     setDraftBanner(false);
     setDraftLinkPasted(true);
     window.setTimeout(() => setDraftLinkPasted(false), 2000);
+    setDraftVerifyStatus("match");
+    setVerifiedFormFp(fingerprintDraft(draft));
     setDraftHint(
-      "Draft pasted from link — refresh quote if the tease looks stale.",
+      `Draft pasted from link (FP ${fingerprintDraft(draft)}) — refresh quote if the tease looks stale.`,
     );
     setSubmitHint(null);
     return true;
@@ -1195,6 +1232,63 @@ export function OnrampTease() {
     }
   }
 
+  /** Preview-only: compare a #omn-draft= link to the current form without applying. */
+  function verifyDraftAgainstCurrent(raw: string): boolean {
+    const draft = extractDraftFromPaste(raw);
+    if (!draft) {
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftHint(
+        "Verify failed — need a #omn-draft= URL/token (or paste into the field).",
+      );
+      return false;
+    }
+    const currentFp = fingerprintDraft(buildDraftPayload());
+    const linkFp = fingerprintDraft(draft);
+    setVerifiedFormFp(currentFp);
+    if (currentFp === linkFp) {
+      setDraftVerifyStatus("match");
+      setDraftHint(
+        `Draft link matches this form (FP ${currentFp}) — safe to share or Paste.`,
+      );
+    } else {
+      setDraftVerifyStatus("mismatch");
+      setDraftHint(
+        `Draft link FP ${linkFp} ≠ form FP ${currentFp} — Paste to apply, or edit to match.`,
+      );
+    }
+    setSubmitHint(null);
+    return true;
+  }
+
+  async function verifyDraftLinkFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setDraftVerifyStatus("invalid");
+        setDraftHint(
+          "Clipboard is empty — paste a #omn-draft= link into the field, then Verify.",
+        );
+        pasteDraftInputRef.current?.focus();
+        return;
+      }
+      if (!verifyDraftAgainstCurrent(text)) {
+        pasteDraftInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteDraftInputRef.current?.value ?? "";
+      if (field.trim()) {
+        verifyDraftAgainstCurrent(field);
+        return;
+      }
+      setDraftVerifyStatus("invalid");
+      setDraftHint(
+        "Clipboard read blocked — paste the #omn-draft= link into the field, then Verify.",
+      );
+      pasteDraftInputRef.current?.focus();
+    }
+  }
+
   function restoreDraft() {
     const draft = readDraftFromStorage();
     if (!draft) {
@@ -1222,6 +1316,8 @@ export function OnrampTease() {
     setDraftSavedAt(null);
     setDraftLinkCopied(false);
     setDraftLinkPasted(false);
+    setDraftVerifyStatus("idle");
+    setVerifiedFormFp(null);
     setDraftHint("Draft cleared from this browser.");
   }
 
@@ -1629,6 +1725,28 @@ export function OnrampTease() {
           }`}
         >
           Link {draftLinkPasted ? "pasted" : "paste"}
+        </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 font-mono text-emerald-100">
+          FP {draftFingerprint}
+        </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            liveVerifyStatus === "match"
+              ? "bg-emerald-400/15 text-emerald-100"
+              : liveVerifyStatus === "mismatch" ||
+                  liveVerifyStatus === "invalid"
+                ? "bg-amber-400/15 text-amber-100"
+                : "bg-white/5 text-sky-100/70"
+          }`}
+        >
+          Verify{" "}
+          {liveVerifyStatus === "match"
+            ? "match"
+            : liveVerifyStatus === "mismatch"
+              ? "mismatch"
+              : liveVerifyStatus === "invalid"
+                ? "invalid"
+                : "idle"}
         </li>
         <li
           className={`rounded-full px-2.5 py-1 ${
@@ -2392,7 +2510,11 @@ export function OnrampTease() {
             <span className="font-semibold tracking-wide text-white">
               {orderRef}
             </span>{" "}
-            — cite this if you continue to Omnipay.cc support (tease only).
+            · draft FP{" "}
+            <span className="font-mono font-semibold tracking-wide text-white">
+              {draftFingerprint}
+            </span>{" "}
+            — cite ref if you continue to Omnipay.cc support (tease only).
           </span>
           <button
             type="button"
@@ -2442,6 +2564,17 @@ export function OnrampTease() {
             className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
           >
             {draftLinkPasted ? "Link pasted" : "Paste draft link"}
+          </button>
+          <button
+            type="button"
+            onClick={verifyDraftLinkFromClipboard}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {liveVerifyStatus === "match"
+              ? "Link matches"
+              : liveVerifyStatus === "mismatch"
+                ? "Link mismatch"
+                : "Verify draft link"}
           </button>
           <input
             ref={pasteDraftInputRef}

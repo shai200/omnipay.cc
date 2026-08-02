@@ -173,6 +173,10 @@ const faqItems = [
     q: "Can I paste a draft link?",
     a: "Yes — Paste draft link reads the clipboard (or the paste field) for a #omn-draft= URL/token and restores the tease client-side. If clipboard access is blocked, paste into the field next to the button. Same preview-only hash — never uploaded to Omnipay servers.",
   },
+  {
+    q: "What is draft FP / Verify draft link?",
+    a: "Draft FP is a short client-side fingerprint of the tease fields (ignores savedAt). Verify draft link compares a #omn-draft= URL to the current form without applying it — match means the link equals this tease; mismatch means Paste would change fields. Fingerprints never leave your browser.",
+  },
 ] as const;
 
 export default function Home() {
