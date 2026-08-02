@@ -122,6 +122,32 @@ const promoCodes: Record<string, { label: string; discountPct: number }> = {
   ACCUMULATE: { label: "5% off fees", discountPct: 5 },
 };
 
+/** Preview-only fiat currencies — tease FX only, not live Stripe FX. */
+const fiatCurrencies = [
+  {
+    id: "usd",
+    label: "USD",
+    detail: "US dollar",
+    symbol: "$",
+    /** Tease: units of this fiat ≈ 1 USD. */
+    perUsd: 1,
+  },
+  {
+    id: "eur",
+    label: "EUR",
+    detail: "Euro",
+    symbol: "€",
+    perUsd: 0.92,
+  },
+  {
+    id: "gbp",
+    label: "GBP",
+    detail: "Pound",
+    symbol: "£",
+    perUsd: 0.79,
+  },
+] as const;
+
 /** Preview-only compliance tease — not a live KYC answer. */
 const fundSources = [
   { id: "salary", label: "Salary", detail: "Paycheck" },
@@ -224,6 +250,10 @@ export function OnrampTease() {
   const [receiptConfirmTouched, setReceiptConfirmTouched] = useState(false);
   const [orderRef] = useState(() => makeOrderRef());
   const [refCopied, setRefCopied] = useState(false);
+  const [summaryCopied, setSummaryCopied] = useState(false);
+  const [fiatCurrency, setFiatCurrency] =
+    useState<(typeof fiatCurrencies)[number]["id"]>("usd");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [quoteAt, setQuoteAt] = useState(() => new Date());
   const [quoteJitterBps, setQuoteJitterBps] = useState(0);
   const [quoteAgeSec, setQuoteAgeSec] = useState(0);
@@ -262,9 +292,18 @@ export function OnrampTease() {
           ? "high"
           : "valid";
   const amountValid = amountStatus === "valid";
+  const selectedFiat =
+    fiatCurrencies.find((option) => option.id === fiatCurrency) ??
+    fiatCurrencies[0];
+  const amountInUsd = amountValid ? parsedAmount / selectedFiat.perUsd : 0;
   const amountLabel = amountValid
-    ? `$${parsedAmount.toLocaleString("en-US")}`
+    ? `${selectedFiat.symbol}${parsedAmount.toLocaleString("en-US")}`
     : "your amount";
+  const amountUsdLabel = amountValid
+    ? `≈$${amountInUsd.toLocaleString("en-US", {
+        maximumFractionDigits: 2,
+      })}`
+    : "—";
 
   const selectedSpeed =
     networkSpeeds.find((option) => option.id === networkSpeed) ??
@@ -298,7 +337,7 @@ export function OnrampTease() {
     promoStatus === "valid" ? promoCodes[trimmedPromo] : null;
 
   const adjustedAmount = amountValid
-    ? parsedAmount * (1 + quoteJitterBps / 10_000)
+    ? amountInUsd * (1 + quoteJitterBps / 10_000)
     : 0;
   const rawFee = amountValid ? adjustedAmount * selectedSpeed.feeRate : 0;
   const feeDiscount = activePromo
@@ -308,6 +347,12 @@ export function OnrampTease() {
   const feeEstimate = amountValid ? `~$${feeAmount.toFixed(2)}` : "—";
   const totalEstimate = amountValid
     ? `~$${(adjustedAmount + feeAmount).toFixed(2)}`
+    : "—";
+  const fiatTotalEstimate = amountValid
+    ? `~${selectedFiat.symbol}${(
+        (adjustedAmount + feeAmount) *
+        selectedFiat.perUsd
+      ).toFixed(2)}`
     : "—";
   const receiveEstimate = amountValid
     ? formatReceive(adjustedAmount, selectedAsset.id)
@@ -391,9 +436,9 @@ export function OnrampTease() {
   useEffect(() => {
     // Seed min-receive floor from the initial tease amount/asset.
     if (lockedUnits === null && amountValid) {
-      setLockedUnits(parsedAmount / teaseRatesUsd[selectedAsset.id]);
+      setLockedUnits(amountInUsd / teaseRatesUsd[selectedAsset.id]);
     }
-  }, [amountValid, lockedUnits, parsedAmount, selectedAsset.id]);
+  }, [amountValid, amountInUsd, lockedUnits, selectedAsset.id]);
 
   useEffect(() => {
     // Keep Pay with aligned to billing-country availability.
@@ -418,7 +463,7 @@ export function OnrampTease() {
     const next = Math.round((Math.random() * 160 - 80) * 10) / 10;
     // Lock floor against the zero-jitter baseline for this amount/asset.
     if (amountValid) {
-      lockQuoteUnits(parsedAmount, selectedAsset.id, 0);
+      lockQuoteUnits(amountInUsd, selectedAsset.id, 0);
     }
     setQuoteJitterBps(next);
     setQuoteAt(new Date());
@@ -435,6 +480,31 @@ export function OnrampTease() {
     } catch {
       setSubmitHint(
         `Copy failed — select ${orderRef} manually if you need the preview ref.`,
+      );
+    }
+  }
+
+  async function shareSummary() {
+    const line = [
+      `Omnipay preview ${orderRef}`,
+      `${amountLabel} (${selectedFiat.label}${selectedFiat.id !== "usd" ? ` ${amountUsdLabel}` : ""}) → ${selectedAsset.label}`,
+      `on ${activeNetwork?.label ?? selectedAsset.network}`,
+      `via ${selectedPayment.label} · ${selectedCountry.label}`,
+      `${selectedCadence.label} · ${selectedSpeed.label}`,
+      `funds ${selectedFundSource.label} · purpose ${selectedPurpose.label}`,
+      receiveEstimate !== "—" ? `receive ${receiveEstimate}` : null,
+      totalEstimate !== "—" ? `card total ${totalEstimate}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    try {
+      await navigator.clipboard.writeText(line);
+      setSummaryCopied(true);
+      window.setTimeout(() => setSummaryCopied(false), 2000);
+      setSubmitHint(null);
+    } catch {
+      setSubmitHint(
+        "Share summary copy failed — select the order preview text manually.",
       );
     }
   }
@@ -537,6 +607,14 @@ export function OnrampTease() {
       event.preventDefault();
       setSubmitHint(
         "Accept the Terms of Service soft-gate before continuing to Omnipay.cc.",
+      );
+      return;
+    }
+
+    if (!privacyAccepted) {
+      event.preventDefault();
+      setSubmitHint(
+        "Accept the Privacy Policy soft-gate before continuing to Omnipay.cc.",
       );
       return;
     }
@@ -687,6 +765,18 @@ export function OnrampTease() {
         >
           ToS {tosAccepted ? "accepted" : "needed"}
         </li>
+        <li
+          className={`rounded-full px-2.5 py-1 ${
+            privacyAccepted
+              ? "bg-emerald-400/15 text-emerald-100"
+              : "bg-amber-400/15 text-amber-100"
+          }`}
+        >
+          Privacy {privacyAccepted ? "accepted" : "needed"}
+        </li>
+        <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
+          {selectedFiat.label}
+        </li>
         <li className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-emerald-100">
           Funds {selectedFundSource.label}
         </li>
@@ -766,7 +856,7 @@ export function OnrampTease() {
                   setQuoteAt(new Date());
                   setQuoteAgeSec(0);
                   if (amountValid) {
-                    lockQuoteUnits(parsedAmount, option.id, 0);
+                    lockQuoteUnits(amountInUsd, option.id, 0);
                   } else {
                     setLockedUnits(null);
                   }
@@ -872,7 +962,61 @@ export function OnrampTease() {
         </label>
       ) : null}
       <fieldset className="mt-4">
-        <legend className="text-sm text-sky-100/80">Buy amount (USD)</legend>
+        <legend className="text-sm text-sky-100/80">Fiat currency</legend>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {fiatCurrencies.map((option) => {
+            const selected = fiatCurrency === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setFiatCurrency(option.id);
+                  setQuoteJitterBps(0);
+                  setQuoteAt(new Date());
+                  setQuoteAgeSec(0);
+                  if (amountValid) {
+                    lockQuoteUnits(
+                      parsedAmount / option.perUsd,
+                      selectedAsset.id,
+                      0,
+                    );
+                  } else {
+                    setLockedUnits(null);
+                  }
+                  setSubmitHint(null);
+                }}
+                aria-pressed={selected}
+                className={`rounded-lg px-2 py-2.5 text-left transition-colors ${
+                  selected
+                    ? "bg-white text-[#0b1b33]"
+                    : "border border-white/20 bg-white/5 text-sky-100/90 hover:bg-white/10"
+                }`}
+              >
+                <span className="block text-sm font-semibold">
+                  {option.label}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[11px] ${
+                    selected ? "text-[#0b1b33]/70" : "text-sky-100/65"
+                  }`}
+                >
+                  {option.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="fiat_currency" value={fiatCurrency} />
+        <p className="mt-2 text-xs text-sky-100/65">
+          Tease FX only — live Stripe settles in the card&apos;s billing
+          currency at checkout.
+        </p>
+      </fieldset>
+      <fieldset className="mt-4">
+        <legend className="text-sm text-sky-100/80">
+          Buy amount ({selectedFiat.label})
+        </legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {presets.map((preset) => {
             const selected = amount === String(preset);
@@ -886,7 +1030,11 @@ export function OnrampTease() {
                   setQuoteJitterBps(0);
                   setQuoteAt(new Date());
                   setQuoteAgeSec(0);
-                  lockQuoteUnits(preset, selectedAsset.id, 0);
+                  lockQuoteUnits(
+                    preset / selectedFiat.perUsd,
+                    selectedAsset.id,
+                    0,
+                  );
                   setSubmitHint(null);
                 }}
                 aria-pressed={selected}
@@ -921,7 +1069,11 @@ export function OnrampTease() {
               setQuoteJitterBps(0);
               setQuoteAt(new Date());
               setQuoteAgeSec(0);
-              lockQuoteUnits(nextParsed, selectedAsset.id, 0);
+              lockQuoteUnits(
+                nextParsed / selectedFiat.perUsd,
+                selectedAsset.id,
+                0,
+              );
             } else {
               setLockedUnits(null);
             }
@@ -1328,10 +1480,19 @@ export function OnrampTease() {
           >
             {refCopied ? "Copied" : "Copy ref"}
           </button>
+          <button
+            type="button"
+            onClick={shareSummary}
+            className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {summaryCopied ? "Shared" : "Share summary"}
+          </button>
         </p>
         <input type="hidden" name="order_ref" value={orderRef} />
         <p className="mt-2">
-          Order preview: {amountLabel} → {selectedAsset.label} on{" "}
+          Order preview: {amountLabel}
+          {selectedFiat.id !== "usd" ? ` (${amountUsdLabel} USD tease)` : ""} →{" "}
+          {selectedAsset.label} on{" "}
           {activeNetwork?.label ?? selectedAsset.network}
           {trimmedWallet
             ? ` → ${trimmedWallet.slice(0, 6)}…${trimmedWallet.slice(-4)}`
@@ -1369,7 +1530,9 @@ export function OnrampTease() {
           {activePromo
             ? ` (−${activePromo.discountPct}% promo off fees)`
             : ""}{" "}
-          · card total {totalEstimate} · ETA {selectedSpeed.eta}
+          · card total {totalEstimate}
+          {selectedFiat.id !== "usd" ? ` (${fiatTotalEstimate})` : ""} · ETA{" "}
+          {selectedSpeed.eta}
           {receiptStatus === "valid" ? ` · receipt → ${trimmedReceipt}` : ""}.
         </p>
         {quoteStale ? (
@@ -1436,6 +1599,36 @@ export function OnrampTease() {
               Omnipay.cc Terms
             </a>{" "}
             still apply at live checkout.
+          </span>
+        </span>
+      </label>
+      <label className="mt-3 flex items-start gap-3 text-sm text-sky-100/90">
+        <input
+          type="checkbox"
+          name="privacy_accepted"
+          value="1"
+          checked={privacyAccepted}
+          onChange={(event) => {
+            setPrivacyAccepted(event.target.checked);
+            setSubmitHint(null);
+          }}
+          className="mt-1 h-4 w-4 rounded border-white/30 accent-[var(--accent)]"
+        />
+        <span>
+          <span className="font-semibold text-white">
+            Accept Privacy Policy
+          </span>
+          <span className="mt-1 block text-xs text-sky-100/70">
+            Preview soft-gate only — the binding{" "}
+            <a
+              href="https://omnipay.cc/PrivacyPolicy"
+              className="underline decoration-sky-200/50 underline-offset-2 hover:text-white"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Omnipay.cc Privacy Policy
+            </a>{" "}
+            still applies at live checkout.
           </span>
         </span>
       </label>

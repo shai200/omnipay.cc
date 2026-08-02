@@ -117,6 +117,18 @@ const faqItems = [
     q: "Why confirm the receipt email?",
     a: "When you enter a receipt email, preview requires a matching confirmation before Continue. Clear both fields to skip receipts in the tease.",
   },
+  {
+    q: "Can I buy in EUR or GBP?",
+    a: "Preview lets you pick USD, EUR, or GBP with a tease FX rate. Amounts convert to a USD-equivalent for crypto estimates — live Stripe still settles in your card’s billing currency at checkout.",
+  },
+  {
+    q: "Why accept the Privacy Policy?",
+    a: "Preview soft-gates Continue behind a Privacy Policy checkbox (alongside Terms). The binding Omnipay.cc Privacy Policy still applies at live checkout — this checkbox is not a substitute for signing in.",
+  },
+  {
+    q: "What does Share summary do?",
+    a: "Copies a one-line order preview (ref, amount, asset, network, cadence, fees) to your clipboard so you can paste it into notes or support — tease only, not a live payment receipt.",
+  },
 ] as const;
 
 export default function Home() {
