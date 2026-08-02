@@ -1,6 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const cadences = [
   { id: "weekly", label: "Weekly", detail: "Steady habit" },
@@ -57,6 +63,61 @@ function encodeReminderForHash(draft: ReminderDraftV1): string {
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
+}
+
+function decodeReminderFromHash(token: string): ReminderDraftV1 | null {
+  try {
+    const b64 = token.replace(/-/g, "+").replace(/_/g, "/");
+    const pad =
+      b64.length % 4 === 0 ? "" : "=".repeat(4 - (b64.length % 4));
+    const binary = atob(b64 + pad);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    return parseReminderDraft(JSON.parse(json));
+  } catch {
+    return null;
+  }
+}
+
+/** Preview-only: extract reminder prefs from a pasted URL, hash, or bare token. */
+function extractReminderFromPaste(raw: string): ReminderDraftV1 | null {
+  const text = raw.trim();
+  if (!text) return null;
+  try {
+    if (text.includes("#") || text.startsWith("http")) {
+      const asUrl = text.includes("://")
+        ? new URL(text)
+        : new URL(text, window.location.origin);
+      const hash = asUrl.hash.replace(/^#/, "");
+      if (hash.startsWith(reminderHashPrefix)) {
+        return decodeReminderFromHash(
+          decodeURIComponent(hash.slice(reminderHashPrefix.length)),
+        );
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+  const hashIdx = text.indexOf(`#${reminderHashPrefix}`);
+  if (hashIdx >= 0) {
+    return decodeReminderFromHash(
+      decodeURIComponent(text.slice(hashIdx + 1 + reminderHashPrefix.length)),
+    );
+  }
+  if (text.startsWith(reminderHashPrefix)) {
+    return decodeReminderFromHash(
+      decodeURIComponent(text.slice(reminderHashPrefix.length)),
+    );
+  }
+  // Bare JSON export or bare base64url token.
+  try {
+    if (text.startsWith("{")) {
+      return parseReminderDraft(JSON.parse(text));
+    }
+  } catch {
+    /* fall through */
+  }
+  return decodeReminderFromHash(text);
 }
 
 function isCadenceId(value: unknown): value is (typeof cadences)[number]["id"] {
@@ -135,6 +196,10 @@ export function ReminderTease() {
   const [reminderSavedAt, setReminderSavedAt] = useState<string | null>(null);
   const [reminderLinkCopied, setReminderLinkCopied] = useState(false);
   const [reminderExported, setReminderExported] = useState(false);
+  const [reminderLinkPasted, setReminderLinkPasted] = useState(false);
+  const [reminderImported, setReminderImported] = useState(false);
+  const pasteReminderInputRef = useRef<HTMLInputElement>(null);
+  const importReminderInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = readReminderFromStorage();
@@ -235,6 +300,8 @@ export function ReminderTease() {
     setReminderSavedAt(null);
     setReminderLinkCopied(false);
     setReminderExported(false);
+    setReminderLinkPasted(false);
+    setReminderImported(false);
     setReminderHint("Reminder prefs cleared from this browser.");
   }
 
@@ -256,6 +323,8 @@ export function ReminderTease() {
       setReminderSavedAt(draft.savedAt);
       setReminderLinkCopied(true);
       setReminderExported(false);
+      setReminderLinkPasted(false);
+      setReminderImported(false);
       window.setTimeout(() => setReminderLinkCopied(false), 2000);
       setReminderHint(
         "Reminder link copied — open / Paste reminder link on another browser. Form unchanged. Nothing uploads to Omnipay servers.",
@@ -294,6 +363,8 @@ export function ReminderTease() {
       setReminderSavedAt(draft.savedAt);
       setReminderExported(true);
       setReminderLinkCopied(false);
+      setReminderLinkPasted(false);
+      setReminderImported(false);
       window.setTimeout(() => setReminderExported(false), 2000);
       setReminderHint(
         "Reminder JSON exported — Import reminder on another browser to restore the slot. Form unchanged.",
@@ -304,6 +375,128 @@ export function ReminderTease() {
         "Export reminder failed — use Copy reminder link instead.",
       );
     }
+  }
+
+  /** Preview-only: write Save reminder slot from a #omn-reminder= paste (form untouched). */
+  function applyPastedToReminderSlot(raw: string): boolean {
+    const draft = extractReminderFromPaste(raw);
+    if (!draft) {
+      setReminderHint(
+        "Paste reminder link failed — need a #omn-reminder= URL or Export reminder .json.",
+      );
+      return false;
+    }
+    try {
+      window.localStorage.setItem(reminderStorageKey, JSON.stringify(draft));
+    } catch {
+      setReminderHint(
+        "Paste reminder link failed — browser storage may be blocked in this preview.",
+      );
+      return false;
+    }
+    setReminderAvailable(true);
+    setReminderSavedAt(draft.savedAt);
+    setReminderBanner(false);
+    setReminderLinkCopied(false);
+    setReminderExported(false);
+    setReminderLinkPasted(true);
+    setReminderImported(false);
+    window.setTimeout(() => setReminderLinkPasted(false), 2000);
+    setReminderHint(
+      "Reminder prefs pasted from link — form unchanged. Restore reminder to load into the form.",
+    );
+    setSubmitHint(null);
+    return true;
+  }
+
+  async function pasteReminderLinkFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        const field = pasteReminderInputRef.current?.value ?? "";
+        if (field.trim() && applyPastedToReminderSlot(field)) {
+          if (pasteReminderInputRef.current) {
+            pasteReminderInputRef.current.value = "";
+          }
+          return;
+        }
+        setReminderHint(
+          "Clipboard is empty — paste a #omn-reminder= link into the field, then Paste reminder link.",
+        );
+        pasteReminderInputRef.current?.focus();
+        return;
+      }
+      if (!applyPastedToReminderSlot(text)) {
+        pasteReminderInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteReminderInputRef.current?.value ?? "";
+      if (field.trim() && applyPastedToReminderSlot(field)) {
+        if (pasteReminderInputRef.current) {
+          pasteReminderInputRef.current.value = "";
+        }
+        return;
+      }
+      setReminderHint(
+        "Clipboard read blocked — paste the #omn-reminder= link into the field, then Paste reminder link.",
+      );
+      pasteReminderInputRef.current?.focus();
+    }
+  }
+
+  function openImportReminderPicker() {
+    importReminderInputRef.current?.click();
+  }
+
+  function onImportReminderFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text =
+          typeof reader.result === "string" ? reader.result : "";
+        const draft = parseReminderDraft(JSON.parse(text));
+        if (!draft) {
+          setReminderHint(
+            "Import reminder failed — file is not a valid Omnipay preview reminder v1.",
+          );
+          return;
+        }
+        try {
+          window.localStorage.setItem(
+            reminderStorageKey,
+            JSON.stringify(draft),
+          );
+        } catch {
+          setReminderHint(
+            "Import reminder failed — browser storage may be blocked in this preview.",
+          );
+          return;
+        }
+        setReminderAvailable(true);
+        setReminderSavedAt(draft.savedAt);
+        setReminderBanner(false);
+        setReminderLinkCopied(false);
+        setReminderExported(false);
+        setReminderLinkPasted(false);
+        setReminderImported(true);
+        window.setTimeout(() => setReminderImported(false), 2000);
+        setReminderHint(
+          "Reminder prefs imported — form unchanged. Restore reminder to load into the form.",
+        );
+        setSubmitHint(null);
+      } catch {
+        setReminderHint(
+          "Import reminder failed — choose a .json exported from Export reminder.",
+        );
+      }
+    };
+    reader.onerror = () => {
+      setReminderHint("Import reminder failed — could not read that file.");
+    };
+    reader.readAsText(file);
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -574,6 +767,57 @@ export function ReminderTease() {
             {reminderExported ? "Reminder exported" : "Export reminder"}
           </button>
         ) : null}
+        <button
+          type="button"
+          onClick={() => {
+            void pasteReminderLinkFromClipboard();
+          }}
+          className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+        >
+          {reminderLinkPasted ? "Reminder link pasted" : "Paste reminder link"}
+        </button>
+        <button
+          type="button"
+          onClick={openImportReminderPicker}
+          className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+        >
+          {reminderImported ? "Reminder imported" : "Import reminder"}
+        </button>
+        <input
+          ref={pasteReminderInputRef}
+          type="text"
+          inputMode="url"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="#omn-reminder=… or full URL"
+          aria-label="Paste reminder link"
+          onPaste={(event) => {
+            const text = event.clipboardData.getData("text");
+            if (!text.trim()) return;
+            event.preventDefault();
+            if (applyPastedToReminderSlot(text)) {
+              event.currentTarget.value = "";
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            const value = event.currentTarget.value;
+            if (applyPastedToReminderSlot(value)) {
+              event.currentTarget.value = "";
+            }
+          }}
+          className="min-w-[12rem] flex-1 rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none transition focus:border-[var(--accent)]"
+        />
+        <input
+          ref={importReminderInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          aria-hidden
+          tabIndex={-1}
+          onChange={onImportReminderFile}
+        />
       </p>
       {reminderHint ? (
         <p className="mt-2 text-xs text-[var(--muted)]" role="status">
