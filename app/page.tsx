@@ -263,7 +263,7 @@ const faqItems = [
   },
   {
     q: "What is Clear form / Reminder FP?",
-    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. When the form differs from defaults, Clear form arms a Confirm reset to defaults step (second click applies). Reminder FP chips show Form FP, Defaults FP, and Slot FP (ignores savedAt). Copy form FP / Copy defaults FP / Copy Slot FP / Copy Defaults↔Slot pair put fingerprints on the clipboard. Compare Defaults FP ↔ Slot FP / Verify defaults vs slot report whether saved prefs equal Clear form targets. Apply defaults to slot / Reset slot to defaults write Clear form defaults into the slot; Export defaults downloads Clear form targets as JSON (form untouched). Fingerprints never leave your browser.",
+    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. When the form differs from defaults, Clear form arms a Confirm reset to defaults step (second click applies). Reminder FP chips show Form FP, Defaults FP, and Slot FP (ignores savedAt). Copy form FP / Copy defaults FP / Copy Slot FP / Copy Defaults↔Slot pair / Copy Form↔Defaults pair put fingerprints on the clipboard. Compare Defaults FP ↔ Slot FP / Verify defaults vs slot report whether saved prefs equal Clear form targets. Apply defaults to slot / Reset slot to defaults write Clear form defaults into the slot; Export defaults downloads Clear form targets as JSON; Paste/Import defaults apply that JSON to the form only (slot untouched). Fingerprints never leave your browser.",
   },
   {
     q: "What is Defaults FP / Confirm reset to defaults?",
@@ -295,7 +295,11 @@ const faqItems = [
   },
   {
     q: "What is Copy Defaults↔Slot pair / Export defaults?",
-    a: "Copy Defaults↔Slot pair puts a Defaults FP ↔ Slot FP citation (with = or ≠) on the clipboard so you can cite Clear form targets vs Save reminder across browsers — form untouched. Export defaults downloads Clear form defaults as omnipay-reminder-defaults.json (distinct from Export reminder, which dumps the slot) — form and slot untouched. Import reminder can restore an exported defaults file into the slot. Fingerprints never leave your browser.",
+    a: "Copy Defaults↔Slot pair puts a Defaults FP ↔ Slot FP citation (with = or ≠) on the clipboard so you can cite Clear form targets vs Save reminder across browsers — form untouched. Export defaults downloads Clear form defaults as omnipay-reminder-defaults.json (distinct from Export reminder, which dumps the slot) — form and slot untouched. Paste/Import defaults apply that JSON to the live form only; Import reminder can restore it into the slot. Fingerprints never leave your browser.",
+  },
+  {
+    q: "What is Copy Form↔Defaults pair / Paste defaults / Import defaults?",
+    a: "Copy Form↔Defaults pair puts a Form FP ↔ Defaults FP citation (with = or ≠) on the clipboard so you can cite the live form vs Clear form targets — slot untouched. Paste defaults reads Export defaults JSON (or #omn-reminder=) from the clipboard/field and applies it to the live form only. Import defaults loads the same .json via file picker into the form only — distinct from Paste reminder link / Import reminder, which write the Save reminder slot. Fingerprints never leave your browser.",
   },
   {
     q: "What is Verify form vs defaults / Diff form vs defaults?",

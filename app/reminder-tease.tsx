@@ -306,9 +306,15 @@ export function ReminderTease() {
     useState(false);
   const [reminderDefaultsExported, setReminderDefaultsExported] =
     useState(false);
+  const [reminderFormDefaultsPairCopied, setReminderFormDefaultsPairCopied] =
+    useState(false);
+  const [reminderDefaultsPasted, setReminderDefaultsPasted] = useState(false);
+  const [reminderDefaultsImported, setReminderDefaultsImported] =
+    useState(false);
   const [clearFormArmSecondsLeft, setClearFormArmSecondsLeft] = useState(0);
   const pasteReminderInputRef = useRef<HTMLInputElement>(null);
   const importReminderInputRef = useRef<HTMLInputElement>(null);
+  const importDefaultsInputRef = useRef<HTMLInputElement>(null);
   const clearFormArmTimerRef = useRef<number | null>(null);
   const clearFormArmTickRef = useRef<number | null>(null);
 
@@ -523,6 +529,11 @@ export function ReminderTease() {
     setReminderDefaultsSlotCompared(false);
     setReminderDefaultsAppliedToSlot(false);
     setReminderSlotResetToDefaults(false);
+    setReminderDefaultsSlotPairCopied(false);
+    setReminderDefaultsExported(false);
+    setReminderFormDefaultsPairCopied(false);
+    setReminderDefaultsPasted(false);
+    setReminderDefaultsImported(false);
     setReminderHint("Reminder prefs cleared from this browser.");
   }
 
@@ -1472,10 +1483,11 @@ export function ReminderTease() {
       URL.revokeObjectURL(url);
       setReminderDefaultsExported(true);
       setReminderDefaultsSlotPairCopied(false);
+      setReminderFormDefaultsPairCopied(false);
       setReminderExported(false);
       window.setTimeout(() => setReminderDefaultsExported(false), 2000);
       setReminderHint(
-        `Defaults JSON exported (FP ${defaultsFp}) — Import reminder / Apply defaults to slot on another browser. Form + slot untouched.`,
+        `Defaults JSON exported (FP ${defaultsFp}) — Paste/Import defaults (form) or Import reminder / Apply defaults to slot on another browser. Form + slot untouched.`,
       );
       setSubmitHint(null);
     } catch {
@@ -1483,6 +1495,196 @@ export function ReminderTease() {
         "Export defaults failed — use Copy defaults FP instead.",
       );
     }
+  }
+
+  /** Preview-only: copy Form FP ↔ Defaults FP citation pair (slot untouched). */
+  async function copyFormDefaultsFpPair() {
+    const formFp = reminderFormFingerprint;
+    const defaultsFp = reminderDefaultsFingerprint;
+    const matchMark = formFp === defaultsFp ? "=" : "≠";
+    const pair = `Form FP ${formFp} ↔ Defaults FP ${defaultsFp} (${matchMark})`;
+    try {
+      await navigator.clipboard.writeText(pair);
+      setReminderFormDefaultsCompared(true);
+      setReminderFormDefaultsPairCopied(true);
+      setReminderDefaultsSlotPairCopied(false);
+      setReminderDefaultsExported(false);
+      setReminderDefaultsPasted(false);
+      setReminderDefaultsImported(false);
+      setReminderVerifyAnchor("defaults");
+      setReminderVerifyStatus(formFp === defaultsFp ? "match" : "mismatch");
+      if (formFp === defaultsFp) {
+        setReminderDiffLines([]);
+      } else {
+        setReminderDiffLines(
+          diffReminderFields(
+            buildReminderPayload(),
+            defaultReminderDraft(),
+            "form",
+            "defaults",
+          ),
+        );
+      }
+      window.setTimeout(() => {
+        setReminderFormDefaultsPairCopied(false);
+        setReminderFormDefaultsCompared(false);
+      }, 2000);
+      setReminderHint(
+        `Copied ${pair} — cite when verifying live form vs Clear form targets. Slot untouched.`,
+      );
+      setSubmitHint(null);
+    } catch {
+      setReminderHint(
+        "Copy Form↔Defaults pair failed — clipboard may be blocked in this preview.",
+      );
+    }
+  }
+
+  /** Preview-only: apply defaults JSON to live form only (slot untouched). */
+  function applyDefaultsJsonToForm(raw: string): boolean {
+    let draft: ReminderDraftV1 | null = null;
+    try {
+      const text = raw.trim();
+      if (!text) return false;
+      draft = extractReminderFromPaste(text);
+      if (!draft && text.startsWith("{")) {
+        draft = parseReminderDraft(JSON.parse(text));
+      }
+    } catch {
+      draft = null;
+    }
+    if (!draft) {
+      setReminderHint(
+        "Paste/Import defaults failed — need Export defaults .json (or #omn-reminder= / reminder v1 JSON).",
+      );
+      return false;
+    }
+    const priorFp = fingerprintReminder(buildReminderPayload());
+    const appliedFp = fingerprintReminder(draft);
+    const codeDefaultsFp = reminderDefaultsFingerprint;
+    applyReminder(draft);
+    disarmClearFormArm();
+    setReminderFormCleared(false);
+    setReminderFormSwapped(false);
+    setReminderFormDefaultsCompared(true);
+    setReminderFormSlotCompared(false);
+    setReminderDefaultsSlotCompared(false);
+    setReminderVerifyAnchor("defaults");
+    setReminderVerifyStatus(
+      appliedFp === codeDefaultsFp ? "match" : "mismatch",
+    );
+    if (appliedFp === codeDefaultsFp) {
+      setReminderDiffLines([]);
+    } else {
+      setReminderDiffLines(
+        diffReminderFields(draft, defaultReminderDraft(), "form", "defaults"),
+      );
+    }
+    const slot = readReminderFromStorage();
+    if (slot) {
+      setReminderAvailable(true);
+      setReminderSavedAt(slot.savedAt);
+      setReminderSlotFingerprint(fingerprintReminder(slot));
+      setReminderBanner(false);
+    }
+    const vsCode =
+      appliedFp === codeDefaultsFp
+        ? `equals code Defaults FP ${codeDefaultsFp}`
+        : `≠ code Defaults FP ${codeDefaultsFp}`;
+    setReminderHint(
+      priorFp === appliedFp
+        ? `Defaults applied to form — Form FP already ${appliedFp} (${vsCode}). Slot untouched.`
+        : `Defaults applied to form (was FP ${priorFp} → ${appliedFp}; ${vsCode}). Slot untouched.`,
+    );
+    setSubmitHint(null);
+    return true;
+  }
+
+  async function pasteDefaultsFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        const field = pasteReminderInputRef.current?.value ?? "";
+        if (field.trim() && applyDefaultsJsonToForm(field)) {
+          setReminderDefaultsPasted(true);
+          setReminderDefaultsImported(false);
+          setReminderLinkPasted(false);
+          setReminderImported(false);
+          window.setTimeout(() => setReminderDefaultsPasted(false), 2000);
+          if (pasteReminderInputRef.current) {
+            pasteReminderInputRef.current.value = "";
+          }
+          return;
+        }
+        setReminderHint(
+          "Clipboard is empty — paste Export defaults JSON into the field, then Paste defaults.",
+        );
+        pasteReminderInputRef.current?.focus();
+        return;
+      }
+      if (!applyDefaultsJsonToForm(text)) {
+        pasteReminderInputRef.current?.focus();
+        return;
+      }
+      setReminderDefaultsPasted(true);
+      setReminderDefaultsImported(false);
+      setReminderLinkPasted(false);
+      setReminderImported(false);
+      window.setTimeout(() => setReminderDefaultsPasted(false), 2000);
+    } catch {
+      const field = pasteReminderInputRef.current?.value ?? "";
+      if (field.trim() && applyDefaultsJsonToForm(field)) {
+        setReminderDefaultsPasted(true);
+        setReminderDefaultsImported(false);
+        setReminderLinkPasted(false);
+        setReminderImported(false);
+        window.setTimeout(() => setReminderDefaultsPasted(false), 2000);
+        if (pasteReminderInputRef.current) {
+          pasteReminderInputRef.current.value = "";
+        }
+        return;
+      }
+      setReminderHint(
+        "Clipboard read blocked — paste Export defaults JSON into the field, then Paste defaults.",
+      );
+      pasteReminderInputRef.current?.focus();
+    }
+  }
+
+  function openImportDefaultsPicker() {
+    importDefaultsInputRef.current?.click();
+  }
+
+  function onImportDefaultsFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text =
+          typeof reader.result === "string" ? reader.result : "";
+        if (!applyDefaultsJsonToForm(text)) {
+          setReminderHint(
+            "Import defaults failed — choose a .json exported from Export defaults.",
+          );
+          return;
+        }
+        setReminderDefaultsImported(true);
+        setReminderDefaultsPasted(false);
+        setReminderImported(false);
+        setReminderLinkPasted(false);
+        window.setTimeout(() => setReminderDefaultsImported(false), 2000);
+      } catch {
+        setReminderHint(
+          "Import defaults failed — choose a .json exported from Export defaults.",
+        );
+      }
+    };
+    reader.onerror = () => {
+      setReminderHint("Import defaults failed — could not read that file.");
+    };
+    reader.readAsText(file);
   }
 
   /** Preview-only: swap live reminder form ↔ Save reminder slot. */
@@ -2219,6 +2421,47 @@ export function ReminderTease() {
         <button
           type="button"
           onClick={() => {
+            void copyFormDefaultsFpPair();
+          }}
+          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+            reminderFormDefaultsPairCopied
+              ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+              : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+          }`}
+        >
+          {reminderFormDefaultsPairCopied
+            ? "Form↔Defaults pair copied"
+            : "Copy Form↔Defaults pair"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            void pasteDefaultsFromClipboard();
+          }}
+          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+            reminderDefaultsPasted
+              ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+              : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+          }`}
+        >
+          {reminderDefaultsPasted ? "Defaults pasted" : "Paste defaults"}
+        </button>
+        <button
+          type="button"
+          onClick={openImportDefaultsPicker}
+          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+            reminderDefaultsImported
+              ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+              : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+          }`}
+        >
+          {reminderDefaultsImported
+            ? "Defaults imported"
+            : "Import defaults"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
             void copyReminderFormFp();
           }}
           className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
@@ -2384,6 +2627,15 @@ export function ReminderTease() {
           aria-hidden
           tabIndex={-1}
           onChange={onImportReminderFile}
+        />
+        <input
+          ref={importDefaultsInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          aria-hidden
+          tabIndex={-1}
+          onChange={onImportDefaultsFile}
         />
       </p>
       {reminderDiffLines.length > 0 && reminderVerifyStatus === "mismatch" ? (
