@@ -1127,6 +1127,27 @@ const flaxFieldWork = [
   },
 ] as const;
 
+const hempFieldWork = [
+  {
+    name: "Bract rows",
+    rhythm: "After the flax field",
+    detail:
+      "A soft-sage belt of hemp on the warm gravel edge past the flax — seed bracts catch the same late light the bolls finish on, and the deep roots knit the clay without crowding the orchard windbreak into damp.",
+  },
+  {
+    name: "Strip mornings",
+    rhythm: "Quiet dawn sheaves",
+    detail:
+      "Hand strip when the bracts dry and dew still holds. Mara ties ripe stalks before the stand opens — the hemp field is a finish lane, not a combine parade that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "Hempseed weeks",
+    rhythm: "Late autumn board",
+    detail:
+      "A few cold-press jugs for the farm table after the pack shed has done its quiet work — Leah chalks hempseed oil when the press is honest. No anonymous commodity bin; just what the bract finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -1303,6 +1324,9 @@ export default function Home() {
             </a>
             <a href="#flax-field" className="transition hover:text-[var(--foreground)]">
               Flax field
+            </a>
+            <a href="#hemp-field" className="transition hover:text-[var(--foreground)]">
+              Hemp field
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -3725,6 +3749,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the flax field
+            </a>
+          </div>
+        </section>
+
+        {/* Hemp field — one job: bract rows after the flax field, strip mornings + hempseed weeks */}
+        <section
+          id="hemp-field"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -left-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Bract and soft sage
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A hemp field that finishes the flax belt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Bract rows, strip mornings, and hempseed weeks — a heat-loving belt of
+              soft sage after the flax field, then cold-press jugs that find the
+              farm table once the pack-shed lane has done its quiet late-autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {hempFieldWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20hemp%20field"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the hemp field
             </a>
           </div>
         </section>
