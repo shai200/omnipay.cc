@@ -434,6 +434,27 @@ const dairyWork = [
   },
 ] as const;
 
+const smokehouseWork = [
+  {
+    name: "Low smoke",
+    rhythm: "Apple and oak",
+    detail:
+      "A small shed east of the barn — wood from the lot, not pellets from a truck. Heat stays gentle so fat renders clean and bark stays edible.",
+  },
+  {
+    name: "Cure racks",
+    rhythm: "Salt, time, cool air",
+    detail:
+      "Bacon, lardo, and a short run of country ham hang beside the cream room’s chill. Neighbors bring jars; we keep a chalk ledger for the waiting list.",
+  },
+  {
+    name: "Stand jars",
+    rhythm: "Saturday morning",
+    detail:
+      "Smoked paprika salt, rendered fat, and sliced ends for the farm table. Nothing leaves without a date and a name on the lid.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -511,6 +532,9 @@ export default function Home() {
             </a>
             <a href="#dairy" className="transition hover:text-[var(--foreground)]">
               Dairy
+            </a>
+            <a href="#smokehouse" className="transition hover:text-[var(--foreground)]">
+              Smokehouse
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -1465,6 +1489,48 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the dairy
+            </a>
+          </div>
+        </section>
+
+        {/* Smokehouse — one job: low smoke, cure racks, and Saturday jars */}
+        <section id="smokehouse" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(680px_360px_at_75%_35%,rgba(198,164,90,0.12),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Smoke and cure
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A smokehouse that works on wood from the lot.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Low smoke, cure racks, and stand jars — the quiet line from
+              pasture and orchard wood to bacon, lardo, and Saturday fat for
+              the farm table.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {smokehouseWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20smokehouse"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the smokehouse
             </a>
           </div>
         </section>
