@@ -59,6 +59,12 @@ const visitSteps = [
   { label: "Take home", detail: "Farm stand open Sat–Sun" },
 ] as const;
 
+const visitHours = [
+  { day: "Saturday", hours: "9am – 2pm" },
+  { day: "Sunday", hours: "9am – 2pm" },
+  { day: "Weekdays", hours: "By appointment for CSA pickup" },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -73,6 +79,9 @@ export default function Home() {
           <nav className="hidden items-center gap-8 text-sm text-[var(--muted)] md:flex">
             <a href="#practice" className="transition hover:text-[var(--foreground)]">
               Practice
+            </a>
+            <a href="#land" className="transition hover:text-[var(--foreground)]">
+              Land
             </a>
             <a href="#harvest" className="transition hover:text-[var(--foreground)]">
               Harvest
@@ -165,6 +174,34 @@ export default function Home() {
                   </p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Land — one job: place story with real visual anchor */}
+        <section id="land" className="relative border-t border-[var(--line)]">
+          <div className="relative min-h-[70svh] overflow-hidden md:min-h-[80svh]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=2400&q=80"
+              alt="Green crop rows under open prairie sky"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0f1f16]/90 via-[#0f1f16]/55 to-[#0f1f16]/20" />
+            <div className="relative z-10 mx-auto flex min-h-[70svh] max-w-6xl items-end px-6 py-16 md:min-h-[80svh] md:px-8 md:py-24">
+              <div className="max-w-xl">
+                <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+                  The land
+                </p>
+                <h2 className="mt-3 font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+                  Eighty acres between creek and windbreak.
+                </h2>
+                <p className="mt-4 text-base leading-relaxed text-[var(--muted)] md:text-lg">
+                  Contoured rows follow the slope. Pasture rests between
+                  grazings. A thin strip of prairie remains wild so birds and
+                  pollinators keep their share of the year.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -269,6 +306,22 @@ export default function Home() {
                   </li>
                 ))}
               </ol>
+              <div className="mt-10 border-t border-[var(--line)] pt-8">
+                <p className="font-[family-name:var(--font-fraunces)] text-lg font-semibold">
+                  Stand hours
+                </p>
+                <ul className="mt-4 space-y-3">
+                  {visitHours.map((row) => (
+                    <li
+                      key={row.day}
+                      className="flex flex-wrap items-baseline justify-between gap-2 text-sm md:text-base"
+                    >
+                      <span className="font-medium">{row.day}</span>
+                      <span className="text-[var(--muted)]">{row.hours}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
             <div className="relative min-h-[320px] overflow-hidden rounded-sm md:min-h-[420px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
