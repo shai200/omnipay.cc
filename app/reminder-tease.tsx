@@ -291,6 +291,7 @@ export function ReminderTease() {
   const [reminderFpCopied, setReminderFpCopied] = useState(false);
   const [reminderDefaultsFpCopied, setReminderDefaultsFpCopied] =
     useState(false);
+  const [reminderSlotFpCopied, setReminderSlotFpCopied] = useState(false);
   const [reminderFormDefaultsCompared, setReminderFormDefaultsCompared] =
     useState(false);
   const [reminderFormSlotCompared, setReminderFormSlotCompared] =
@@ -341,7 +342,7 @@ export function ReminderTease() {
       setClearFormArmSecondsLeft(0);
       setReminderClearFormArmed(false);
       setReminderHint(
-        `Confirm reset expired (form FP ${formFp} ≠ defaults FP ${defaultsFp}) — click Clear form again to re-arm. Slot untouched.`,
+        `Auto-disarm: Confirm reset expired (form FP ${formFp} ≠ defaults FP ${defaultsFp}) — click Clear form again to re-arm. Slot untouched.`,
       );
     }, armSeconds * 1000);
   }
@@ -500,6 +501,7 @@ export function ReminderTease() {
     disarmClearFormArm();
     setReminderFpCopied(false);
     setReminderDefaultsFpCopied(false);
+    setReminderSlotFpCopied(false);
     setReminderFormDefaultsCompared(false);
     setReminderFormSlotCompared(false);
     setReminderHint("Reminder prefs cleared from this browser.");
@@ -530,7 +532,7 @@ export function ReminderTease() {
       setReminderClearFormArmed(true);
       armClearFormCountdown(formFp, defaultsFp);
       setReminderHint(
-        `Confirm reset to defaults (form FP ${formFp} → defaults FP ${defaultsFp}) — click Clear form again within 4s, or Cancel reset. Slot untouched.`,
+        `Confirm reset to defaults (form FP ${formFp} → defaults FP ${defaultsFp}) — click Clear form again within 4s, Cancel reset, or wait for Auto-disarm banner. Slot untouched.`,
       );
       return;
     }
@@ -698,6 +700,37 @@ export function ReminderTease() {
     } catch {
       setReminderHint(
         "Copy defaults FP failed — clipboard may be blocked in this preview.",
+      );
+    }
+  }
+
+  /** Preview-only: copy Save reminder Slot FP (not a share URL). */
+  async function copyReminderSlotFp() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
+      setReminderHint(
+        "Copy Slot FP — no Save reminder slot in this browser. Save reminder first.",
+      );
+      return;
+    }
+    const slotFp = fingerprintReminder(slot);
+    try {
+      await navigator.clipboard.writeText(slotFp);
+      setReminderAvailable(true);
+      setReminderSavedAt(slot.savedAt);
+      setReminderSlotFingerprint(slotFp);
+      setReminderSlotFpCopied(true);
+      window.setTimeout(() => setReminderSlotFpCopied(false), 2000);
+      setReminderHint(
+        `Slot FP ${slotFp} copied — cite when verifying Save reminder across browsers. Form untouched.`,
+      );
+    } catch {
+      setReminderHint(
+        "Copy Slot FP failed — clipboard may be blocked in this preview.",
       );
     }
   }
@@ -1320,6 +1353,28 @@ export function ReminderTease() {
           </button>
         </p>
       ) : null}
+      {reminderClearFormArmed ? (
+        <p
+          className="mb-4 rounded-xl border border-amber-400/60 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          role="status"
+          aria-label="Auto-disarm banner"
+        >
+          Auto-disarm banner: Confirm reset armed —{" "}
+          <span className="font-semibold">
+            {clearFormArmSecondsLeft || 4}s
+          </span>{" "}
+          until auto-disarm (no apply). Click Confirm reset to defaults to
+          apply, or{" "}
+          <button
+            type="button"
+            onClick={cancelClearFormReset}
+            className="font-semibold text-amber-950 underline underline-offset-2"
+          >
+            Cancel reset
+          </button>
+          . Slot untouched.
+        </p>
+      ) : null}
       <fieldset>
         <legend className="text-sm font-medium text-[var(--foreground)]">
           Reminder cadence
@@ -1699,6 +1754,17 @@ export function ReminderTease() {
             ? "Defaults FP copied"
             : "Copy defaults FP"}
         </button>
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={() => {
+              void copyReminderSlotFp();
+            }}
+            className="rounded-lg border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/40"
+          >
+            {reminderSlotFpCopied ? "Slot FP copied" : "Copy Slot FP"}
+          </button>
+        ) : null}
         {reminderAvailable ? (
           <button
             type="button"

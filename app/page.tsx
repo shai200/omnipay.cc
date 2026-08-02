@@ -263,11 +263,11 @@ const faqItems = [
   },
   {
     q: "What is Clear form / Reminder FP?",
-    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. When the form differs from defaults, Clear form arms a Confirm reset to defaults step (second click applies). Reminder FP chips show Form FP, Defaults FP, and Slot FP (ignores savedAt). Copy form FP / Copy defaults FP put fingerprints on the clipboard. Fingerprints never leave your browser.",
+    a: "Clear form resets the live reminder form to defaults without touching the Save reminder slot — useful after Swap reminder ↔ form when you want a blank form but keep the swapped prefs. When the form differs from defaults, Clear form arms a Confirm reset to defaults step (second click applies). Reminder FP chips show Form FP, Defaults FP, and Slot FP (ignores savedAt). Copy form FP / Copy defaults FP / Copy Slot FP put fingerprints on the clipboard. Fingerprints never leave your browser.",
   },
   {
     q: "What is Defaults FP / Confirm reset to defaults?",
-    a: "Defaults FP is the stable fingerprint of Clear form targets (weekly / morning / drop alerts on / ≥10 / local / empty email). Confirm reset to defaults is the armed Clear form state when the live form diverged — first click arms a 4s countdown on the button, second click applies defaults before expiry; if Form FP already equals Defaults FP, Clear form is a no-op. Cancel reset (or editing the form while armed) disarms without applying. Save reminder slot stays untouched. Fingerprints never leave your browser.",
+    a: "Defaults FP is the stable fingerprint of Clear form targets (weekly / morning / drop alerts on / ≥10 / local / empty email). Confirm reset to defaults is the armed Clear form state when the live form diverged — first click arms a 4s countdown on the button and Auto-disarm banner, second click applies defaults before expiry; if Form FP already equals Defaults FP, Clear form is a no-op. Cancel reset (or editing the form while armed) disarms without applying. Save reminder slot stays untouched. Fingerprints never leave your browser.",
   },
   {
     q: "What is Compare Form FP ↔ Defaults FP / Cancel reset?",
@@ -276,6 +276,10 @@ const faqItems = [
   {
     q: "What is Compare Form FP ↔ Slot FP / Arm countdown?",
     a: "Slot FP chip highlights green (=) when it matches Form FP and amber (≠) when it diverges. Compare Form FP ↔ Slot FP reports the match without writing and surfaces Diff lines on diverge. Arm countdown is the visible 4s timer on Confirm reset to defaults while Clear form is armed — expires back to Clear form if you do not confirm. Fingerprints never leave your browser.",
+  },
+  {
+    q: "What is Copy Slot FP / Auto-disarm banner?",
+    a: "Copy Slot FP puts the Save reminder Slot FP on the clipboard (form untouched) so you can cite it across browsers. Auto-disarm banner appears while Confirm reset is armed, shows the live countdown, and auto-disarms with no apply when the timer expires — Cancel reset or editing the form also disarms. Fingerprints never leave your browser.",
   },
   {
     q: "What is Verify form vs defaults / Diff form vs defaults?",
