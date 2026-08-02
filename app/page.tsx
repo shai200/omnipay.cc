@@ -182,6 +182,27 @@ const pastureLife = [
   },
 ] as const;
 
+const orchardRows = [
+  {
+    name: "Heirloom rows",
+    season: "Bloom to first frost",
+    detail:
+      "Old varieties along the windbreak — skins that bruise, flavor that lasts, and cider worth waiting for.",
+  },
+  {
+    name: "Windbreak shelter",
+    season: "Year-round work",
+    detail:
+      "Trees break the prairie gale so greens and pasture keep their water. Birds nest; snow drifts where we want it.",
+  },
+  {
+    name: "Press weeks",
+    season: "Late autumn",
+    detail:
+      "Fallen fruit becomes juice and a small run of hard cider. Neighbors bring jugs; we keep the pulp for compost.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -223,6 +244,9 @@ export default function Home() {
             </a>
             <a href="#pasture" className="transition hover:text-[var(--foreground)]">
               Pasture
+            </a>
+            <a href="#orchard" className="transition hover:text-[var(--foreground)]">
+              Orchard
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -664,6 +688,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask to walk the pasture
+            </a>
+          </div>
+        </section>
+
+        {/* Orchard — one job: windbreak fruit and press weeks */}
+        <section
+          id="orchard"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#14251b]"
+        >
+          <div className="pointer-events-none absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-[var(--accent)]/14 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Along the windbreak
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              An orchard that shelters the farm and sweetens autumn.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Heirloom trees hold the prairie edge — fruit for the stand, shade
+              for the rows, and a few press weeks when neighbors share the
+              harvest.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {orchardRows.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.season}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20orchard%20press"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about press weeks
             </a>
           </div>
         </section>
