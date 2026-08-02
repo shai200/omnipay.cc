@@ -591,7 +591,7 @@ export function OnrampTease() {
     string | null
   >(null);
   const [verifyAnchor, setVerifyAnchor] = useState<
-    "form" | "pin" | "draft" | "saved"
+    "form" | "pin" | "draft" | "saved" | "formpin"
   >("form");
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
@@ -1079,7 +1079,7 @@ export function OnrampTease() {
       ? pinFingerprint
       : verifyAnchor === "draft"
         ? draftSlotFingerprint
-        : draftFingerprint; // form | saved track live form FP
+        : draftFingerprint; // form | saved | formpin track live form FP
   const liveVerifyStatus =
     draftVerifyStatus === "invalid"
       ? "invalid"
@@ -1527,7 +1527,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft / Verify form vs pin / Diff form vs pin. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -2304,6 +2304,80 @@ export function OnrampTease() {
     setSubmitHint(null);
   }
 
+  /** Preview-only: compare live form vs pin slot (neither written; Save draft untouched). */
+  function verifyFormVsPin() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("formpin");
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
+    const pinFp = fingerprintDraft(pinned);
+    setPinAvailable(true);
+    setPinFingerprint(pinFp);
+    setVerifyAnchor("formpin");
+    setVerifiedFormFp(currentFp);
+    if (currentFp === pinFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `Form matches pin (FP ${pinFp}) — nothing to Apply.`,
+      );
+    } else {
+      const diffs = diffDraftFields(current, pinned, "pin", "form");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Form FP ${currentFp} ≠ pin FP ${pinFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Apply pin to load pinned values.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: list field diffs between form and pin (neither written; Save draft untouched). */
+  function diffFormVsPin() {
+    const pinned = readPinFromStorage();
+    if (!pinned) {
+      setPinAvailable(false);
+      setPinFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("formpin");
+      setDraftHint("No pin in this browser — Pin draft first.");
+      return;
+    }
+    const current = buildDraftPayload();
+    const currentFp = fingerprintDraft(current);
+    const pinFp = fingerprintDraft(pinned);
+    setPinAvailable(true);
+    setPinFingerprint(pinFp);
+    setVerifyAnchor("formpin");
+    setVerifiedFormFp(currentFp);
+    if (currentFp === pinFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `No field diffs — form matches pin (FP ${pinFp}).`,
+      );
+    } else {
+      const diffs = diffDraftFields(current, pinned, "pin", "form");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Diff form vs pin: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (form FP ${currentFp} ≠ pin FP ${pinFp}). Apply pin to load pinned values.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
   function clearPin() {
     try {
       window.localStorage.removeItem(pinStorageKey);
@@ -2320,7 +2394,11 @@ export function OnrampTease() {
     setPinImported(false);
     setPinFromDrafted(false);
     setDraftPinSwapped(false);
-    if (verifyAnchor === "pin" || verifyAnchor === "draft") {
+    if (
+      verifyAnchor === "pin" ||
+      verifyAnchor === "draft" ||
+      verifyAnchor === "formpin"
+    ) {
       setDraftVerifyStatus("idle");
       setVerifiedFormFp(null);
       setDraftDiffLines([]);
@@ -3803,6 +3881,32 @@ export function OnrampTease() {
               liveVerifyStatus === "mismatch"
                 ? `Diff form/draft (${draftDiffLines.length})`
                 : "Diff form vs draft"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={verifyFormVsPin}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "formpin" && liveVerifyStatus === "match"
+                ? "Form=pin match"
+                : verifyAnchor === "formpin" && liveVerifyStatus === "mismatch"
+                  ? "Form≠pin"
+                  : "Verify form vs pin"}
+            </button>
+          ) : null}
+          {pinAvailable ? (
+            <button
+              type="button"
+              onClick={diffFormVsPin}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "formpin" &&
+              draftDiffLines.length > 0 &&
+              liveVerifyStatus === "mismatch"
+                ? `Diff form/pin (${draftDiffLines.length})`
+                : "Diff form vs pin"}
             </button>
           ) : null}
           {pinAvailable ? (
