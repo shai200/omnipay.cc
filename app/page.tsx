@@ -602,6 +602,27 @@ const pigPaddockWork = [
   },
 ] as const;
 
+const duckPondWork = [
+  {
+    name: "Reed margin",
+    rhythm: "After the pig paddock",
+    detail:
+      "A shallow pond edged in cattail and soft rush — ducks work snails and mosquito larvae so the creek below stays clearer, and the wet edge never hardens into bare mud.",
+  },
+  {
+    name: "Nest raft",
+    rhythm: "Quiet spring mornings",
+    detail:
+      "Floating timber rafts with deep straw when the prairie frost still bites. Hens brood on water, not a confinement pen — the raft is the pause, then birds return to the reed margin.",
+  },
+  {
+    name: "Egg mornings",
+    rhythm: "Twice a week to the stand",
+    detail:
+      "Rich yolks for the board after the pack shed has sorted cartons — Leah chalks duck eggs beside hen eggs when the count is honest. No anonymous warehouse carton; just what the pond grew.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -703,6 +724,9 @@ export default function Home() {
             </a>
             <a href="#pig-paddock" className="transition hover:text-[var(--foreground)]">
               Pig paddock
+            </a>
+            <a href="#duck-pond" className="transition hover:text-[var(--foreground)]">
+              Duck pond
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -2003,6 +2027,48 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the pig paddock
+            </a>
+          </div>
+        </section>
+
+        {/* Duck pond — one job: wet edge after rooting, eggs for the stand */}
+        <section id="duck-pond" className="relative border-t border-[var(--line)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(680px_360px_at_70%_35%,rgba(143,180,201,0.14),transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--sky)]">
+              Water and wing
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A duck pond that finishes the wet edge.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Reed margin, nest raft, and egg mornings — a small flock on soft
+              water after the pig paddock, then yolks that find the stand once
+              the pack-shed lane has done its quiet sorting work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {duckPondWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20duck%20pond"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the duck pond
             </a>
           </div>
         </section>
