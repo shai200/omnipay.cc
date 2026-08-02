@@ -1022,6 +1022,27 @@ const milletFieldWork = [
   },
 ] as const;
 
+const quinoaFieldWork = [
+  {
+    name: "Plume rows",
+    rhythm: "After the millet field",
+    detail:
+      "A cool-season belt of quinoa on the warm gravel edge past the millet — seed plumes catch the same late light the heads finish on, and the deep roots knit the clay without crowding the orchard windbreak into damp.",
+  },
+  {
+    name: "Strip mornings",
+    rhythm: "Quiet dawn sheaves",
+    detail:
+      "Hand strips when the plumes dry and dew still holds. Mara ties ripe bundles before the stand opens — the quinoa field is a finish lane, not a combine parade that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "Bowl weeks",
+    rhythm: "Late autumn board",
+    detail:
+      "A few stone-mill sacks for the farm table after the pack shed has done its quiet work — Leah chalks quinoa when the rinse is honest. No anonymous commodity bin; just what the plume finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -1183,6 +1204,9 @@ export default function Home() {
             </a>
             <a href="#millet-field" className="transition hover:text-[var(--foreground)]">
               Millet field
+            </a>
+            <a href="#quinoa-field" className="transition hover:text-[var(--foreground)]">
+              Quinoa field
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -3380,6 +3404,51 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the millet field
+            </a>
+          </div>
+        </section>
+
+        {/* Quinoa field — one job: plume rows after the millet field, strip mornings + bowl weeks */}
+        <section
+          id="quinoa-field"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -left-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Plume and cool ivory
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A quinoa field that finishes the millet belt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Plume rows, strip mornings, and bowl weeks — a cool-season belt of
+              cool ivory after the millet field, then stone-mill sacks that find the farm
+              table once the pack-shed lane has done its quiet late-autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {quinoaFieldWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20quinoa%20field"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the quinoa field
             </a>
           </div>
         </section>
