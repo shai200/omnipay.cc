@@ -592,7 +592,7 @@ export function OnrampTease() {
     string | null
   >(null);
   const [verifyAnchor, setVerifyAnchor] = useState<
-    "form" | "pin" | "draft" | "saved" | "formpin"
+    "form" | "pin" | "draft" | "saved" | "formpin" | "draftlink"
   >("form");
   const autosaveSkipRef = useRef(true);
   const autosaveTimerRef = useRef<number | null>(null);
@@ -1078,7 +1078,7 @@ export function OnrampTease() {
   const liveVerifyAnchorFp =
     verifyAnchor === "pin"
       ? pinFingerprint
-      : verifyAnchor === "draft"
+      : verifyAnchor === "draft" || verifyAnchor === "draftlink"
         ? draftSlotFingerprint
         : draftFingerprint; // form | saved | formpin track live form FP
   const liveVerifyStatus =
@@ -1529,7 +1529,7 @@ export function OnrampTease() {
       setPinSwapped(false);
       setPinApplied(false);
       setDraftHint(
-        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft / Swap form ↔ draft / Verify form vs pin / Diff form vs pin. Clear pin removes it.`,
+        `Pin saved (FP ${fp}) — Apply / Swap / Diff / Copy / Paste / Export / Import / Verify / Diff pin link / Pin from draft / Draft from pin / Swap draft ↔ pin / Verify draft vs pin / Diff draft vs pin / Verify form vs draft / Diff form vs draft / Swap form ↔ draft / Verify form vs pin / Diff form vs pin / Verify draft vs link / Diff draft vs link. Clear pin removes it.`,
       );
       setSubmitHint(null);
     } catch {
@@ -2422,6 +2422,180 @@ export function OnrampTease() {
       `Swapped form ↔ draft (form was FP ${currentFp} → now FP ${draftFp}; Save draft holds previous form, FP ${nextDraftFp}). Pin untouched. Refresh quote if stale.`,
     );
     setSubmitHint(null);
+  }
+
+  /** Preview-only: compare a #omn-draft= link to the Save draft slot without applying. */
+  function verifyDraftAgainstLink(raw: string): boolean {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("draftlink");
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return false;
+    }
+    const link = extractDraftFromPaste(raw);
+    if (!link) {
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("draftlink");
+      setDraftHint(
+        "Verify draft vs link failed — need a #omn-draft= URL/token (or paste into the field).",
+      );
+      return false;
+    }
+    const draftFp = fingerprintDraft(draft);
+    const linkFp = fingerprintDraft(link);
+    setDraftAvailable(true);
+    setDraftSlotFingerprint(draftFp);
+    setVerifyAnchor("draftlink");
+    setVerifiedFormFp(draftFp);
+    if (draftFp === linkFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `Draft link matches Save draft (FP ${draftFp}) — form and pin unchanged.`,
+      );
+    } else {
+      const diffs = diffDraftFields(draft, link, "link", "draft");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Draft link FP ${linkFp} ≠ Save draft FP ${draftFp} — ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Paste draft link would change the form; Import/Export still move Save draft.`,
+      );
+    }
+    setSubmitHint(null);
+    return true;
+  }
+
+  /** Preview-only: list field diffs between Save draft slot and a #omn-draft= link. */
+  function diffDraftAgainstLink(raw: string): boolean {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("draftlink");
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return false;
+    }
+    const link = extractDraftFromPaste(raw);
+    if (!link) {
+      setDraftVerifyStatus("invalid");
+      setVerifiedFormFp(null);
+      setDraftDiffLines([]);
+      setVerifyAnchor("draftlink");
+      setDraftHint(
+        "Diff draft vs link failed — need a #omn-draft= URL/token (or paste into the field).",
+      );
+      return false;
+    }
+    const draftFp = fingerprintDraft(draft);
+    const linkFp = fingerprintDraft(link);
+    setDraftAvailable(true);
+    setDraftSlotFingerprint(draftFp);
+    setVerifyAnchor("draftlink");
+    setVerifiedFormFp(draftFp);
+    if (draftFp === linkFp) {
+      setDraftVerifyStatus("match");
+      setDraftDiffLines([]);
+      setDraftHint(
+        `No field diffs — draft link matches Save draft (FP ${draftFp}).`,
+      );
+    } else {
+      const diffs = diffDraftFields(draft, link, "link", "draft");
+      setDraftVerifyStatus("mismatch");
+      setDraftDiffLines(diffs);
+      setDraftHint(
+        `Diff draft vs link: ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (link FP ${linkFp} ≠ Save draft FP ${draftFp}). Form and pin untouched.`,
+      );
+    }
+    setSubmitHint(null);
+    return true;
+  }
+
+  async function verifyDraftLinkVsSavedFromClipboard() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setDraftVerifyStatus("invalid");
+        setDraftDiffLines([]);
+        setVerifyAnchor("draftlink");
+        setDraftHint(
+          "Clipboard is empty — paste a #omn-draft= link into the field, then Verify draft vs link.",
+        );
+        pasteDraftInputRef.current?.focus();
+        return;
+      }
+      if (!verifyDraftAgainstLink(text)) {
+        pasteDraftInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteDraftInputRef.current?.value ?? "";
+      if (field.trim()) {
+        verifyDraftAgainstLink(field);
+        return;
+      }
+      setDraftVerifyStatus("invalid");
+      setDraftDiffLines([]);
+      setVerifyAnchor("draftlink");
+      setDraftHint(
+        "Clipboard read blocked — paste the #omn-draft= link into the field, then Verify draft vs link.",
+      );
+      pasteDraftInputRef.current?.focus();
+    }
+  }
+
+  async function diffDraftLinkVsSavedFromClipboard() {
+    const draft = readDraftFromStorage();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftSlotFingerprint(null);
+      setDraftHint("No saved draft in this browser — Save draft first.");
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setDraftVerifyStatus("invalid");
+        setDraftDiffLines([]);
+        setVerifyAnchor("draftlink");
+        setDraftHint(
+          "Clipboard is empty — paste a #omn-draft= link into the field, then Diff draft vs link.",
+        );
+        pasteDraftInputRef.current?.focus();
+        return;
+      }
+      if (!diffDraftAgainstLink(text)) {
+        pasteDraftInputRef.current?.focus();
+      }
+    } catch {
+      const field = pasteDraftInputRef.current?.value ?? "";
+      if (field.trim()) {
+        diffDraftAgainstLink(field);
+        return;
+      }
+      setDraftVerifyStatus("invalid");
+      setDraftDiffLines([]);
+      setVerifyAnchor("draftlink");
+      setDraftHint(
+        "Clipboard read blocked — paste the #omn-draft= link into the field, then Diff draft vs link.",
+      );
+      pasteDraftInputRef.current?.focus();
+    }
   }
 
   function clearPin() {
@@ -3938,6 +4112,36 @@ export function OnrampTease() {
               className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
             >
               {formDraftSwapped ? "Form ↔ draft ✓" : "Swap form ↔ draft"}
+            </button>
+          ) : null}
+          {draftAvailable ? (
+            <button
+              type="button"
+              onClick={() => {
+                void verifyDraftLinkVsSavedFromClipboard();
+              }}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "draftlink" && liveVerifyStatus === "match"
+                ? "Draft=link match"
+                : verifyAnchor === "draftlink" && liveVerifyStatus === "mismatch"
+                  ? "Draft≠link"
+                  : "Verify draft vs link"}
+            </button>
+          ) : null}
+          {draftAvailable ? (
+            <button
+              type="button"
+              onClick={() => {
+                void diffDraftLinkVsSavedFromClipboard();
+              }}
+              className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {verifyAnchor === "draftlink" &&
+              draftDiffLines.length > 0 &&
+              liveVerifyStatus === "mismatch"
+                ? `Diff draft/link (${draftDiffLines.length})`
+                : "Diff draft vs link"}
             </button>
           ) : null}
           {pinAvailable ? (

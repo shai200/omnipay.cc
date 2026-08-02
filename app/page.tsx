@@ -222,6 +222,10 @@ const faqItems = [
     a: "Swap form ↔ draft exchanges the live form with the Save draft localStorage slot without touching the pin. After the swap, Restore draft loads the previous form values; the form shows what was saved. Fingerprints stay in your browser — nothing uploads to Omnipay servers.",
   },
   {
+    q: "What is Verify draft vs link / Diff draft vs link?",
+    a: "Verify draft vs link compares a #omn-draft= URL to the Save draft localStorage slot without writing anything — match means the link equals the saved draft; mismatch means Paste draft link would diverge from Save draft (form stays untouched). Diff draft vs link lists which fields differ (draft → link). Pin slot stays untouched. Fingerprints never leave your browser.",
+  },
+  {
     q: "What is Verify draft vs pin / Diff draft vs pin?",
     a: "Verify draft vs pin compares the Save draft slot to the pin slot without writing anything — match means the two slots are equal; mismatch means Pin from draft or Draft from pin would change a slot. Diff draft vs pin lists which fields differ (draft → pin). The form stays untouched. Fingerprints never leave your browser.",
   },
