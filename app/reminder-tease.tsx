@@ -293,20 +293,57 @@ export function ReminderTease() {
     useState(false);
   const [reminderFormDefaultsCompared, setReminderFormDefaultsCompared] =
     useState(false);
+  const [reminderFormSlotCompared, setReminderFormSlotCompared] =
+    useState(false);
+  const [clearFormArmSecondsLeft, setClearFormArmSecondsLeft] = useState(0);
   const pasteReminderInputRef = useRef<HTMLInputElement>(null);
   const importReminderInputRef = useRef<HTMLInputElement>(null);
   const clearFormArmTimerRef = useRef<number | null>(null);
+  const clearFormArmTickRef = useRef<number | null>(null);
 
-  function disarmClearFormArm(reason?: string) {
+  function clearArmCountdownTimers() {
     if (clearFormArmTimerRef.current != null) {
       window.clearTimeout(clearFormArmTimerRef.current);
       clearFormArmTimerRef.current = null;
     }
+    if (clearFormArmTickRef.current != null) {
+      window.clearInterval(clearFormArmTickRef.current);
+      clearFormArmTickRef.current = null;
+    }
+    setClearFormArmSecondsLeft(0);
+  }
+
+  function disarmClearFormArm(reason?: string) {
+    clearArmCountdownTimers();
     if (!reminderClearFormArmed && !reason) return;
     setReminderClearFormArmed(false);
     if (reason) {
       setReminderHint(reason);
     }
+  }
+
+  function armClearFormCountdown(formFp: string, defaultsFp: string) {
+    clearArmCountdownTimers();
+    const armSeconds = 4;
+    setClearFormArmSecondsLeft(armSeconds);
+    clearFormArmTickRef.current = window.setInterval(() => {
+      setClearFormArmSecondsLeft((prev) => {
+        if (prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+    clearFormArmTimerRef.current = window.setTimeout(() => {
+      clearFormArmTimerRef.current = null;
+      if (clearFormArmTickRef.current != null) {
+        window.clearInterval(clearFormArmTickRef.current);
+        clearFormArmTickRef.current = null;
+      }
+      setClearFormArmSecondsLeft(0);
+      setReminderClearFormArmed(false);
+      setReminderHint(
+        `Confirm reset expired (form FP ${formFp} ≠ defaults FP ${defaultsFp}) — click Clear form again to re-arm. Slot untouched.`,
+      );
+    }, armSeconds * 1000);
   }
 
   /** Preview-only: edit while armed cancels Confirm reset (no apply). */
@@ -318,7 +355,15 @@ export function ReminderTease() {
     }
     setReminderFormCleared(false);
     setReminderFormDefaultsCompared(false);
+    setReminderFormSlotCompared(false);
   }
+
+  useEffect(() => {
+    return () => {
+      clearArmCountdownTimers();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount cleanup only
+  }, []);
 
   useEffect(() => {
     const saved = readReminderFromStorage();
@@ -368,6 +413,9 @@ export function ReminderTease() {
   );
   const reminderFormMatchesDefaults =
     reminderFormFingerprint === reminderDefaultsFingerprint;
+  const reminderFormMatchesSlot =
+    reminderSlotFingerprint != null &&
+    reminderFormFingerprint === reminderSlotFingerprint;
 
   function applyReminder(draft: ReminderDraftV1) {
     setCadence(draft.cadence);
@@ -394,6 +442,7 @@ export function ReminderTease() {
       setReminderFormCleared(false);
       disarmClearFormArm();
       setReminderFormDefaultsCompared(false);
+      setReminderFormSlotCompared(false);
       setReminderHint(
         `Reminder prefs saved (FP ${fp}) — Restore reminder reloads them. Nothing uploads to Omnipay servers.`,
       );
@@ -424,6 +473,7 @@ export function ReminderTease() {
     setReminderFormCleared(false);
     disarmClearFormArm();
     setReminderFormDefaultsCompared(false);
+    setReminderFormSlotCompared(false);
     setReminderHint(
       `Reminder prefs restored (FP ${fp}) — confirm on Omnipay.cc after sign-in to make them live.`,
     );
@@ -451,6 +501,7 @@ export function ReminderTease() {
     setReminderFpCopied(false);
     setReminderDefaultsFpCopied(false);
     setReminderFormDefaultsCompared(false);
+    setReminderFormSlotCompared(false);
     setReminderHint("Reminder prefs cleared from this browser.");
   }
 
@@ -464,6 +515,7 @@ export function ReminderTease() {
       disarmClearFormArm();
       setReminderFormCleared(false);
       setReminderFormDefaultsCompared(false);
+      setReminderFormSlotCompared(false);
       setReminderHint(
         `Form already at defaults (FP ${defaultsFp}) — Clear form would change nothing. Slot untouched.`,
       );
@@ -476,25 +528,13 @@ export function ReminderTease() {
     }
     if (!reminderClearFormArmed) {
       setReminderClearFormArmed(true);
-      if (clearFormArmTimerRef.current != null) {
-        window.clearTimeout(clearFormArmTimerRef.current);
-      }
-      clearFormArmTimerRef.current = window.setTimeout(() => {
-        clearFormArmTimerRef.current = null;
-        setReminderClearFormArmed(false);
-        setReminderHint(
-          `Confirm reset expired (form FP ${formFp} ≠ defaults FP ${defaultsFp}) — click Clear form again to re-arm. Slot untouched.`,
-        );
-      }, 4000);
+      armClearFormCountdown(formFp, defaultsFp);
       setReminderHint(
-        `Confirm reset to defaults (form FP ${formFp} → defaults FP ${defaultsFp}) — click Clear form again, or Cancel reset. Slot untouched.`,
+        `Confirm reset to defaults (form FP ${formFp} → defaults FP ${defaultsFp}) — click Clear form again within 4s, or Cancel reset. Slot untouched.`,
       );
       return;
     }
-    if (clearFormArmTimerRef.current != null) {
-      window.clearTimeout(clearFormArmTimerRef.current);
-      clearFormArmTimerRef.current = null;
-    }
+    clearArmCountdownTimers();
     setCadence(defaults.cadence);
     setSendWindow(defaults.sendWindow);
     setDropAlerts(defaults.dropAlerts);
@@ -508,6 +548,7 @@ export function ReminderTease() {
     setReminderFormSwapped(false);
     setReminderClearFormArmed(false);
     setReminderFormDefaultsCompared(false);
+    setReminderFormSlotCompared(false);
     setReminderFormCleared(true);
     window.setTimeout(() => setReminderFormCleared(false), 2000);
     if (slot) {
@@ -557,6 +598,7 @@ export function ReminderTease() {
     }
     setReminderVerifyAnchor("defaults");
     setReminderFormDefaultsCompared(true);
+    setReminderFormSlotCompared(false);
     window.setTimeout(() => setReminderFormDefaultsCompared(false), 2000);
     if (formFp === defaultsFp) {
       setReminderVerifyStatus("match");
@@ -575,6 +617,54 @@ export function ReminderTease() {
       setReminderDiffLines(diffs);
       setReminderHint(
         `Form FP ${formFp} ≠ Defaults FP ${defaultsFp} — chips highlight diverge; ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Slot untouched.`,
+      );
+    }
+    setSubmitHint(null);
+  }
+
+  /** Preview-only: highlight Form FP vs Slot FP match without writing. */
+  function compareFormVsSlotFp() {
+    const slot = readReminderFromStorage();
+    if (!slot) {
+      setReminderAvailable(false);
+      setReminderBanner(false);
+      setReminderSavedAt(null);
+      setReminderSlotFingerprint(null);
+      setReminderFormSlotCompared(false);
+      setReminderVerifyStatus("invalid");
+      setReminderVerifyAnchor("form");
+      setReminderDiffLines([]);
+      setReminderHint(
+        "No saved reminder prefs in this browser — Save reminder first.",
+      );
+      return;
+    }
+    const formFp = reminderFormFingerprint;
+    const slotFp = fingerprintReminder(slot);
+    setReminderAvailable(true);
+    setReminderSavedAt(slot.savedAt);
+    setReminderSlotFingerprint(slotFp);
+    setReminderVerifyAnchor("form");
+    setReminderFormSlotCompared(true);
+    setReminderFormDefaultsCompared(false);
+    window.setTimeout(() => setReminderFormSlotCompared(false), 2000);
+    if (formFp === slotFp) {
+      setReminderVerifyStatus("match");
+      setReminderDiffLines([]);
+      setReminderHint(
+        `Form FP matches Slot FP (${slotFp}) — nothing to restore. Defaults untouched.`,
+      );
+    } else {
+      const diffs = diffReminderFields(
+        buildReminderPayload(),
+        slot,
+        "slot",
+        "form",
+      );
+      setReminderVerifyStatus("mismatch");
+      setReminderDiffLines(diffs);
+      setReminderHint(
+        `Form FP ${formFp} ≠ Slot FP ${slotFp} — chips highlight diverge; ${diffs.length} field${diffs.length === 1 ? "" : "s"} differ (see Diff). Restore reminder to load saved prefs.`,
       );
     }
     setSubmitHint(null);
@@ -1037,6 +1127,7 @@ export function ReminderTease() {
     setReminderFormCleared(false);
     disarmClearFormArm();
     setReminderFormDefaultsCompared(false);
+    setReminderFormSlotCompared(false);
     window.setTimeout(() => setReminderFormSwapped(false), 2000);
     setReminderVerifyStatus("idle");
     setReminderDiffLines([]);
@@ -1452,13 +1543,27 @@ export function ReminderTease() {
           Defaults FP {reminderDefaultsFingerprint}
         </li>
         <li
-          className={`rounded-full border border-[var(--line)] px-2.5 py-1 font-mono ${
-            reminderSlotFingerprint
-              ? "bg-[var(--accent)]/10 text-[var(--foreground)]"
-              : "bg-[#f7f9fc] text-[var(--muted)]"
+          className={`rounded-full border px-2.5 py-1 font-mono ${
+            !reminderSlotFingerprint
+              ? "border-[var(--line)] bg-[#f7f9fc] text-[var(--muted)]"
+              : reminderFormMatchesSlot
+                ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+                : "border-amber-400/60 bg-amber-50 text-amber-950"
           }`}
+          title={
+            !reminderSlotFingerprint
+              ? "No Save reminder slot"
+              : reminderFormMatchesSlot
+                ? "Slot FP matches Form FP"
+                : "Slot FP differs from Form FP"
+          }
         >
           Slot FP {reminderSlotFingerprint ?? "none"}
+          {reminderSlotFingerprint
+            ? reminderFormMatchesSlot
+              ? " ="
+              : " ≠"
+            : ""}
         </li>
       </ul>
       <p
@@ -1502,7 +1607,7 @@ export function ReminderTease() {
           {reminderFormCleared
             ? "Form cleared"
             : reminderClearFormArmed
-              ? "Confirm reset to defaults"
+              ? `Confirm reset to defaults (${clearFormArmSecondsLeft || 4}s)`
               : "Clear form"}
         </button>
         {reminderClearFormArmed ? (
@@ -1531,6 +1636,25 @@ export function ReminderTease() {
               : "Form FP ≠ Defaults FP"
             : "Compare Form FP ↔ Defaults FP"}
         </button>
+        {reminderAvailable ? (
+          <button
+            type="button"
+            onClick={compareFormVsSlotFp}
+            className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
+              reminderFormSlotCompared
+                ? reminderFormMatchesSlot
+                  ? "border-emerald-500/50 bg-emerald-50 text-emerald-900"
+                  : "border-amber-400/60 bg-amber-50 text-amber-950"
+                : "border-[var(--line)] bg-white text-[var(--foreground)] hover:border-[var(--accent)]/40"
+            }`}
+          >
+            {reminderFormSlotCompared
+              ? reminderFormMatchesSlot
+                ? "Form FP = Slot FP"
+                : "Form FP ≠ Slot FP"
+              : "Compare Form FP ↔ Slot FP"}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={verifyReminderVsDefaults}
