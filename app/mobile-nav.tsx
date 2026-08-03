@@ -112,6 +112,7 @@ const links = [
   { href: "#swedish-brown-bean-field", label: "Swedish Brown bean field" },
   { href: "#peregion-bean-field", label: "Peregion bean field" },
   { href: "#yellow-indian-woman-bean-field", label: "Yellow Indian Woman bean field" },
+  { href: "#bird-egg-bean-field", label: "Bird Egg bean field" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
