@@ -97,6 +97,7 @@ const links = [
   { href: "#tongue-of-fire-bean-field", label: "Tongue of Fire bean field" },
   { href: "#good-mother-stallard-bean-field", label: "Good Mother Stallard bean field" },
   { href: "#hidatsa-shield-figure-bean-field", label: "Hidatsa Shield Figure bean field" },
+  { href: "#cherokee-trail-of-tears-bean-field", label: "Cherokee Trail of Tears bean field" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
