@@ -100,6 +100,7 @@ const links = [
   { href: "#cherokee-trail-of-tears-bean-field", label: "Cherokee Trail of Tears bean field" },
   { href: "#four-corners-gold-bean-field", label: "Four Corners Gold bean field" },
   { href: "#rio-zape-bean-field", label: "Rio Zape bean field" },
+  { href: "#hopi-black-bean-field", label: "Hopi Black bean field" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
