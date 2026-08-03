@@ -110,6 +110,7 @@ const links = [
   { href: "#kenearly-yellow-eye-bean-field", label: "Kenearly Yellow Eye bean field" },
   { href: "#snow-cap-bean-field", label: "Snow Cap bean field" },
   { href: "#swedish-brown-bean-field", label: "Swedish Brown bean field" },
+  { href: "#peregion-bean-field", label: "Peregion bean field" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
