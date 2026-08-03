@@ -1,42 +1,38 @@
-# OmniPay
+# Northfield (omnipay.cc Studio project)
 
-A Fiat to Crypto bridge enabling seamless conversion between traditional currencies and cryptocurrencies.
+Regenerative farming site built for the OmniPay Studio project
+(`opensource_remote` → `https://github.com/shai200/omnipay.cc`).
 
-## Getting Started
-
-First, run the development server:
+## Local
 
 ```bash
+npm ci --legacy-peer-deps
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
+- Firebase Hosting static export (`output: "export"`) for preview channels
 
-## Tech Stack
+## Deploy (Firebase Hosting preview)
 
-- [Next.js](https://nextjs.org) - React framework
-- TypeScript - Type safety
-- Tailwind CSS - Styling
+Firebase project: `omnipaycc-9e9cb`. Prefer preview channels until Founder
+explicitly green-lights the live Firebase channel.
 
-## Learn More
+```bash
+npm ci --legacy-peer-deps
+npm run build
+npx firebase-tools hosting:channel:deploy agent-smoke --expires 7d
+```
 
-To learn more about Next.js, take a look at the following resources:
+Or: `npm run firebase:preview`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Surface | URL |
+|---|---|
+| Preview channel | `https://omnipaycc-9e9cb--agent-smoke-*.web.app` |
+| Firebase live (untouched until FOUNDER_GO) | `https://omnipaycc-9e9cb.web.app` |
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Do **not** commit service-account JSON or `.env*` files.
