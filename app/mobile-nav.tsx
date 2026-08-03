@@ -104,6 +104,7 @@ const links = [
   { href: "#arikara-yellow-bean-field", label: "Arikara Yellow bean field" },
   { href: "#true-red-cranberry-bean-field", label: "True Red Cranberry bean field" },
   { href: "#flor-de-mayo-bean-field", label: "Flor de Mayo bean field" },
+  { href: "#bolita-bean-field", label: "Bolita bean field" },
   { href: "#visit", label: "Visit" },
 ] as const;
 
