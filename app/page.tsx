@@ -2387,6 +2387,27 @@ const marfaxBeanFieldWork = [
   },
 ] as const;
 
+const kingOfTheEarlyBeanFieldWork = [
+  {
+    name: "Pod rows",
+    rhythm: "After the Marfax bean field",
+    detail:
+      "A cream-ivory belt of King of the Early beans on the gravel edge past the Marfax — early baking seed catches the same late light the golden-amber Marfax finishes on, and the nodules knit the clay with nitrogen without crowding the orchard windbreak into damp.",
+  },
+  {
+    name: "Pull mornings",
+    rhythm: "Quiet dawn sheaves",
+    detail:
+      "Hand pull when the pods show the cream-ivory King of the Early seed and dew still holds. Mara ties ripe stems before the stand opens — the King of the Early bean field is a finish lane, not a combine parade that packs the clay into a path the CSA kids would track indoors.",
+  },
+  {
+    name: "King of the Early weeks",
+    rhythm: "Late autumn board",
+    detail:
+      "A few dry jars and baking sacks for the farm table after the pack shed has done its quiet work — Leah chalks whole King of the Early when the mill is honest. No anonymous commodity bin; just what the pod finished on Northfield clay.",
+  },
+] as const;
+
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--soil)] text-[var(--foreground)]">
@@ -2743,6 +2764,9 @@ export default function Home() {
             </a>
             <a href="#marfax-bean-field" className="transition hover:text-[var(--foreground)]">
               Marfax bean field
+            </a>
+            <a href="#king-of-the-early-bean-field" className="transition hover:text-[var(--foreground)]">
+              King of the Early bean field
             </a>
             <a href="#visit" className="transition hover:text-[var(--foreground)]">
               Visit
@@ -7919,6 +7943,52 @@ export default function Home() {
               className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Ask about the Marfax bean field
+            </a>
+          </div>
+        </section>
+
+        {/* King of the Early bean field — one job: pod rows after the Marfax bean field, pull mornings + King of the Early weeks */}
+        <section
+          id="king-of-the-early-bean-field"
+          className="relative overflow-hidden border-t border-[var(--line)] bg-[#0f1f16]"
+        >
+          <div className="pointer-events-none absolute -right-16 top-10 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+              Pod and cream-ivory King of the Early seed
+            </p>
+            <h2 className="mt-3 max-w-2xl font-[family-name:var(--font-fraunces)] text-3xl font-semibold md:text-5xl">
+              A King of the Early bean field that finishes the Marfax bean belt.
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--muted)] md:text-lg">
+              Pod rows, pull mornings, and King of the Early weeks — a warm-season belt of
+              cream-ivory baking seed after the Marfax bean field,
+              then dry jars and baking sacks that find the farm table once the pack-shed lane
+              has done its quiet late-autumn work.
+            </p>
+            <ul className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+              {kingOfTheEarlyBeanFieldWork.map((item, i) => (
+                <li
+                  key={item.name}
+                  className="border-t border-[var(--line)] pt-6"
+                >
+                  <p className="font-[family-name:var(--font-fraunces)] text-sm font-semibold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")} · {item.rhythm}
+                  </p>
+                  <h3 className="mt-2 font-[family-name:var(--font-fraunces)] text-2xl font-semibold">
+                    {item.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)] md:text-base">
+                    {item.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:hello@northfield.farm?subject=Northfield%20King%20of%20the%20Early%20bean%20field"
+              className="mt-12 inline-block rounded-sm border border-[var(--line)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Ask about the King of the Early bean field
             </a>
           </div>
         </section>
