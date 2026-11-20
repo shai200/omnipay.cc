@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Omnipay.cc - Fiat to Crypto Gateway",
+  title: "OmniPurchase - Fiat to Crypto Gateway",
   description: "Your secure gateway from Fiat to Crypto. Buy cryptocurrency instantly with Stripe.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Omnipay",
+    title: "OmniPurchase",
   },
   formatDetection: {
     telephone: false,

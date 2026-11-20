@@ -1,4 +1,4 @@
-const CACHE_NAME = 'omnipay-v1';
+const CACHE_NAME = 'omnipurchase-v1';
 const urlsToCache = [
   '/',
   '/manifest.json',
