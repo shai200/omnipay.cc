@@ -1,259 +1,147 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import {
-  User,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  Auth,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from 'firebase/auth';
-import {
-  doc,
-  getDoc,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  Firestore,
-} from 'firebase/firestore';
-import { getFirebaseServices } from '@/lib/firebase';
+import { authClient } from '@/lib/auth/client';
+import type { PublicProfile } from '@/lib/profile';
 
-let auth: Auth | null = null;
-let db: Firestore | null = null;
-
-// Initialize on first access
-const ensureInitialized = () => {
-  if (!auth || !db) {
-    const { auth: authService, db: dbService } = getFirebaseServices();
-    auth = authService;
-    db = dbService;
-  }
-  return { auth: auth!, db: db! };
-};
-
-type PrefillDob = {
-  day?: number;
-  month?: number;
-  year?: number;
-};
-
-type PrefillAddress = {
-  country?: string;
-  line1?: string;
-  line2?: string;
-  city?: string;
-  state?: string;
-  postal_code?: string;
-};
-
-type PrefillProfile = {
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  dob?: PrefillDob;
-  address?: PrefillAddress;
-  reminder_monthly?: boolean;
-  reminder_price_drop?: boolean;
-  reminder_weekly?: boolean;
-  wallet_addresses?: { [key: string]: string };
-  lock_wallet_address?: boolean;
-  source_currency?: string;
-  source_amount?: string;
+export type AuthUser = {
+  uid: string;
+  email: string | null;
 };
 
 interface AuthContextType {
-  user: User | null;
-  profile: PrefillProfile | null;
+  user: AuthUser | null;
+  profile: PublicProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, profile: PrefillProfile) => Promise<void>;
+  signUp: (email: string, password: string, profile: PublicProfile) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOutUser: () => Promise<void>;
-  updateProfile: (profile: PrefillProfile) => Promise<void>;
+  updateProfile: (profile: PublicProfile) => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const cleanProfile = (profile: PrefillProfile): PrefillProfile => {
-  const cleaned: PrefillProfile = {};
+function authError(message: string | undefined, fallback: string): Error {
+  if (!message || message.length > 200) return new Error(fallback);
+  return new Error(message);
+}
 
-  if (profile.email) cleaned.email = profile.email;
-  if (profile.first_name) cleaned.first_name = profile.first_name;
-  if (profile.last_name) cleaned.last_name = profile.last_name;
-
-  if (profile.dob) {
-    const dob: PrefillDob = {};
-    if (profile.dob.day) dob.day = profile.dob.day;
-    if (profile.dob.month) dob.month = profile.dob.month;
-    if (profile.dob.year) dob.year = profile.dob.year;
-    if (Object.keys(dob).length > 0) cleaned.dob = dob;
+async function readProfile(): Promise<PublicProfile | null> {
+  const response = await fetch('/api/profile', { credentials: 'same-origin' });
+  if (response.status === 401) return null;
+  if (!response.ok) {
+    throw new Error('Unable to load profile.');
   }
-
-  if (profile.address) {
-    const address: PrefillAddress = {};
-    if (profile.address.country) address.country = profile.address.country;
-    if (profile.address.line1) address.line1 = profile.address.line1;
-    if (profile.address.line2) address.line2 = profile.address.line2;
-    if (profile.address.city) address.city = profile.address.city;
-    if (profile.address.state) address.state = profile.address.state;
-    if (profile.address.postal_code) address.postal_code = profile.address.postal_code;
-    if (Object.keys(address).length > 0) cleaned.address = address;
-  }
-
-  // Always include reminder settings, even if false
-  if (profile.reminder_monthly !== undefined) cleaned.reminder_monthly = profile.reminder_monthly;
-  if (profile.reminder_price_drop !== undefined) cleaned.reminder_price_drop = profile.reminder_price_drop;
-  if (profile.reminder_weekly !== undefined) cleaned.reminder_weekly = profile.reminder_weekly;
-
-  // Onramp prefill settings
-  if (profile.wallet_addresses) cleaned.wallet_addresses = profile.wallet_addresses;
-  if (profile.lock_wallet_address !== undefined) cleaned.lock_wallet_address = profile.lock_wallet_address;
-  if (profile.source_currency) cleaned.source_currency = profile.source_currency;
-  if (profile.source_amount) cleaned.source_amount = profile.source_amount;
-
-  return cleaned;
-};
+  const body = await response.json() as { profile?: PublicProfile | null };
+  return body.profile ?? null;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<PrefillProfile | null>(null);
+  const { data, isPending } = authClient.useSession();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (uid: string) => {
-    try {
-      const { db: dbService } = ensureInitialized();
-      const ref = doc(dbService, 'users', uid);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        setProfile(snap.data() as PrefillProfile);
-      } else {
-        setProfile(null);
-      }
-    } catch (error: any) {
-      console.log('Profile does not exist or insufficient permissions:', error.code);
-      setProfile(null);
-    }
-  };
-
   useEffect(() => {
-    const { auth: authService } = ensureInitialized();
-    const unsubscribe = onAuthStateChanged(authService, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchProfile(currentUser.uid);
-      } else {
-        setProfile(null);
+    let cancelled = false;
+
+    async function load() {
+      if (isPending) return;
+      const sessionUser = data?.user;
+      if (!sessionUser) {
+        if (!cancelled) {
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        }
+        return;
       }
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
-  }, []);
+      if (!cancelled) {
+        setUser({ uid: sessionUser.id, email: sessionUser.email ?? null });
+      }
 
-  const signUp = async (email: string, password: string, profileData: PrefillProfile) => {
-    try {
-      const { auth: authService, db: dbService } = ensureInitialized();
-      const credential = await createUserWithEmailAndPassword(authService, email, password);
-      const uid = credential.user.uid;
-      console.log('User created with UID:', uid);
-
-      // Wait for auth token to be ready
-      const token = await credential.user.getIdToken();
-      console.log('Token obtained, length:', token.length);
-
-      const cleaned = cleanProfile({ ...profileData, email });
-      console.log('Attempting to write profile to Firestore:', cleaned);
-      
-      await setDoc(
-        doc(dbService, 'users', uid),
-        {
-          ...cleaned,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
-
-      console.log('Profile saved successfully');
-      setProfile(cleaned);
-    } catch (error: any) {
-      console.error('SignUp error details:', {
-        code: error.code,
-        message: error.message,
-        fullError: error
-      });
-      throw error;
+      try {
+        const nextProfile = await readProfile();
+        if (!cancelled) setProfile(nextProfile);
+      } catch {
+        if (!cancelled) setProfile(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [isPending, data?.user]);
+
+  const signUp = async (email: string, password: string, profileData: PublicProfile) => {
+    const name = [profileData.first_name, profileData.last_name].filter(Boolean).join(' ') || 'Account';
+    const result = await authClient.signUp.email({ email, password, name });
+    if (result.error) {
+      throw authError(result.error.message, 'Unable to create an account.');
+    }
+
+    const response = await fetch('/api/profile', {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(profileData),
+    });
+    const body = await response.json().catch(() => ({})) as { error?: string; profile?: PublicProfile };
+    if (!response.ok) {
+      throw new Error(body.error || 'Account created, but the profile could not be saved.');
+    }
+    setUser({ uid: result.data?.user.id ?? '', email });
+    setProfile(body.profile ?? null);
   };
 
   const signIn = async (email: string, password: string) => {
-    const { auth: authService } = ensureInitialized();
-    await signInWithEmailAndPassword(authService, email, password);
+    const result = await authClient.signIn.email({ email, password });
+    if (result.error) {
+      throw authError(result.error.message, 'Invalid email or password.');
+    }
   };
 
   const signInWithGoogle = async () => {
-    try {
-      const { auth: authService, db: dbService } = ensureInitialized();
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(authService, provider);
-      const user = result.user;
-
-      // Check if user profile exists, if not create one
-      const userDocRef = doc(dbService, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (!userDocSnap.exists()) {
-        // Create profile for new Google user
-        const firstName = user.displayName?.split(' ')[0] || '';
-        const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
-
-        await setDoc(userDocRef, {
-          email: user.email,
-          first_name: firstName,
-          last_name: lastName,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        }, { merge: true });
-      }
-
-      // Refresh profile data
-      await fetchProfile(user.uid);
-    } catch (error: any) {
-      console.error('Google sign-in error:', error);
-      throw error;
+    const result = await authClient.signIn.social({ provider: 'google', callbackURL: '/' });
+    if (result.error) {
+      throw authError(result.error.message, 'Google sign-in failed.');
     }
   };
 
   const signOutUser = async () => {
-    const { auth: authService } = ensureInitialized();
-    await signOut(authService);
+    await authClient.signOut();
+    setUser(null);
+    setProfile(null);
   };
 
-  const updateProfile = async (profileData: PrefillProfile) => {
-    if (!user) return;
-
-    const { db: dbService } = ensureInitialized();
-    const cleaned = cleanProfile(profileData);
-    await setDoc(doc(dbService, 'users', user.uid), {
-      ...cleaned,
-      updatedAt: serverTimestamp(),
-    }, { merge: true });
-
-    setProfile((prev) => ({ ...(prev || {}), ...cleaned }));
+  const updateProfile = async (profileData: PublicProfile) => {
+    const response = await fetch('/api/profile', {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(profileData),
+    });
+    const body = await response.json().catch(() => ({})) as { error?: string; profile?: PublicProfile };
+    if (!response.ok) {
+      throw new Error(body.error || 'Failed to update.');
+    }
+    setProfile(body.profile ?? null);
   };
 
   const refreshProfile = async () => {
     if (!user) return;
-    await fetchProfile(user.uid);
+    setProfile(await readProfile());
   };
 
   const value = useMemo(
     () => ({ user, profile, loading, signUp, signIn, signInWithGoogle, signOutUser, updateProfile, refreshProfile }),
-    [user, profile, loading]
+    [user, profile, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

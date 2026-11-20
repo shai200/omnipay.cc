@@ -4,30 +4,45 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node build-worker.mjs",
     "start": "next start",
-    "lint": "eslint"
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "jobs:email": "tsx worker/email-jobs.ts",
+    "migrate:firebase": "tsx scripts/migrate-firebase.ts",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.7.27",
+    "@sendgrid/mail": "^8.1.6",
     "@stripe/crypto": "^0.0.4",
     "@stripe/stripe-js": "^8.7.0",
-    "firebase": "^12.9.0",
-    "firebase-admin": "^13.6.0",
-    "firebase-functions": "^7.0.0",
+    "bcryptjs": "^3.0.3",
+    "better-auth": "^1.7.27",
+    "drizzle-orm": "^0.45.4",
+    "firebase-scrypt": "^2.2.0",
     "next": "^16.1.6",
+    "postgres": "^4.1.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "stripe": "^20.0.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.17",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
-    "next-pwa": "^5.6.0",
+    "firebase-admin": "^13.10.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
   }
 }

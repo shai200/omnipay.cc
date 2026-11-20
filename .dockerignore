@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+dist
+coverage
+migration-data
+.env
+.env.*
+!.env.example
+*.pem
+npm-debug.log*

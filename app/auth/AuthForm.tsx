@@ -222,6 +222,11 @@ export default function AuthForm({ mode }: { mode: Mode }) {
                     style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
                   />
                 </div>
+                {!isSignup && (
+                  <a href="/auth/forgot" className="block text-sm" style={{ color: 'var(--accent)' }}>
+                    Forgot password?
+                  </a>
+                )}
               </>
             )}
 
