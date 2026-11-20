@@ -35,7 +35,9 @@ export function createMemoryDb() {
   const users = new Map<string, Doc>();
   const sessions = new Map<string, Doc>();
   const events = new Map<string, Doc>();
+  const webhookEvents = new Map<string, Doc>();
   const reads: string[] = [];
+  const counters = { writes: 0 };
   const verifyIdToken = vi.fn();
   let autoId = 0;
 
@@ -43,6 +45,7 @@ export function createMemoryDb() {
     if (name === 'users') return users;
     if (name === 'onramp_sessions') return sessions;
     if (name === 'onramp_events') return events;
+    if (name === 'stripe_webhook_events') return webhookEvents;
     throw new Error(`unexpected collection ${name}`);
   }
 
@@ -59,6 +62,7 @@ export function createMemoryDb() {
         };
       },
       async set(data: Doc, options?: { merge?: boolean }) {
+        counters.writes += 1;
         if (options?.merge && store.has(id)) {
           const next = { ...store.get(id)! };
           applyFields(next, data);
@@ -73,6 +77,7 @@ export function createMemoryDb() {
         if (!store.has(id)) {
           throw new Error(`missing ${collectionName}/${id}`);
         }
+        counters.writes += 1;
         const next = { ...store.get(id)! };
         applyFields(next, data);
         store.set(id, next);
@@ -117,12 +122,16 @@ export function createMemoryDb() {
     users,
     sessions,
     events,
+    webhookEvents,
     reads,
+    counters,
     reset() {
       users.clear();
       sessions.clear();
       events.clear();
+      webhookEvents.clear();
       reads.length = 0;
+      counters.writes = 0;
       verifyIdToken.mockReset();
     },
   };
