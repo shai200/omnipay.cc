@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import { dobEligibility } from '@/lib/age';
 
 const initialForm = {
   email: '',
@@ -146,6 +147,19 @@ export default function CheckoutSettingsPage() {
     e.preventDefault();
     setMessage('');
     setSaving(true);
+
+    if (form.dob_year && form.dob_month && form.dob_day) {
+      const eligibility = dobEligibility({
+        year: form.dob_year,
+        month: form.dob_month,
+        day: form.dob_day,
+      });
+      if (!eligibility.ok) {
+        setMessage(eligibility.error);
+        setSaving(false);
+        return;
+      }
+    }
 
     try {
       await updateProfile(payload);

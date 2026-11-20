@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import { dobEligibility } from '@/lib/age';
 
 const initialForm = {
   email: '',
@@ -24,7 +25,7 @@ const initialForm = {
   source_amount: '100',
 };
 
-export default function ProfilePage() {
+export default function CheckoutSettingsPage() {
   const router = useRouter();
   const { user, profile, loading, updateProfile, refreshProfile, signOutUser } = useAuth();
   const [form, setForm] = useState(initialForm);
@@ -147,22 +148,14 @@ export default function ProfilePage() {
     setMessage('');
     setSaving(true);
 
-    // Validate age if DOB is provided
     if (form.dob_year && form.dob_month && form.dob_day) {
-      const birthDate = new Date(
-        parseInt(form.dob_year),
-        parseInt(form.dob_month) - 1,
-        parseInt(form.dob_day)
-      );
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-
-      if (age < 13) {
-        setMessage('You must be at least 13 years old to use this service.');
+      const eligibility = dobEligibility({
+        year: form.dob_year,
+        month: form.dob_month,
+        day: form.dob_day,
+      });
+      if (!eligibility.ok) {
+        setMessage(eligibility.error);
         setSaving(false);
         return;
       }
@@ -172,7 +165,7 @@ export default function ProfilePage() {
       await updateProfile(payload);
       console.log('Profile saved with payload:', payload);
       // Don't need to refresh - the form already has the correct values
-      setMessage('Profile updated successfully.');
+      setMessage('Checkout settings updated successfully.');
       setSaving(false);
     } catch (err: any) {
       console.error('Save error:', err);

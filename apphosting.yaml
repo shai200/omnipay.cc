@@ -1,4 +1,8 @@
 # Firebase App Hosting configuration
+# Client config and server secrets are read from Cloud Secret Manager so live
+# values are not committed. NEXT_PUBLIC_* values are still inlined into the
+# browser bundle at build time. Create the secrets before the next rollout.
+# See README.md for the required variables.
 runConfig:
   minInstances: 0
   maxInstances: 100
@@ -8,12 +12,12 @@ runConfig:
 
 env:
   - variable: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-    value: pk_live_51QcWITLFOCxUQmeXCCHhUbo912tPTt4qMr314Mp6rh9ddD0h76fF3RKatIvqzxZROy5HpZePc58PHtxCcg3tmjAk00M3YyvJz7
+    secret: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
     availability:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_CONFIG
-    value: '{"apiKey":"AIzaSyB4YMGM8BRrT-goRI7Y2FhzHgHD9JQRtNI","appId":"1:548261736586:web:ee720a197790f900f07d73","authDomain":"omnipaycc-9e9cb.firebaseapp.com","databaseURL":"","messagingSenderId":"548261736586","projectId":"omnipaycc-9e9cb","storageBucket":"omnipaycc-9e9cb.firebasestorage.app"}'
+    secret: NEXT_PUBLIC_FIREBASE_CONFIG
     availability:
       - BUILD
       - RUNTIME
