@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FieldValue } from 'firebase-admin/firestore';
 import Stripe from 'stripe';
-import { adminDb } from '@/lib/firebase-admin';
-import {
-  WEBHOOK_EVENTS_COLLECTION,
-  decideSessionWrite,
-  parseOnrampWebhookEvent,
-} from '@/lib/onramp-webhook';
+import { getDb } from '@/lib/db/client';
+import { applyVerifiedOnrampUpdate } from '@/lib/db/onramp-store';
+import { parseOnrampWebhookEvent } from '@/lib/onramp-webhook';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +25,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature.' }, { status: 400 });
   }
 
-  // Signature verification needs the exact bytes Stripe signed.
   const payload = await request.text();
   let event: unknown;
   try {
@@ -52,71 +47,9 @@ export async function POST(request: NextRequest) {
   }
 
   const update = parsed.update;
-  const eventRef = adminDb.collection(WEBHOOK_EVENTS_COLLECTION).doc(update.eventId);
-  const sessionRef = adminDb.collection('onramp_sessions').doc(update.sessionId);
-
   let outcome: { duplicate: boolean; applied: boolean };
   try {
-    outcome = await adminDb.runTransaction(async (tx) => {
-      const eventSnap = await tx.get(eventRef);
-      const sessionSnap = await tx.get(sessionRef);
-      if (eventSnap.exists) {
-        return { duplicate: true, applied: false };
-      }
-
-      const data = sessionSnap.exists ? sessionSnap.data() : undefined;
-      const decision = decideSessionWrite(
-        data
-          ? {
-              status: data.status,
-              statusEventCreated: data.statusEventCreated,
-              verifiedCompletionEventId: data.verifiedCompletionEventId,
-              transactionDetails: data.transactionDetails,
-            }
-          : undefined,
-        update,
-      );
-
-      tx.set(eventRef, {
-        eventId: update.eventId,
-        type: update.eventType,
-        sessionId: update.sessionId,
-        status: update.status,
-        eventCreated: update.eventCreated,
-        signatureVerified: true,
-        applied: decision.action === 'apply',
-        processedAt: FieldValue.serverTimestamp(),
-      });
-
-      if (decision.action === 'skip') {
-        return { duplicate: false, applied: false };
-      }
-
-      const fields = {
-        status: decision.status,
-        lastStatus: decision.status,
-        lastUpdated: FieldValue.serverTimestamp(),
-        statusEventCreated: decision.statusEventCreated,
-        statusEventId: decision.statusEventId,
-        transactionDetails: decision.transactionDetails,
-        statusHistory: FieldValue.arrayUnion(decision.historyEntry),
-        ...(decision.completionEventId
-          ? { verifiedCompletionEventId: decision.completionEventId }
-          : {}),
-      };
-
-      if (sessionSnap.exists) {
-        tx.update(sessionRef, fields);
-      } else {
-        tx.set(sessionRef, {
-          sessionId: update.sessionId,
-          createdAt: FieldValue.serverTimestamp(),
-          ...fields,
-        });
-      }
-
-      return { duplicate: false, applied: true };
-    });
+    outcome = await applyVerifiedOnrampUpdate(getDb(), update);
   } catch {
     console.error('Failed to record onramp webhook', { eventId: update.eventId });
     return NextResponse.json({ error: 'Failed to record onramp status.' }, { status: 500 });

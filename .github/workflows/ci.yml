@@ -34,9 +34,8 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - name: Install Functions dependencies
-        run: npm ci --prefix functions
-
-      - name: Functions typecheck
-        run: npm run typecheck --prefix functions
+        env:
+          # Placeholder so the production build can construct auth config.
+          # It is not a session secret and must not be copied to Railway.
+          BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-a-real-key
+          BETTER_AUTH_URL: http://localhost:3000

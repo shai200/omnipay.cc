@@ -46,3 +46,7 @@ firestore-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# build output and one-off migration exports
+/dist
+/migration-data

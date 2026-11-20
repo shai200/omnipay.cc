@@ -1,49 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FieldValue } from 'firebase-admin/firestore';
 import { dobEligibility } from '@/lib/age';
 import { appendCustomerInformation } from '@/lib/customer-prefill';
-import { adminDb } from '@/lib/firebase-admin';
+import { getDb } from '@/lib/db/client';
+import { recordSessionOwner } from '@/lib/db/onramp-store';
+import { getCheckoutProfile } from '@/lib/db/profile-store';
 import { isSafeSessionId, resolveOnrampRequest } from '@/lib/onramp-request';
-import { verifyBearerUid } from '@/lib/verify-bearer-uid';
+import { getRequestUserId } from '@/lib/session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const STRIPE_ONRAMP_URL = 'https://api.stripe.com/v1/crypto/onramp_sessions';
-
-type SessionWrite = 'ok' | 'conflict';
-
-// Ownership only. Status, including fulfillment_complete, is written by the
-// verified Stripe webhook and must not be set from session creation.
-async function recordSessionOwner(uid: string, sessionId: string): Promise<SessionWrite> {
-  const ref = adminDb.collection('onramp_sessions').doc(sessionId);
-  return adminDb.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (snap.exists) {
-      const owner = snap.data()?.userId;
-      if (typeof owner === 'string' && owner !== uid) {
-        return 'conflict';
-      }
-      if (typeof owner !== 'string') {
-        tx.update(ref, {
-          userId: uid,
-          lastUpdated: FieldValue.serverTimestamp(),
-        });
-      }
-      return 'ok';
-    }
-
-    tx.set(ref, {
-      sessionId,
-      userId: uid,
-      createdAt: FieldValue.serverTimestamp(),
-      lastUpdated: FieldValue.serverTimestamp(),
-      transactionDetails: {},
-      statusHistory: [],
-    });
-    return 'ok';
-  });
-}
 
 function checkoutError(status: number) {
   return NextResponse.json({ error: 'Unable to start checkout. Please try again.' }, { status });
@@ -56,7 +23,7 @@ function stripeOnrampUnavailable(errorData: unknown): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  const uid = await verifyBearerUid(request);
+  const uid = await getRequestUserId(request);
   if (!uid) {
     return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
   }
@@ -73,16 +40,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: resolved.error }, { status: 400 });
   }
 
-  let profile: Record<string, unknown> | undefined;
+  let profile: unknown;
   try {
-    const userDoc = await adminDb.collection('users').doc(uid).get();
-    profile = userDoc.exists ? (userDoc.data() as Record<string, unknown>) : undefined;
+    profile = await getCheckoutProfile(getDb(), uid);
   } catch {
     console.error('Failed to load user profile for onramp session');
     return checkoutError(500);
   }
 
-  const eligibility = dobEligibility(profile?.dob);
+  const profileRecord = profile && typeof profile === 'object' ? profile as { dob?: unknown } : {};
+  const eligibility = dobEligibility(profileRecord.dob);
   if (!eligibility.ok) {
     return NextResponse.json(
       { error: eligibility.error },
@@ -161,7 +128,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const write = await recordSessionOwner(uid, session.id);
+    const write = await recordSessionOwner(getDb(), uid, session.id);
     if (write === 'conflict') {
       console.error('Onramp session id is already owned by another user');
       return NextResponse.json({ error: 'Unable to start checkout. Please try again.' }, { status: 403 });

@@ -1,0 +1,11 @@
+# Email cron service. Set this service's config file path to
+# /railway.worker.toml before its first deploy. The job must exit when finished.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "node dist/worker.js"
+preDeployCommand = ["node dist/migrate.js"]
+cronSchedule = "0 * * * *"
+restartPolicyType = "NEVER"
