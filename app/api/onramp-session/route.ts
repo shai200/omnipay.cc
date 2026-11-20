@@ -1,229 +1,193 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
+import { dobEligibility } from '@/lib/age';
+import { appendCustomerInformation } from '@/lib/customer-prefill';
+import { adminDb } from '@/lib/firebase-admin';
+import { isSafeSessionId, resolveOnrampRequest } from '@/lib/onramp-request';
+import { verifyBearerUid } from '@/lib/verify-bearer-uid';
 
-// Initialize Firebase Admin if not already done
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const STRIPE_ONRAMP_URL = 'https://api.stripe.com/v1/crypto/onramp_sessions';
+
+type SessionWrite = 'ok' | 'conflict';
+
+async function recordSessionOwner(
+  uid: string,
+  sessionId: string,
+  status: string,
+): Promise<SessionWrite> {
+  const ref = adminDb.collection('onramp_sessions').doc(sessionId);
+  return adminDb.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.exists) {
+      const owner = snap.data()?.userId;
+      if (typeof owner === 'string' && owner !== uid) {
+        return 'conflict';
+      }
+      if (typeof owner !== 'string') {
+        tx.update(ref, {
+          userId: uid,
+          lastUpdated: FieldValue.serverTimestamp(),
+        });
+      }
+      return 'ok';
+    }
+
+    tx.set(ref, {
+      sessionId,
+      userId: uid,
+      status,
+      lastStatus: status,
+      createdAt: FieldValue.serverTimestamp(),
+      lastUpdated: FieldValue.serverTimestamp(),
+      transactionDetails: {},
+      statusHistory: [],
+    });
+    return 'ok';
   });
 }
 
-const db = admin.firestore();
+function checkoutError(status: number) {
+  return NextResponse.json({ error: 'Unable to start checkout. Please try again.' }, { status });
+}
+
+function stripeOnrampUnavailable(errorData: unknown): boolean {
+  if (!errorData || typeof errorData !== 'object') return false;
+  const message = (errorData as { error?: { message?: unknown } }).error?.message;
+  return typeof message === 'string' && /crypto onramp is not enabled/i.test(message);
+}
 
 export async function POST(request: NextRequest) {
+  const uid = await verifyBearerUid(request);
+  if (!uid) {
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  }
+
+  let body: unknown;
   try {
-    const body = await request.json();
-    const { walletAddress, sourceAmount, destinationCurrency, destinationNetwork, sourceCurrency, userId } = body;
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+  }
 
-    console.log('=== ONRAMP SESSION REQUEST ===');
-    console.log('Timestamp:', new Date().toISOString());
-    console.log('Request body:', {
-      walletAddress,
-      sourceAmount,
-      sourceCurrency,
-      destinationCurrency,
-      destinationNetwork,
-      userId,
-    });
+  const resolved = resolveOnrampRequest(body);
+  if (!resolved.ok) {
+    return NextResponse.json({ error: resolved.error }, { status: 400 });
+  }
 
-    // Build the request body for Stripe API
-    const formData = new URLSearchParams();
-    console.log('Building form data for Stripe API...');
+  let profile: Record<string, unknown> | undefined;
+  try {
+    const userDoc = await adminDb.collection('users').doc(uid).get();
+    profile = userDoc.exists ? (userDoc.data() as Record<string, unknown>) : undefined;
+  } catch {
+    console.error('Failed to load user profile for onramp session');
+    return checkoutError(500);
+  }
 
-    // Only add wallet address if provided - let user enter it in the widget
-    if (walletAddress) {
-      formData.append('wallet_addresses[ethereum]', walletAddress);
-      console.log('✓ Added wallet address:', walletAddress);
-    } else {
-      console.log('ℹ No wallet address provided');
-    }
+  const eligibility = dobEligibility(profile?.dob);
+  if (!eligibility.ok) {
+    return NextResponse.json(
+      { error: eligibility.error },
+      { status: eligibility.reason === 'underage' ? 403 : 400 },
+    );
+  }
 
-    if (sourceAmount) {
-      formData.append('source_amount', sourceAmount.toString());
-      console.log('✓ Added source amount:', sourceAmount);
-    }
+  const secret = process.env.STRIPE_SECRET_KEY;
+  if (!secret) {
+    console.error('STRIPE_SECRET_KEY is not configured');
+    return checkoutError(500);
+  }
 
-    if (sourceCurrency) {
-      formData.append('source_currency', sourceCurrency);
-      console.log('✓ Added source currency:', sourceCurrency);
-    }
+  const formData = new URLSearchParams();
+  if (resolved.walletAddress && resolved.destinationNetwork) {
+    formData.append(`wallet_addresses[${resolved.destinationNetwork}]`, resolved.walletAddress);
+  }
+  if (resolved.sourceAmount) formData.append('source_amount', resolved.sourceAmount);
+  if (resolved.sourceCurrency) formData.append('source_currency', resolved.sourceCurrency);
+  if (resolved.destinationCurrency) formData.append('destination_currency', resolved.destinationCurrency);
+  if (resolved.destinationNetwork) formData.append('destination_network', resolved.destinationNetwork);
+  appendCustomerInformation(formData, profile, eligibility.dob);
 
-    if (destinationCurrency) {
-      formData.append('destination_currency', destinationCurrency);
-      console.log('✓ Added destination currency:', destinationCurrency);
-    }
-
-    if (destinationNetwork) {
-      formData.append('destination_network', destinationNetwork);
-      console.log('✓ Added destination network:', destinationNetwork);
-    }
-
-    // Fetch and add customer information if userId provided
-    if (userId) {
-      console.log('📋 Fetching user profile for userId:', userId);
-      try {
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          console.log('✓ User profile found');
-          console.log('User data fields:', Object.keys(userData || {}));
-          
-          // Add basic customer info
-          if (userData?.email) {
-            formData.append('customer_information[email]', userData.email);
-            console.log('✓ Added email:', userData.email);
-          } else {
-            console.log('ℹ No email in user profile');
-          }
-          if (userData?.first_name) {
-            formData.append('customer_information[first_name]', userData.first_name);
-            console.log('✓ Added first_name:', userData.first_name);
-          } else {
-            console.log('ℹ No first_name in user profile');
-          }
-          if (userData?.last_name) {
-            formData.append('customer_information[last_name]', userData.last_name);
-            console.log('✓ Added last_name:', userData.last_name);
-          } else {
-            console.log('ℹ No last_name in user profile');
-          }
-          
-          // Add date of birth with age validation
-          if (userData?.dob) {
-            console.log('📅 Processing DOB:', userData.dob);
-            
-            // Validate that all DOB fields are present
-            if (userData.dob.year && userData.dob.month && userData.dob.day) {
-              // Calculate age - Stripe requires at least 13 years old
-              const birthDate = new Date(userData.dob.year, userData.dob.month - 1, userData.dob.day);
-              const today = new Date();
-              let age = today.getFullYear() - birthDate.getFullYear();
-              const monthDiff = today.getMonth() - birthDate.getMonth();
-              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-              }
-              
-              console.log('🎂 Calculated age:', age);
-              
-              if (age >= 13) {
-                formData.append('customer_information[dob][year]', userData.dob.year.toString());
-                formData.append('customer_information[dob][month]', userData.dob.month.toString());
-                formData.append('customer_information[dob][day]', userData.dob.day.toString());
-                console.log('✓ Added DOB (age verified):', `${userData.dob.year}-${userData.dob.month}-${userData.dob.day}`);
-              } else {
-                console.log('⚠ User is under 13 years old - skipping DOB to avoid Stripe rejection');
-              }
-            } else {
-              console.log('⚠ Incomplete DOB data - skipping:', userData.dob);
-            }
-          } else {
-            console.log('ℹ No DOB in user profile');
-          }
-          
-          // Add address
-          if (userData?.address) {
-            console.log('📍 Processing address:', Object.keys(userData.address));
-            if (userData.address.country) {
-              formData.append('customer_information[address][country]', userData.address.country);
-              console.log('✓ Added address.country:', userData.address.country);
-            }
-            if (userData.address.line1) {
-              formData.append('customer_information[address][line1]', userData.address.line1);
-              console.log('✓ Added address.line1:', userData.address.line1);
-            }
-            if (userData.address.line2) {
-              formData.append('customer_information[address][line2]', userData.address.line2);
-              console.log('✓ Added address.line2:', userData.address.line2);
-            }
-            if (userData.address.city) {
-              formData.append('customer_information[address][city]', userData.address.city);
-              console.log('✓ Added address.city:', userData.address.city);
-            }
-            if (userData.address.state) {
-              formData.append('customer_information[address][state]', userData.address.state);
-              console.log('✓ Added address.state:', userData.address.state);
-            }
-            if (userData.address.postal_code) {
-              formData.append('customer_information[address][postal_code]', userData.address.postal_code);
-              console.log('✓ Added address.postal_code:', userData.address.postal_code);
-            }
-          } else {
-            console.log('ℹ No address in user profile');
-          }
-        } else {
-          console.log('⚠ User document not found in Firestore');
-        }
-      } catch (error: any) {
-        console.error('❌ Error fetching user profile:', error.message);
-        console.error('Error details:', error);
-        // Continue even if profile fetch fails
-      }
-    } else {
-      console.log('ℹ No userId provided - skipping profile lookup');
-    }
-
-    console.log('🔗 Making request to Stripe API...');
-    console.log('Stripe endpoint: https://api.stripe.com/v1/crypto/onramp_sessions');
-    console.log('Form data keys:', Array.from(formData.entries()).map(([k]) => k));
-
-    // Make direct API call to Stripe
-    const response = await fetch('https://api.stripe.com/v1/crypto/onramp_sessions', {
+  let response: Response;
+  try {
+    response = await fetch(STRIPE_ONRAMP_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+        Authorization: `Bearer ${secret}`,
         'Content-Type': 'application/x-www-form-urlencoded',
         'Stripe-Version': '2024-11-20.acacia',
       },
       body: formData.toString(),
     });
-
-    console.log('📡 Stripe API response status:', response.status, response.statusText);
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('❌ Stripe API error response:', JSON.stringify(errorData, null, 2));
-
-      // Provide more helpful error messages
-      if (errorData.error?.type === 'invalid_request_error') {
-        console.error('Invalid request error details:', errorData.error.message);
-        throw new Error(
-          `Stripe Crypto Onramp API error: ${errorData.error.message}. ` +
-          `This might mean:\n` +
-          `1. Crypto onramp is not enabled on your Stripe account\n` +
-          `2. Business name and URL need to be set in Stripe Dashboard\n` +
-          `3. Your account needs approval for crypto onramp access\n` +
-          `Request log: ${errorData.error.request_log_url || 'N/A'}`
-        );
-      }
-
-      throw new Error(errorData.error?.message || 'Stripe API error');
-    }
-
-    const session = await response.json();
-    console.log('✅ Session created successfully!');
-    console.log('Session ID:', session.id);
-    console.log('Session status:', session.status);
-    console.log('=== END ONRAMP SESSION REQUEST ===');
-
-    return NextResponse.json({
-      clientSecret: session.client_secret,
-      sessionId: session.id,
-    });
-  } catch (error: any) {
-    console.error('');
-    console.error('❌ ===== ERROR IN ONRAMP SESSION ===== ❌');
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('Full error object:', JSON.stringify(error, null, 2));
-    console.error('=====================================');
-    console.error('');
-    return NextResponse.json(
-      {
-        error: error.message || 'Failed to create onramp session',
-        details: 'Check server console for full error details'
-      },
-      { status: 500 }
-    );
+  } catch {
+    console.error('Stripe onramp session request could not be sent');
+    return checkoutError(502);
   }
+
+  if (!response.ok) {
+    let errorData: unknown = null;
+    try {
+      errorData = await response.json();
+    } catch {
+      errorData = null;
+    }
+    const stripeError =
+      errorData && typeof errorData === 'object'
+        ? (errorData as { error?: { type?: unknown; code?: unknown } }).error
+        : undefined;
+    console.error('Stripe onramp session request failed', {
+      status: response.status,
+      type: typeof stripeError?.type === 'string' ? stripeError.type : undefined,
+      code: typeof stripeError?.code === 'string' ? stripeError.code : undefined,
+    });
+    if (stripeOnrampUnavailable(errorData)) {
+      return NextResponse.json(
+        { error: 'Crypto purchases are currently unavailable. Please try again later.' },
+        { status: 502 },
+      );
+    }
+    return checkoutError(502);
+  }
+
+  let session: { id?: unknown; client_secret?: unknown; status?: unknown };
+  try {
+    session = await response.json();
+  } catch {
+    console.error('Stripe onramp session response was not valid JSON');
+    return checkoutError(502);
+  }
+
+  if (typeof session.client_secret !== 'string' || !isSafeSessionId(session.id)) {
+    console.error('Stripe onramp session response was missing expected fields');
+    return checkoutError(502);
+  }
+
+  const status = typeof session.status === 'string' && session.status.length <= 64
+    ? session.status
+    : 'initialized';
+
+  try {
+    const write = await recordSessionOwner(uid, session.id, status);
+    if (write === 'conflict') {
+      console.error('Onramp session id is already owned by another user');
+      return NextResponse.json({ error: 'Unable to start checkout. Please try again.' }, { status: 403 });
+    }
+  } catch {
+    console.error('Failed to record onramp session owner');
+    return checkoutError(500);
+  }
+
+  console.log('Onramp session created', {
+    sessionId: session.id,
+    uid,
+    network: resolved.destinationNetwork,
+    walletAttached: Boolean(resolved.walletAddress),
+  });
+
+  return NextResponse.json({
+    clientSecret: session.client_secret,
+    sessionId: session.id,
+  });
 }

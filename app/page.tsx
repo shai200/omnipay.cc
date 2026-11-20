@@ -3,6 +3,7 @@
 import OnrampWidget from './components/OnrampWidget';
 import { useTheme } from './contexts/ThemeContext';
 import { useAuth } from './contexts/AuthContext';
+import { walletAddressForNetwork } from '@/lib/wallet';
 import { useState } from 'react';
 
 export default function Home() {
@@ -200,7 +201,7 @@ export default function Home() {
 
             <OnrampWidget
               key={`${profile?.source_amount}-${profile?.source_currency}`}
-              walletAddress={profile?.wallet_addresses?.ethereum || profile?.wallet_addresses?.bitcoin}
+              walletAddress={walletAddressForNetwork(profile?.wallet_addresses, 'bitcoin')}
               sourceAmount={profile?.source_amount ? Number(profile.source_amount) : 100}
               sourceCurrency={profile?.source_currency || 'usd'}
               destinationCurrency="btc"

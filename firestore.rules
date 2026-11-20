@@ -6,17 +6,19 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // Onramp events: only server can write (via Admin SDK)
+
+    // Onramp events are written by the Admin SDK. Clients may read only their own.
+    // Collection queries must filter userId to the signed-in user.
     match /onramp_events/{eventId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Only admin SDK can write
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if false;
     }
-    
-    // Onramp sessions: only server can write (via Admin SDK)
+
+    // Onramp sessions are written by the Admin SDK. Clients may read only their own.
+    // Collection queries must filter userId to the signed-in user.
     match /onramp_sessions/{sessionId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Only admin SDK can write
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if false;
     }
   }
 }
