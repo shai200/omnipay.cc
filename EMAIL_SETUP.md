@@ -68,8 +68,8 @@ npm run serve
 ## Email Triggers
 
 ### First Purchase Email
-- **Trigger**: When `onramp_sessions` status changes to `fulfillment_complete`
-- **Condition**: Only if it's the user's first completed purchase
+- **Trigger**: `onramp_sessions` update whose `verifiedCompletionEventId` was written by the signature-verified Stripe webhook (`crypto.onramp_session.updated`)
+- **Condition**: The stored webhook event matches that session, status is `fulfillment_complete`, and it is the user's first completed purchase
 - **Data**: Transaction details, amounts, crypto purchased
 
 ### Cart Abandonment Email

@@ -5,9 +5,7 @@ import { loadStripeOnramp, type OnrampSession, type OnrampSessionResult } from '
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 
-type OnrampSnapshot = OnrampSessionResult & {
-  transaction_details?: Record<string, unknown>;
-};
+type OnrampSnapshot = OnrampSessionResult;
 
 interface OnrampWidgetProps {
   walletAddress?: string;
@@ -116,36 +114,12 @@ export default function OnrampWidget({
 
         onrampSessionRef.current = onrampSession;
 
-        onrampSession.addEventListener('onramp_session_updated', async (event) => {
+        onrampSession.addEventListener('onramp_session_updated', (event) => {
           const session = event.payload.session as OnrampSnapshot;
           const status = session.status;
           const sessionId = session.id;
 
           console.log('Onramp session updated', { sessionId, status });
-
-          try {
-            const currentUser = userRef.current;
-            if (!currentUser) return;
-            const eventToken = await currentUser.getIdToken();
-            const trackResponse = await fetch('/api/track-onramp-event', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${eventToken}`,
-              },
-              body: JSON.stringify({
-                sessionId,
-                status,
-                transactionDetails: session.transaction_details,
-                timestamp: new Date().toISOString(),
-              }),
-            });
-            if (!trackResponse.ok) {
-              console.error('Failed to track onramp event');
-            }
-          } catch (trackError) {
-            console.error('Failed to track onramp event:', trackError);
-          }
 
           if (status === 'fulfillment_complete') {
             console.log('Crypto purchase completed!');

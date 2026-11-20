@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { isWebhookEventId, verifiedCompletionAllowsEmail } from './verified-completion';
 
 // Initialize Firebase Admin at module level (required for Cloud Functions)
 if (!admin.apps.length) {
@@ -110,41 +111,68 @@ export const onUserRegistration = functions.firestore
 export const onFirstPurchaseComplete = functions.firestore
   .document('onramp_sessions/{sessionId}')
   .onUpdate(async (change, context) => {
-    initializeServices();
-    
-    const before = change.before.data();
-    const after = change.after.data();
+    const before = change.before.data() || {};
+    const after = change.after.data() || {};
+    const eventId = after.verifiedCompletionEventId;
+    const sessionId = context.params.sessionId;
 
-    // Only trigger when status changes to fulfillment_complete
-    if (before.status !== 'fulfillment_complete' && after.status === 'fulfillment_complete') {
-      const userId = after.userId;
-      
-      if (!userId) {
-        console.log('No userId, skipping email');
+    // A bare status change, including one posted by a client, does not send mail.
+    // The marker is set only by the signature-verified onramp webhook.
+    if (!isWebhookEventId(eventId) || before.verifiedCompletionEventId === eventId || typeof sessionId !== 'string') {
+      if (before.status !== 'fulfillment_complete' && after.status === 'fulfillment_complete') {
+        console.log('Skipping first-purchase email; completion was not a verified onramp webhook');
+      }
+      return null;
+    }
+
+    const eventSnap = await getDb().collection('stripe_webhook_events').doc(eventId).get();
+    const eventData = eventSnap.data();
+    const allowed = verifiedCompletionAllowsEmail({
+      sessionId,
+      beforeMarker: before.verifiedCompletionEventId,
+      afterMarker: eventId,
+      afterStatus: after.status,
+      event: eventData
+        ? {
+            signatureVerified: eventData.signatureVerified,
+            applied: eventData.applied,
+            type: eventData.type,
+            status: eventData.status,
+            sessionId: eventData.sessionId,
+          }
+        : undefined,
+    });
+    if (!allowed) {
+      console.log('Skipping first-purchase email; completion was not a verified onramp webhook');
+      return null;
+    }
+
+    const userId = after.userId;
+
+    if (!userId) {
+      console.log('No userId, skipping email');
+      return null;
+    }
+
+    // Check if this is their first purchase
+    const completedSessions = await getDb()
+      .collection('onramp_sessions')
+      .where('userId', '==', userId)
+      .where('status', '==', 'fulfillment_complete')
+      .get();
+
+    if (completedSessions.size === 1) {
+      const userDoc = await getDb().collection('users').doc(userId).get();
+      const userData = userDoc.data();
+
+      if (!userData?.email) {
+        console.log('No email found for user');
         return null;
       }
 
-      // Check if this is their first purchase
-      const completedSessions = await getDb()
-        .collection('onramp_sessions')
-        .where('userId', '==', userId)
-        .where('status', '==', 'fulfillment_complete')
-        .get();
+      await sendFirstPurchaseEmail(userData.email, userData.first_name, after);
 
-      if (completedSessions.size === 1) {
-        // This is their first purchase!
-        const userDoc = await getDb().collection('users').doc(userId).get();
-        const userData = userDoc.data();
-
-        if (!userData?.email) {
-          console.log('No email found for user');
-          return null;
-        }
-
-        await sendFirstPurchaseEmail(userData.email, userData.first_name, after);
-        
-        console.log(`Sent first purchase email to ${userData.email}`);
-      }
+      console.log(`Sent first purchase email to ${userData.email}`);
     }
 
     return null;

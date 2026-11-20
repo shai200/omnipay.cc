@@ -13,11 +13,9 @@ const STRIPE_ONRAMP_URL = 'https://api.stripe.com/v1/crypto/onramp_sessions';
 
 type SessionWrite = 'ok' | 'conflict';
 
-async function recordSessionOwner(
-  uid: string,
-  sessionId: string,
-  status: string,
-): Promise<SessionWrite> {
+// Ownership only. Status, including fulfillment_complete, is written by the
+// verified Stripe webhook and must not be set from session creation.
+async function recordSessionOwner(uid: string, sessionId: string): Promise<SessionWrite> {
   const ref = adminDb.collection('onramp_sessions').doc(sessionId);
   return adminDb.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
@@ -38,8 +36,6 @@ async function recordSessionOwner(
     tx.set(ref, {
       sessionId,
       userId: uid,
-      status,
-      lastStatus: status,
       createdAt: FieldValue.serverTimestamp(),
       lastUpdated: FieldValue.serverTimestamp(),
       transactionDetails: {},
@@ -164,12 +160,8 @@ export async function POST(request: NextRequest) {
     return checkoutError(502);
   }
 
-  const status = typeof session.status === 'string' && session.status.length <= 64
-    ? session.status
-    : 'initialized';
-
   try {
-    const write = await recordSessionOwner(uid, session.id, status);
+    const write = await recordSessionOwner(uid, session.id);
     if (write === 'conflict') {
       console.error('Onramp session id is already owned by another user');
       return NextResponse.json({ error: 'Unable to start checkout. Please try again.' }, { status: 403 });

@@ -27,13 +27,16 @@ Copy `.env.example` to `.env.local` for local development. `.env.local` is gitig
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Browser, crypto onramp widget | Publishable key. Safe to expose to the browser, but set it in the environment instead of committing it. |
 | `NEXT_PUBLIC_FIREBASE_CONFIG` | Browser, Firebase Auth and Firestore | JSON string of the Firebase web app config. Public by design, but set it in the environment instead of committing it. |
 | `STRIPE_SECRET_KEY` | Server, `POST /api/onramp-session` | Secret. Prefer a restricted key with only the crypto onramp permissions this route needs. |
+| `STRIPE_WEBHOOK_SECRET` | Server, `POST /api/stripe/webhook` | Secret. Signing secret for `crypto.onramp_session.updated`. Not a Stripe API key. |
 | `FIREBASE_SERVICE_ACCOUNT` | Server, `lib/firebase-admin.ts` | Secret. Service account JSON as a single-line string. |
 | `FIREBASE_PROJECT_ID` | Server, optional | Needed only when the service account JSON has no `project_id`. |
 | `SENDGRID_API_KEY` | Cloud Functions runtime | Secret. Not read by the Next.js app. |
 
 Firebase App Hosting maps these names in `apphosting.yaml`. Each one is a Cloud Secret Manager secret, including the browser-public values, so live config stays out of git. `NEXT_PUBLIC_*` values are still inlined into the client bundle at build time. Create `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_FIREBASE_CONFIG` before the next rollout and grant the App Hosting service account access to them.
 
-`npm test` runs the auth and age-gate tests.
+Purchase status is written only by `POST /api/stripe/webhook` after Stripe signature verification. Create the `STRIPE_WEBHOOK_SECRET` secret before the next App Hosting rollout.
+
+`npm test` runs the onramp auth, age-gate, and webhook tests.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

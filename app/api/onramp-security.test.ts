@@ -158,13 +158,62 @@ describe('onramp auth, age gate, and wallet routing', () => {
     expect(params.get('customer_information[address][line1]')).toBe('Secretstreet 42');
     expect(params.get('customer_information[dob][year]')).toBe('1990');
 
-    expect(getMemoryDb().sessions.get('cos_test_123')?.userId).toBe('user-1');
+    const created = getMemoryDb().sessions.get('cos_test_123');
+    expect(created?.userId).toBe('user-1');
+    expect(created?.status).toBeUndefined();
+    expect(created?.verifiedCompletionEventId).toBeUndefined();
     expect(getMemoryDb().reads).not.toContain('users/someone-else');
 
     const logs = loggedText();
     for (const secret of [EMAIL, 'Firstnamezz', 'Lastnamezz', 'Secretstreet 42', WALLET, STRIPE_KEY, CLIENT_SECRET]) {
       expect(logs).not.toContain(secret);
     }
+  });
+
+  it('does not store fulfillment_complete from the Stripe create response', async () => {
+    getMemoryDb().users.set('user-1', adultProfile());
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        id: 'cos_test_123',
+        client_secret: CLIENT_SECRET,
+        status: 'fulfillment_complete',
+      }),
+    });
+
+    const response = await createSession(postJson('/api/onramp-session', {
+      walletAddress: WALLET,
+      destinationCurrency: 'btc',
+      destinationNetwork: 'bitcoin',
+    }, 'Bearer valid-token'));
+
+    expect(response.status).toBe(200);
+    const session = getMemoryDb().sessions.get('cos_test_123');
+    expect(session?.userId).toBe('user-1');
+    expect(session?.status).toBeUndefined();
+    expect(session?.lastStatus).toBeUndefined();
+    expect(session?.verifiedCompletionEventId).toBeUndefined();
+    expect(getMemoryDb().webhookEvents.size).toBe(0);
+  });
+
+  it('attaches the owner without overwriting a webhook status', async () => {
+    getMemoryDb().users.set('user-1', adultProfile());
+    getMemoryDb().sessions.set('cos_test_123', {
+      sessionId: 'cos_test_123',
+      status: 'fulfillment_complete',
+      verifiedCompletionEventId: 'evt_real',
+      statusHistory: [{ status: 'fulfillment_complete', eventId: 'evt_real' }],
+    });
+
+    const response = await createSession(postJson('/api/onramp-session', {}, 'Bearer valid-token'));
+    expect(response.status).toBe(200);
+
+    const session = getMemoryDb().sessions.get('cos_test_123');
+    expect(session?.userId).toBe('user-1');
+    expect(session?.status).toBe('fulfillment_complete');
+    expect(session?.verifiedCompletionEventId).toBe('evt_real');
+    expect(session?.statusHistory).toEqual([{ status: 'fulfillment_complete', eventId: 'evt_real' }]);
   });
 
   it('rejects an ethereum address when the purchase network is bitcoin', async () => {
@@ -182,23 +231,16 @@ describe('onramp auth, age gate, and wallet routing', () => {
   });
 });
 
-describe('track-onramp-event authorization', () => {
+describe('track-onramp-event cannot write purchase status', () => {
   beforeEach(() => {
     getMemoryDb().reset();
     getMemoryDb().auth.verifyIdToken.mockImplementation(async (token: string) => {
       if (token === 'owner-token') return { uid: 'owner' };
-      if (token === 'other-token') return { uid: 'other' };
       throw new Error('invalid');
     });
   });
 
-  it('requires auth and will not update another user session', async () => {
-    const anonymous = await trackEvent(postJson('/api/track-onramp-event', {
-      sessionId: 'cos_victim',
-      status: 'fulfillment_complete',
-    }));
-    expect(anonymous.status).toBe(401);
-
+  it('rejects client status posts and does not create or update a session', async () => {
     getMemoryDb().sessions.set('cos_victim', {
       sessionId: 'cos_victim',
       userId: 'owner',
@@ -206,40 +248,37 @@ describe('track-onramp-event authorization', () => {
       statusHistory: [],
     });
 
-    const forbidden = await trackEvent(postJson('/api/track-onramp-event', {
+    const anonymous = await trackEvent(postJson('/api/track-onramp-event', {
+      sessionId: 'cos_victim',
+      status: 'fulfillment_complete',
+    }));
+    expect(anonymous.status).toBe(403);
+    expect(await anonymous.json()).toEqual({
+      error: 'Purchase status cannot be set from the client.',
+    });
+
+    const owner = await trackEvent(postJson('/api/track-onramp-event', {
       sessionId: 'cos_victim',
       status: 'fulfillment_complete',
       userId: 'owner',
-    }, 'Bearer other-token'));
-    expect(forbidden.status).toBe(403);
-    expect(getMemoryDb().sessions.get('cos_victim')?.status).toBe('requires_payment');
-    expect(getMemoryDb().events.size).toBe(0);
-  });
+      transactionDetails: { source_amount: '100.00' },
+    }, 'Bearer owner-token'));
+    expect(owner.status).toBe(403);
 
-  it('records the caller uid and ignores a userId in the body', async () => {
-    const response = await trackEvent(postJson('/api/track-onramp-event', {
+    const createAttempt = await trackEvent(postJson('/api/track-onramp-event', {
       sessionId: 'cos_new',
       status: 'fulfillment_complete',
       userId: 'victim',
     }, 'Bearer owner-token'));
-    expect(response.status).toBe(200);
+    expect(createAttempt.status).toBe(403);
 
-    const session = getMemoryDb().sessions.get('cos_new');
-    expect(session?.userId).toBe('owner');
-    expect(session?.status).toBe('fulfillment_complete');
-    expect([...getMemoryDb().events.values()][0]).toMatchObject({
-      sessionId: 'cos_new',
+    expect(getMemoryDb().sessions.get('cos_victim')).toMatchObject({
       userId: 'owner',
-      status: 'fulfillment_complete',
+      status: 'requires_payment',
     });
-
-    const update = await trackEvent(postJson('/api/track-onramp-event', {
-      sessionId: 'cos_new',
-      status: 'fulfillment_processing',
-      userId: 'victim',
-    }, 'Bearer owner-token'));
-    expect(update.status).toBe(200);
-    expect(getMemoryDb().sessions.get('cos_new')?.userId).toBe('owner');
-    expect(getMemoryDb().sessions.get('cos_new')?.status).toBe('fulfillment_processing');
+    expect(getMemoryDb().sessions.get('cos_victim')?.verifiedCompletionEventId).toBeUndefined();
+    expect(getMemoryDb().sessions.has('cos_new')).toBe(false);
+    expect(getMemoryDb().events.size).toBe(0);
+    expect(getMemoryDb().webhookEvents.size).toBe(0);
   });
 });

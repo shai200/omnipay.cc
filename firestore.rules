@@ -16,9 +16,15 @@ service cloud.firestore {
 
     // Onramp sessions are written by the Admin SDK. Clients may read only their own.
     // Collection queries must filter userId to the signed-in user.
+    // Status is written only by the signature-verified Stripe webhook.
     match /onramp_sessions/{sessionId} {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow write: if false;
+    }
+
+    // Stripe webhook idempotency records. Admin SDK only.
+    match /stripe_webhook_events/{eventId} {
+      allow read, write: if false;
     }
   }
 }
