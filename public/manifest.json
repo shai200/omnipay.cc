@@ -1,6 +1,6 @@
 {
-  "name": "Omnipay.cc - Fiat to Crypto Gateway",
-  "short_name": "Omnipay",
+  "name": "OmniPurchase - Fiat to Crypto Gateway",
+  "short_name": "OmniPurchase",
   "description": "Your secure gateway from Fiat to Crypto. Buy cryptocurrency instantly with Stripe.",
   "start_url": "/",
   "scope": "/",

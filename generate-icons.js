@@ -47,7 +47,7 @@ const screenshotWide = `
     </linearGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#grad)"/>
-  <text x="640" y="250" font-size="80" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">Omnipay.cc</text>
+  <text x="640" y="250" font-size="72" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">OmniPurchase</text>
   <text x="640" y="350" font-size="40" fill="white" text-anchor="middle" font-family="Arial">Fiat to Crypto Gateway</text>
 </svg>
 `;
@@ -61,7 +61,7 @@ const screenshotNarrow = `
     </linearGradient>
   </defs>
   <rect width="540" height="720" fill="url(#grad)"/>
-  <text x="270" y="280" font-size="60" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">Omnipay.cc</text>
+  <text x="270" y="280" font-size="42" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">OmniPurchase</text>
   <text x="270" y="360" font-size="24" fill="white" text-anchor="middle" font-family="Arial">Fiat to Crypto</text>
 </svg>
 `;
