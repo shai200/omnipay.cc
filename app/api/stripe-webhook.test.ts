@@ -1,25 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { isWebhookEventId, verifiedCompletionAllowsEmail } from '../../functions/src/verified-completion';
-import { getMemoryDb } from '../../test/memory-firestore';
-
-vi.mock('@/lib/firebase-admin', async () => {
-  const { getMemoryDb: getDb } = await import('../../test/memory-firestore');
-  const memory = getDb();
-  return {
-    adminApp: { name: 'test' },
-    adminAuth: memory.auth,
-    adminDb: memory.db,
-  };
-});
-
-vi.mock('firebase-admin/firestore', () => ({
-  FieldValue: {
-    serverTimestamp: () => ({ __op: 'serverTimestamp' }),
-    arrayUnion: (value: unknown) => ({ __op: 'arrayUnion', value }),
-  },
-}));
+import { onrampSessions, webhookEvents } from '@/lib/db/schema';
+import { isWebhookEventId, verifiedCompletionAllowsEmail } from '@/lib/email/verified-completion';
+import { openTestDatabase, resetTestData } from '../../test/db';
 
 import { POST as receiveWebhook } from './stripe/webhook/route';
 
@@ -85,8 +70,8 @@ describe('stripe onramp webhook', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
   const fetchMock = vi.fn();
 
-  beforeEach(() => {
-    getMemoryDb().reset();
+  beforeEach(async () => {
+    await resetTestData();
     process.env.STRIPE_WEBHOOK_SECRET = WEBHOOK_SECRET;
     vi.stubGlobal('fetch', fetchMock);
     fetchMock.mockReset();
@@ -112,10 +97,11 @@ describe('stripe onramp webhook', () => {
     const body = payload();
     delete process.env.STRIPE_WEBHOOK_SECRET;
 
+    const db = await openTestDatabase();
     const unconfigured = await receiveWebhook(signedRequest(body, sign(body)));
     expect(unconfigured.status).toBe(500);
-    expect(getMemoryDb().sessions.size).toBe(0);
-    expect(getMemoryDb().webhookEvents.size).toBe(0);
+    expect(await db.select().from(onrampSessions)).toHaveLength(0);
+    expect(await db.select().from(webhookEvents)).toHaveLength(0);
 
     process.env.STRIPE_WEBHOOK_SECRET = WEBHOOK_SECRET;
 
@@ -134,9 +120,8 @@ describe('stripe onramp webhook', () => {
     ));
     expect(expired.status).toBe(400);
 
-    expect(getMemoryDb().sessions.size).toBe(0);
-    expect(getMemoryDb().webhookEvents.size).toBe(0);
-    expect(getMemoryDb().counters.writes).toBe(0);
+    expect(await db.select().from(onrampSessions)).toHaveLength(0);
+    expect(await db.select().from(webhookEvents)).toHaveLength(0);
     expect(fetchMock).not.toHaveBeenCalled();
     const logs = loggedText();
     for (const secret of [WEBHOOK_SECRET, 'whsec_other_secret', CLIENT_SECRET, WALLET]) {
@@ -145,12 +130,13 @@ describe('stripe onramp webhook', () => {
   });
 
   it('stores status from a verified event and ignores a second delivery', async () => {
-    getMemoryDb().sessions.set('cos_test_123', {
-      sessionId: 'cos_test_123',
-      userId: 'user-1',
+    const db = await openTestDatabase();
+    await db.insert(onrampSessions).values({
+      id: 'cos_test_123',
+      userId: null,
       status: 'initialized',
       statusEventCreated: 1_700_000_000,
-      transactionDetails: { wallet_address: WALLET, source_currency: 'usd' },
+      transactionDetails: { source_currency: 'usd' },
       statusHistory: [],
     });
 
@@ -159,9 +145,8 @@ describe('stripe onramp webhook', () => {
     expect(first.status).toBe(200);
     expect(await first.json()).toEqual({ received: true });
 
-    const session = getMemoryDb().sessions.get('cos_test_123');
+    const [session] = await db.select().from(onrampSessions).where(eq(onrampSessions.id, 'cos_test_123'));
     expect(session).toMatchObject({
-      userId: 'user-1',
       status: 'requires_payment',
       lastStatus: 'requires_payment',
       statusEventCreated: 1_700_000_200,
@@ -174,7 +159,7 @@ describe('stripe onramp webhook', () => {
         destination_network: 'bitcoin',
       },
     });
-    expect(session?.verifiedCompletionEventId).toBeUndefined();
+    expect(session?.verifiedCompletionEventId).toBeNull();
     expect(JSON.stringify(session)).not.toContain(WALLET);
     expect(JSON.stringify(session)).not.toContain(CLIENT_SECRET);
     expect(JSON.stringify(session)).not.toContain('attacker');
@@ -186,9 +171,9 @@ describe('stripe onramp webhook', () => {
       },
     ]);
 
-    const recorded = getMemoryDb().webhookEvents.get('evt_test_1');
+    const [recorded] = await db.select().from(webhookEvents).where(eq(webhookEvents.id, 'evt_test_1'));
     expect(recorded).toMatchObject({
-      eventId: 'evt_test_1',
+      id: 'evt_test_1',
       type: 'crypto.onramp_session.updated',
       sessionId: 'cos_test_123',
       status: 'requires_payment',
@@ -196,23 +181,13 @@ describe('stripe onramp webhook', () => {
       signatureVerified: true,
       applied: true,
     });
-    expect(Object.keys(recorded ?? {}).sort()).toEqual([
-      'applied',
-      'eventCreated',
-      'eventId',
-      'processedAt',
-      'sessionId',
-      'signatureVerified',
-      'status',
-      'type',
-    ]);
 
-    const writesAfterFirst = getMemoryDb().counters.writes;
     const duplicate = await receiveWebhook(signedRequest(body, sign(body)));
     expect(duplicate.status).toBe(200);
-    expect(getMemoryDb().counters.writes).toBe(writesAfterFirst);
-    expect(getMemoryDb().webhookEvents.size).toBe(1);
-    expect(getMemoryDb().sessions.get('cos_test_123')?.statusHistory).toHaveLength(1);
+    const events = await db.select().from(webhookEvents);
+    expect(events).toHaveLength(1);
+    const [after] = await db.select().from(onrampSessions).where(eq(onrampSessions.id, 'cos_test_123'));
+    expect(after?.statusHistory).toHaveLength(1);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(loggedText()).not.toContain(WEBHOOK_SECRET);
     expect(loggedText()).not.toContain(CLIENT_SECRET);
@@ -220,6 +195,7 @@ describe('stripe onramp webhook', () => {
   });
 
   it('sets the completion marker once, keeps it sticky, and will not apply an older non-terminal status', async () => {
+    const db = await openTestDatabase();
     const processing = payload({
       id: 'evt_processing',
       created: 1_700_000_300,
@@ -233,8 +209,10 @@ describe('stripe onramp webhook', () => {
       status: 'requires_payment',
     });
     expect((await receiveWebhook(signedRequest(olderPayment, sign(olderPayment)))).status).toBe(200);
-    expect(getMemoryDb().sessions.get('cos_test_123')?.status).toBe('fulfillment_processing');
-    expect(getMemoryDb().webhookEvents.get('evt_old_payment')).toMatchObject({ applied: false, signatureVerified: true });
+    const [mid] = await db.select().from(onrampSessions).where(eq(onrampSessions.id, 'cos_test_123'));
+    expect(mid?.status).toBe('fulfillment_processing');
+    const [oldEvent] = await db.select().from(webhookEvents).where(eq(webhookEvents.id, 'evt_old_payment'));
+    expect(oldEvent).toMatchObject({ applied: false, signatureVerified: true });
 
     const complete = payload({
       id: 'evt_complete',
@@ -243,11 +221,11 @@ describe('stripe onramp webhook', () => {
     });
     expect((await receiveWebhook(signedRequest(complete, sign(complete)))).status).toBe(200);
 
-    const session = getMemoryDb().sessions.get('cos_test_123');
+    const [session] = await db.select().from(onrampSessions).where(eq(onrampSessions.id, 'cos_test_123'));
     expect(session?.status).toBe('fulfillment_complete');
     expect(session?.verifiedCompletionEventId).toBe('evt_complete');
     expect(isWebhookEventId(session?.verifiedCompletionEventId)).toBe(true);
-    expect(session?.userId).toBeUndefined();
+    expect(session?.userId).toBeNull();
 
     const laterPayment = payload({
       id: 'evt_late_payment',
@@ -263,42 +241,46 @@ describe('stripe onramp webhook', () => {
     });
     expect((await receiveWebhook(signedRequest(secondComplete, sign(secondComplete)))).status).toBe(200);
 
-    const finalSession = getMemoryDb().sessions.get('cos_test_123');
+    const [finalSession] = await db.select().from(onrampSessions).where(eq(onrampSessions.id, 'cos_test_123'));
     expect(finalSession?.status).toBe('fulfillment_complete');
     expect(finalSession?.verifiedCompletionEventId).toBe('evt_complete');
     expect(finalSession?.statusHistory).toEqual([
       expect.objectContaining({ eventId: 'evt_processing', status: 'fulfillment_processing' }),
       expect.objectContaining({ eventId: 'evt_complete', status: 'fulfillment_complete' }),
     ]);
-    expect(getMemoryDb().webhookEvents.get('evt_complete')).toMatchObject({
+    const events = await db.select().from(webhookEvents);
+    const byId = new Map(events.map((event) => [event.id, event]));
+    expect(byId.get('evt_complete')).toMatchObject({
       applied: true,
       signatureVerified: true,
       status: 'fulfillment_complete',
       sessionId: 'cos_test_123',
     });
-    expect(getMemoryDb().webhookEvents.get('evt_complete_again')).toMatchObject({ applied: false });
-    expect(getMemoryDb().webhookEvents.get('evt_late_payment')).toMatchObject({ applied: false });
+    expect(byId.get('evt_complete_again')).toMatchObject({ applied: false });
+    expect(byId.get('evt_late_payment')).toMatchObject({ applied: false });
   });
 
   it('does not change session status for another event type or an unsafe status', async () => {
-    getMemoryDb().sessions.set('cos_test_123', {
-      sessionId: 'cos_test_123',
-      userId: 'user-1',
+    const db = await openTestDatabase();
+    await db.insert(onrampSessions).values({
+      id: 'cos_test_123',
       status: 'requires_payment',
     });
 
     const other = payload({ id: 'evt_other', type: 'payment_intent.succeeded', status: 'fulfillment_complete' });
     const otherResponse = await receiveWebhook(signedRequest(other, sign(other)));
     expect(otherResponse.status).toBe(200);
-    expect(getMemoryDb().webhookEvents.size).toBe(0);
-    expect(getMemoryDb().sessions.get('cos_test_123')?.status).toBe('requires_payment');
+    expect(await db.select().from(webhookEvents)).toHaveLength(0);
+    const [unchanged] = await db.select().from(onrampSessions).where(eq(onrampSessions.id, 'cos_test_123'));
+    expect(unchanged?.status).toBe('requires_payment');
 
     const badStatus = payload({ id: 'evt_bad', status: 'fulfillment_complete/../x' });
     const badResponse = await receiveWebhook(signedRequest(badStatus, sign(badStatus)));
     expect(badResponse.status).toBe(200);
-    expect(getMemoryDb().sessions.get('cos_test_123')?.status).toBe('requires_payment');
-    expect(getMemoryDb().sessions.get('cos_test_123')?.verifiedCompletionEventId).toBeUndefined();
-    expect(getMemoryDb().webhookEvents.size).toBe(0);
+    const [still] = await db.select().from(onrampSessions).where(eq(onrampSessions.id, 'cos_test_123'));
+    expect(still?.status).toBe('requires_payment');
+    expect(still?.verifiedCompletionEventId).toBeNull();
+    expect(await db.select().from(webhookEvents)).toHaveLength(0);
   });
 });
 

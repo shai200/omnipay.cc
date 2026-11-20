@@ -59,14 +59,11 @@ export default function OnrampWidget({
         setError(null);
         container.innerHTML = '';
 
-        const token = await activeUser.getIdToken();
-        if (cancelled) return;
-
         const response = await fetch('/api/onramp-session', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             walletAddress,

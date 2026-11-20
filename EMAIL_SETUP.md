@@ -1,104 +1,29 @@
-# Email Integration Setup Guide
+# Email jobs
 
-## Components Added
+Welcome, first-purchase, abandoned-cart, and reminder mail is sent by the hourly worker, not by a web request.
 
-1. **Firebase Cloud Functions** (`functions/src/index.ts`)
-   - `onFirstPurchaseComplete`: Triggers when purchase completes
-   - `checkAbandonedCarts`: Runs hourly to find abandoned carts
-
-2. **SendGrid Integration**
-   - Uses dynamic templates for emails
-
-## Setup Steps
-
-### 1. Install Functions Dependencies
 ```bash
-cd functions
-npm install
+npm run jobs:email
 ```
 
-### 2. Configure Environment Variables
+On Railway the email-jobs service runs `node dist/worker.js` every hour at minute 0 UTC (`railway.worker.toml`). The process exits when the pass finishes. Reminders are sent only when that run falls in the 17:00 UTC hour, on Monday for weekly preferences and on the 1st for monthly preferences.
 
-Edit `functions/.env` file (already created):
-```bash
-SENDGRID_API_KEY=SG.your_actual_key_here
-FROM_EMAIL=support@omnipay.cc
-FIRST_PURCHASE_TEMPLATE_ID=d-your_template_id
-CART_ABANDONMENT_TEMPLATE_ID=d-your_template_id
-```
+Set `SENDGRID_API_KEY` and a verified `SENDGRID_FROM_EMAIL` (default `support@omnipay.cc`). With no API key the worker logs that mail is skipped and does not mark anything sent. `EMAIL_JOBS_DRY_RUN=true` counts the work and does not send.
 
-**Note:** The `.env` file is gitignored for security.
+Template ids default to the existing SendGrid dynamic templates. Override them with:
 
-### 3. Create SendGrid Templates
+- `SENDGRID_TEMPLATE_WELCOME`
+- `SENDGRID_TEMPLATE_FIRST_PURCHASE`
+- `SENDGRID_TEMPLATE_ABANDONED_CART`
+- `SENDGRID_TEMPLATE_REMINDER`
 
-Log into SendGrid Dashboard → Email API → Dynamic Templates
+Password reset mail is sent by the web service when a customer asks for it. It uses the same API key and from address, and a plain message rather than a template. The link expires in one hour.
 
-**Template 1: First Purchase Welcome**
-- Template ID: `d-xxxxxxxxxxxxxx`
-- Variables: `{{first_name}}`, `{{transaction_amount}}`, `{{transaction_currency}}`, `{{crypto_amount}}`, `{{crypto_currency}}`
+## What each job sends
 
-**Template 2: Cart Abandonment**
-- Template ID: `d-yyyyyyyyyyyyyy`
-- Variables: `{{first_name}}`, `{{cart_amount}}`, `{{cart_currency}}`, `{{crypto_currency}}`, `{{resume_link}}`
+- Welcome: a profile whose welcome timestamp is empty. Imported Firebase profiles are marked sent so old customers are not mailed again.
+- First purchase: the customer's only `fulfillment_complete` session whose completion marker matches a signature-verified, applied `crypto.onramp_session.updated` webhook row. A status written any other way does not qualify.
+- Abandoned cart: `requires_payment` sessions idle for at least an hour, then again after 3 days and 30 days, and not after three emails. Recording the send does not move the session's update time.
+- Reminders: `reminder_weekly` on Mondays and `reminder_monthly` on the 1st, after 7 or 30 days. The price-drop preference is stored and is not sent by this worker.
 
-### 4. Update Template IDs
-
-In `functions/src/index.ts`:
-```typescript.env`:
-```bash
-FIRST_PURCHASE_TEMPLATE_ID=d-YOUR_ACTUAL_TEMPLATE_ID
-CART_ABANDONMENT_TEMPLATE_ID=d-YOUR_ACTUAL_TEMPLATE_ID
-
-### 5. Verify Sender Email
-
-In SendGrid Dashboard → Settings → Sender Authentication
-- Verify `support@omnipay.cc`
-
-### 6. Deploy Functions
-```bash
-firebase deploy --only functions
-```
-
-### 7. Test Functions Locally (Optional)
-```bash
-cd functions
-npm run serve
-```
-
-## Email Triggers
-
-### First Purchase Email
-- **Trigger**: `onramp_sessions` update whose `verifiedCompletionEventId` was written by the signature-verified Stripe webhook (`crypto.onramp_session.updated`)
-- **Condition**: The stored webhook event matches that session, status is `fulfillment_complete`, and it is the user's first completed purchase
-- **Data**: Transaction details, amounts, crypto purchased
-
-### Cart Abandonment Email
-- **Trigger**: Cron job runs every 1 hour
-- **Condition**: Session in `requires_payment` for >1 hour, email not sent yet
-- **Data**: Cart details, resume link
-
-## Monitoring
-
-View logs:
-```bash
-firebase functions:log
-```
-
-Check function execution:
-```bash
-firebase functions:list
-```
-
-## Cost Estimates
-
-- **Cloud Functions**: Free tier includes 2M invocations/month
-- **SendGrid**: Free tier includes 100 emails/day
-- **Firestore Reads**: ~2-5 reads per cart check
-
-## Customization
-
-Edit `functions/src/index.ts` to:
-- Add more email triggers (rejected users, etc.)
-- Adjust timing (change `'every 1 hours'` to `'every 30 minutes'`)
-- Add SMS via Twilio
-- Track email opens/clicks
+The worker logs counts only. It does not log email addresses, names, or wallet addresses.
