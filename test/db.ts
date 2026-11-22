@@ -97,3 +97,45 @@ export async function signInCookie(email: string, password: string): Promise<str
   }
   return pairs.join('; ');
 }
+
+type QueryFn = (sql: string, params?: unknown[]) => Promise<unknown>;
+
+/**
+ * Runs `competitor` inside the next transaction, immediately before the first
+ * statement whose SQL matches `pattern`. PGlite has a single connection and
+ * runs transactions one after another, so this is how a test reproduces
+ * another writer committing between two statements of a transaction (for
+ * example, a Stripe webhook inserting a row after a SELECT found none).
+ * Returns a function that removes the hook.
+ */
+export function interleaveBeforeQuery(pattern: RegExp, competitor: (query: QueryFn) => Promise<void>): () => void {
+  if (!client) throw new Error('Open the test database first.');
+  const pg = client;
+  const original = pg.transaction;
+  let fired = false;
+
+  pg.transaction = (async (callback: (tx: unknown) => Promise<unknown>) =>
+    original.call(pg, async (tx) => {
+      const query: QueryFn = (sql, params) => tx.query(sql, params);
+      const wrapped = new Proxy(tx, {
+        get(target, prop) {
+          if (prop === 'query') {
+            return async (sql: string, params?: unknown[], options?: Parameters<typeof tx.query>[2]) => {
+              if (!fired && pattern.test(sql)) {
+                fired = true;
+                await competitor(query);
+              }
+              return target.query(sql, params, options);
+            };
+          }
+          const value = Reflect.get(target, prop);
+          return typeof value === 'function' ? value.bind(target) : value;
+        },
+      });
+      return callback(wrapped);
+    })) as typeof pg.transaction;
+
+  return () => {
+    pg.transaction = original;
+  };
+}
