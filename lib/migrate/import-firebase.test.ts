@@ -116,6 +116,44 @@ describe('firebase import', () => {
   });
 });
 
+describe('firebase import edge cases', () => {
+  beforeEach(async () => {
+    await resetTestData();
+  });
+
+  it('falls back to "Account" when a user has no name at all', async () => {
+    const db = await openTestDatabase();
+    const data = snapshot();
+    data.authUsers[0]!.displayName = undefined;
+    data.users[0]!.data.first_name = undefined;
+    data.users[0]!.data.last_name = undefined;
+    await importFirebaseSnapshot(db, data);
+    const [person] = await db.select().from(user).where(eq(user.id, 'firebase-user'));
+    expect(person?.name).toBe('Account');
+  });
+
+  it('skips a profile-only user whose email is already taken instead of failing', async () => {
+    const db = await openTestDatabase();
+    const data = snapshot();
+    data.users.push({ id: 'profile-only', data: { email: 'person@example.com', first_name: 'Dup' } });
+    const counts = await importFirebaseSnapshot(db, data);
+    expect(counts.skippedUsers).toBe(1);
+    expect(await db.select().from(profiles).where(eq(profiles.userId, 'profile-only'))).toHaveLength(0);
+  });
+
+  it('keeps a legacy abandoned-cart email from being sent again', async () => {
+    const db = await openTestDatabase();
+    const data = snapshot();
+    data.onrampSessions.push({
+      id: 'cos_cart',
+      data: { userId: 'firebase-user', status: 'requires_payment', abandonmentEmailSent: true },
+    });
+    await importFirebaseSnapshot(db, data);
+    const [session] = await db.select().from(onrampSessions).where(eq(onrampSessions.id, 'cos_cart'));
+    expect(session?.abandonmentEmailCount).toBe(1);
+  });
+});
+
 describe('migration safety checks', () => {
   it('refuses to run or to write inside the repository', () => {
     expect(() => assertImportAllowed({ allowFlag: undefined, databaseUrl: 'postgres://u:secret@db.internal:5432/app', confirmHost: 'db.internal:5432' })).toThrow(/ALLOW_DATA_MIGRATION/);

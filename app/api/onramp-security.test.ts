@@ -153,7 +153,7 @@ describe('onramp auth, age gate, and wallet routing', () => {
     expect(created?.verifiedCompletionEventId).toBeNull();
 
     const logs = loggedText();
-    for (const secret of [EMAIL, 'Firstnamezz', 'Lastnamezz', 'Secretstreet 42', WALLET, STRIPE_KEY, CLIENT_SECRET]) {
+    for (const secret of [EMAIL, 'Firstnamezz', 'Lastnamezz', 'Secretstreet 42', WALLET, STRIPE_KEY, CLIENT_SECRET, 'user-1']) {
       expect(logs).not.toContain(secret);
     }
   });

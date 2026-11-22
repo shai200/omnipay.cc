@@ -1,9 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
 import { authClient } from '@/lib/auth/client';
+import { AuthLayout } from '../AuthLayout';
+import { Alert } from '../../components/ui/Alert';
+import { Button } from '../../components/ui/Button';
+import { PasswordField } from '../../components/ui/Field';
+import { IconArrowLeft } from '../../components/ui/icons';
+
+const INVALID_LINK = 'This reset link is invalid or expired.';
 
 function ResetForm() {
   const router = useRouter();
@@ -11,83 +18,75 @@ function ResetForm() {
   const token = params.get('token') ?? '';
   const linkError = params.get('error');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(linkError ? 'This reset link is invalid or expired.' : '');
+  const [error, setError] = useState(linkError || !token ? INVALID_LINK : '');
   const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
     if (!token) {
-      setError('This reset link is invalid or expired.');
+      setError(INVALID_LINK);
       return;
     }
     setSubmitting(true);
     try {
       const result = await authClient.resetPassword({ newPassword: password, token });
       if (result.error) {
-        setError('This reset link is invalid or expired.');
+        setError(INVALID_LINK);
+        setSubmitting(false);
         return;
       }
       router.push('/auth/login');
     } catch {
-      setError('This reset link is invalid or expired.');
-    } finally {
+      setError(INVALID_LINK);
       setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }} htmlFor="password">
-          New password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          maxLength={128}
-          autoComplete="new-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-lg border px-3 py-2"
-          style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-        />
-      </div>
-      {error && <p className="text-sm" style={{ color: '#ef4444' }}>{error}</p>}
-      <button
-        type="submit"
-        disabled={submitting || !token}
-        className="w-full rounded-lg px-4 py-2 text-white font-semibold disabled:opacity-50"
-        style={{ backgroundColor: 'var(--accent)' }}
-      >
-        {submitting ? 'Please wait...' : 'Save password'}
-      </button>
-      <a href="/auth/login" className="block text-sm text-center" style={{ color: 'var(--accent)' }}>
-        Back to sign in
-      </a>
+    <form onSubmit={onSubmit} className="mt-8 space-y-5">
+      <PasswordField
+        label="New password"
+        name="password"
+        required
+        minLength={8}
+        maxLength={128}
+        autoComplete="new-password"
+        hint="At least 8 characters."
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+      />
+      {error && (
+        <Alert tone="danger">
+          {error}{' '}
+          {!token && (
+            <Link href="/auth/forgot" className="font-medium text-fg underline underline-offset-2">
+              Request a new link
+            </Link>
+          )}
+        </Alert>
+      )}
+      <Button type="submit" size="lg" block loading={submitting} disabled={!token}>
+        {submitting ? 'Please wait…' : 'Save password'}
+      </Button>
     </form>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
-      <div className="container mx-auto px-4 py-12">
-        <div
-          className="max-w-2xl mx-auto rounded-2xl border p-8"
-          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
-        >
-          <h1 className="text-2xl font-semibold mb-6" style={{ color: 'var(--foreground)' }}>
-            Choose a new password
-          </h1>
-          <Suspense fallback={<p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}>
-            <ResetForm />
-          </Suspense>
-        </div>
-      </div>
-    </div>
+    <AuthLayout>
+      <h1 className="text-[1.75rem] font-semibold tracking-[-0.025em] text-fg">Choose a new password</h1>
+      <p className="mt-2 text-fg-muted">You will be signed out on other devices after saving.</p>
+      <Suspense fallback={<p className="mt-8 text-fg-muted">Loading…</p>}>
+        <ResetForm />
+      </Suspense>
+      <Link
+        href="/auth/login"
+        className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-brand underline-offset-4 hover:underline"
+      >
+        <IconArrowLeft size={16} /> Back to sign in
+      </Link>
+    </AuthLayout>
   );
 }

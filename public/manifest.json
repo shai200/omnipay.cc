@@ -8,7 +8,9 @@
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#000000",
-  "categories": ["finance"],
+  "categories": [
+    "finance"
+  ],
   "screenshots": [
     {
       "src": "/icons/screenshot-1.png",
@@ -54,10 +56,10 @@
       "name": "Buy Crypto",
       "short_name": "Buy",
       "description": "Start buying cryptocurrency",
-      "url": "/?action=buy",
+      "url": "/#buy",
       "icons": [
         {
-          "src": "/icons/buy-icon-192.png",
+          "src": "/icons/icon-192x192.png",
           "sizes": "192x192",
           "type": "image/png"
         }

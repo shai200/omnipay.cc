@@ -138,9 +138,10 @@ export async function POST(request: NextRequest) {
     return checkoutError(500);
   }
 
+  // No user id, wallet or profile fields: the session id is enough to find the
+  // owner in the database, and server logs are kept outside it.
   console.log('Onramp session created', {
     sessionId: session.id,
-    uid,
     network: resolved.destinationNetwork,
     walletAttached: Boolean(resolved.walletAddress),
   });

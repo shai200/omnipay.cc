@@ -42,6 +42,22 @@ export async function recordSessionOwner(
   sessionId: string,
 ): Promise<SessionWrite> {
   return db.transaction(async (tx) => {
+    // Insert first and let the primary key arbitrate. SELECT ... FOR UPDATE on
+    // a row that does not exist yet locks nothing, so a Stripe webhook for the
+    // same new session could insert it at the same moment and one of the two
+    // inserts failed on the primary key (a 500 from checkout or the webhook).
+    const inserted = await tx
+      .insert(onrampSessions)
+      .values({
+        id: sessionId,
+        userId,
+        transactionDetails: {},
+        statusHistory: [],
+      })
+      .onConflictDoNothing()
+      .returning({ id: onrampSessions.id });
+    if (inserted.length > 0) return 'ok';
+
     const [existing] = await tx
       .select()
       .from(onrampSessions)
@@ -49,16 +65,7 @@ export async function recordSessionOwner(
       .limit(1)
       .for('update');
 
-    if (!existing) {
-      await tx.insert(onrampSessions).values({
-        id: sessionId,
-        userId,
-        transactionDetails: {},
-        statusHistory: [],
-      });
-      return 'ok';
-    }
-
+    if (!existing) return 'conflict';
     if (existing.userId && existing.userId !== userId) return 'conflict';
     if (!existing.userId) {
       await tx
@@ -95,6 +102,15 @@ export async function applyVerifiedOnrampUpdate(
       return { duplicate: true, applied: false };
     }
 
+    // Make sure the row exists before locking it, so a concurrent
+    // recordSessionOwner (or a second event for a brand-new session) waits on
+    // the row lock instead of racing this transaction to the insert. A row
+    // created here has no status yet, so decideSessionWrite treats it as new.
+    await tx
+      .insert(onrampSessions)
+      .values({ id: update.sessionId, transactionDetails: {}, statusHistory: [] })
+      .onConflictDoNothing();
+
     const [existing] = await tx
       .select()
       .from(onrampSessions)
@@ -127,14 +143,7 @@ export async function applyVerifiedOnrampUpdate(
       ...(decision.completionEventId ? { verifiedCompletionEventId: decision.completionEventId } : {}),
     };
 
-    if (existing) {
-      await tx.update(onrampSessions).set(fields).where(eq(onrampSessions.id, update.sessionId));
-    } else {
-      await tx.insert(onrampSessions).values({
-        id: update.sessionId,
-        ...fields,
-      });
-    }
+    await tx.update(onrampSessions).set(fields).where(eq(onrampSessions.id, update.sessionId));
 
     return { duplicate: false, applied: true };
   });

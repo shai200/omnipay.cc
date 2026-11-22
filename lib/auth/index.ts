@@ -1,4 +1,4 @@
-import { betterAuth } from 'better-auth';
+import { betterAuth, getCurrentAdapter } from 'better-auth';
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { nextCookies } from 'better-auth/next-js';
 import { eq } from 'drizzle-orm';
@@ -123,7 +123,22 @@ function buildAuth() {
       },
       session: {
         create: {
-          before: async (session) => {
+          before: async (session, ctx) => {
+            // Sign-up creates the user and its first session in one
+            // transaction. A query on the shared pool cannot see that
+            // uncommitted user, so every email sign-up was rejected
+            // (FAILED_TO_CREATE_SESSION) and rolled back. Read through the
+            // adapter bound to the current transaction instead.
+            const fallback = ctx?.context?.adapter;
+            if (fallback) {
+              const adapter = await getCurrentAdapter(fallback);
+              const row = await adapter.findOne<{ disabled?: boolean | null }>({
+                model: 'user',
+                where: [{ field: 'id', value: session.userId }],
+              });
+              if (!row || row.disabled) return false;
+              return;
+            }
             const [row] = await db
               .select({ disabled: user.disabled })
               .from(user)

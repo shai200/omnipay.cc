@@ -1,40 +1,291 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * OmniPurchase design tokens.
+ *
+ * Every color is a CSS variable so light and dark themes swap in one place.
+ * Pairs are chosen for WCAG AA: fg/muted on bg/surface >= 4.5:1, brand on
+ * surface >= 4.5:1, and on-brand text on brand >= 4.5:1. Components only use
+ * these tokens (through the Tailwind names in @theme below), never raw hex.
+ */
 :root {
-  --background: #f8f9fa;
-  --foreground: #1a1a1a;
-  --card-bg: #ffffff;
-  --card-border: #e0e0e0;
-  --accent: #0066cc;
-  --accent-hover: #0052a3;
-  --text-secondary: #666666;
+  color-scheme: light;
+
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f1f3f7;
+  --surface-inverse: #0b0d12;
+  --border: #e3e6ec;
+  --border-strong: #c9ced8;
+
+  --fg: #0b0d12;
+  --fg-muted: #4a5263;   /* 7.9:1 on white */
+  --fg-subtle: #5f687a;  /* 5.6:1 on white */
+  --fg-inverse: #ffffff;
+
+  --brand: #4338ca;      /* 7.4:1 on white */
+  --brand-hover: #3730a3;
+  --brand-fg: #ffffff;
+  --brand-soft: #eef0ff;
+  --brand-soft-fg: #3730a3;
+  --brand-ring: rgb(67 56 202 / 0.45);
+
+  --success: #047857;
+  --success-soft: #ecfdf5;
+  --warning: #92400e;
+  --warning-soft: #fffbeb;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+  --info: #1d4ed8;
+  --info-soft: #eff6ff;
+
+  --shadow-xs: 0 1px 2px rgb(16 24 40 / 0.05);
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.04), 0 2px 6px rgb(16 24 40 / 0.04);
+  --shadow-md: 0 1px 2px rgb(16 24 40 / 0.04), 0 8px 24px -6px rgb(16 24 40 / 0.10);
+  --shadow-lg: 0 2px 4px rgb(16 24 40 / 0.04), 0 24px 48px -12px rgb(16 24 40 / 0.18);
+
+  --hero-glow-1: rgb(99 102 241 / 0.20);
+  --hero-glow-2: rgb(14 165 233 / 0.14);
+  --grid-line: rgb(15 23 42 / 0.05);
+  --gradient-from: #4338ca; /* 7.4:1 */
+  --gradient-to: #0369a1;   /* 5.6:1 */
 }
 
 [data-theme="dark"] {
-  --background: #0f1419;
-  --foreground: #ffffff;
-  --card-bg: #1a1f2e;
-  --card-border: #2d3748;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --text-secondary: #a0aec0;
+  color-scheme: dark;
+
+  --bg: #07080c;
+  --surface: #0f1117;
+  --surface-2: #161923;
+  --surface-inverse: #f7f8fa;
+  --border: #232734;
+  --border-strong: #353b4b;
+
+  --fg: #f3f4f7;
+  --fg-muted: #aab1c0;   /* 8.6:1 on surface */
+  --fg-subtle: #8b93a5;  /* 5.9:1 on surface */
+  --fg-inverse: #0b0d12;
+
+  --brand: #8b93ff;      /* 6.6:1 on surface */
+  --brand-hover: #a5abff;
+  --brand-fg: #0b0d12;
+  --brand-soft: #1b1d3a;
+  --brand-soft-fg: #c7cbff;
+  --brand-ring: rgb(139 147 255 / 0.5);
+
+  --success: #34d399;
+  --success-soft: #052e22;
+  --warning: #fbbf24;
+  --warning-soft: #2b1d05;
+  --danger: #f87171;
+  --danger-soft: #2d0b0b;
+  --info: #60a5fa;
+  --info-soft: #0b1a33;
+
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 6px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -6px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.4), 0 24px 48px -12px rgb(0 0 0 / 0.6);
+
+  --hero-glow-1: rgb(99 102 241 / 0.22);
+  --hero-glow-2: rgb(14 165 233 / 0.10);
+  --grid-line: rgb(255 255 255 / 0.04);
+  --gradient-from: #a5b4fc;
+  --gradient-to: #7dd3fc;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-inverse: var(--fg-inverse);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-fg: var(--brand-soft-fg);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --animate-fade-up: fade-up 600ms var(--ease-out-soft) both;
+  --animate-fade-in: fade-in 400ms var(--ease-out-soft) both;
+  --animate-spin-slow: spin 1.2s linear infinite;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--brand-soft);
+    color: var(--brand-soft-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Numbers line up in amounts, steps and tables. */
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+/* Theme changes animate colors only on elements that opt in, not on `*`,
+   which forced style recalculation on every element for every transition. */
+.theme-transition,
+.theme-transition * {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+
+/* Gradient accent text. Both stops meet 4.5:1 on the page background. */
+.text-gradient {
+  background-image: linear-gradient(90deg, var(--gradient-from), var(--gradient-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Long-form legal and policy pages. Styles the existing markup so the copy
+   itself does not change. */
+.legal-prose { color: var(--fg-muted); font-size: 1rem; line-height: 1.75; }
+.legal-prose > * + * { margin-top: 1rem; }
+.legal-prose h2 {
+  color: var(--fg);
+  font-size: 1.375rem;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 2.75rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+.legal-prose h2:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.legal-prose h3 { color: var(--fg); font-size: 1.0625rem; font-weight: 600; margin-top: 1.75rem; }
+.legal-prose h4 { color: var(--fg); font-weight: 600; }
+.legal-prose strong { color: var(--fg); font-weight: 600; }
+.legal-prose ul { list-style: disc; padding-left: 1.25rem; }
+.legal-prose li + li { margin-top: 0.375rem; }
+.legal-prose li::marker { color: var(--fg-subtle); }
+.legal-prose a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.legal-prose a:hover { color: var(--brand-hover); }
+.legal-prose .legal-note {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.125rem;
+}
+.legal-prose .legal-callout {
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+  background: var(--warning-soft);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.125rem;
+  color: var(--fg);
+}
+.legal-prose .legal-callout-title { color: var(--warning); font-weight: 600; }
+.legal-prose .legal-danger {
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  background: var(--danger-soft);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.125rem;
+  color: var(--fg);
+}
+.legal-prose .legal-danger-title { color: var(--danger); font-weight: 600; }
+.legal-prose .legal-muted { color: var(--fg-subtle); }
+.legal-prose .legal-grid { display: grid; gap: 1rem; }
+@media (min-width: 768px) { .legal-prose .legal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Hero backdrop: soft color glow plus a faint grid, both pure CSS. */
+.hero-backdrop {
+  background:
+    radial-gradient(60rem 30rem at 15% -10%, var(--hero-glow-1), transparent 60%),
+    radial-gradient(50rem 30rem at 95% 0%, var(--hero-glow-2), transparent 60%);
+}
+.hero-grid {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 75%);
+}
+
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details[open] .faq-chevron { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.legal-prose .legal-grid > div {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.125rem;
+}
+.legal-prose .legal-grid > div > * + * { margin-top: 0.5rem; }
