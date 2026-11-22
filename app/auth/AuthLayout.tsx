@@ -13,19 +13,19 @@ const POINTS = [
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <aside className="relative hidden overflow-hidden bg-surface-inverse lg:flex lg:flex-col lg:justify-between lg:p-12">
+      <aside className="relative hidden overflow-hidden bg-[#0b0d12] lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div aria-hidden className="hero-backdrop absolute inset-0 opacity-90" />
-        <div className="relative [&_a]:text-fg-inverse">
+        <div className="relative [&_a]:text-white">
           <Logo />
         </div>
         <div className="relative max-w-md">
-          <p className="text-3xl font-semibold leading-tight tracking-[-0.025em] text-fg-inverse text-balance">
+          <p className="text-3xl font-semibold leading-tight tracking-[-0.025em] text-white text-balance">
             Buy Bitcoin with your card, straight to your own wallet.
           </p>
           <ul className="mt-8 space-y-3">
             {POINTS.map((point) => (
-              <li key={point} className="flex items-start gap-3 text-fg-inverse/80">
-                <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-fg-inverse dark:bg-black/10">
+              <li key={point} className="flex items-start gap-3 text-white/80">
+                <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
                   <IconCheck size={13} strokeWidth={2.5} />
                 </span>
                 {point}
@@ -33,7 +33,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
             ))}
           </ul>
         </div>
-        <p className="relative text-sm text-fg-inverse/60">© 2026 Omnipay.cc. All rights reserved.</p>
+        <p className="relative text-sm text-white/60">© 2026 Omnipay.cc. All rights reserved.</p>
       </aside>
 
       <div className="flex flex-col">

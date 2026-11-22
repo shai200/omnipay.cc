@@ -165,7 +165,7 @@ export default function Home() {
               className="text-[2.5rem] font-semibold leading-[1.05] tracking-[-0.035em] text-fg text-balance sm:text-5xl lg:text-[3.75rem]"
             >
               Buy Bitcoin with your card.{' '}
-              <span className="bg-gradient-to-r from-[#6366f1] to-[#0ea5e9] bg-clip-text text-transparent">
+              <span className="text-gradient">
                 Straight to your wallet.
               </span>
             </h1>
@@ -181,7 +181,7 @@ export default function Home() {
                 How it works
               </ButtonLink>
             </div>
-            <ul className="mt-10 grid gap-3 text-sm text-fg-muted sm:grid-cols-3" aria-label="Highlights">
+            <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-fg-muted" aria-label="Highlights">
               {['Self-custody wallet delivery', 'Identity checks by Stripe', '18+ only'].map((item) => (
                 <li key={item} className="flex items-center gap-2">
                   <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
@@ -210,7 +210,7 @@ export default function Home() {
           />
           <ol className="mt-14 grid gap-6 md:grid-cols-3">
             {STEPS.map((step, index) => (
-              <li key={step.title} className="reveal relative rounded-xl border border-border bg-bg p-6 sm:p-7">
+              <li key={step.title} className="relative rounded-xl border border-border bg-bg p-6 sm:p-7">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex size-11 items-center justify-center rounded-lg bg-brand-soft text-brand-soft-fg">
                     <step.icon size={22} />
@@ -252,7 +252,7 @@ export default function Home() {
           </div>
           <ul className="grid gap-4 sm:grid-cols-2">
             {TRUST.map((item) => (
-              <li key={item.title} className="reveal rounded-xl border border-border bg-surface p-6 shadow-xs">
+              <li key={item.title} className="rounded-xl border border-border bg-surface p-6 shadow-xs">
                 <span className="inline-flex size-10 items-center justify-center rounded-lg bg-surface-2 text-fg">
                   <item.icon size={20} />
                 </span>
@@ -275,7 +275,7 @@ export default function Home() {
           />
           <ul className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {ROADMAP.map((item) => (
-              <li key={item.title} className="reveal flex flex-col rounded-xl border border-border bg-bg p-6">
+              <li key={item.title} className="flex flex-col rounded-xl border border-border bg-bg p-6">
                 <div className="flex items-start justify-between gap-3">
                   <span className="inline-flex size-10 items-center justify-center rounded-lg bg-brand-soft text-brand-soft-fg">
                     <item.icon size={20} />
@@ -322,25 +322,20 @@ export default function Home() {
       {/* Closing CTA */}
       <section className="pb-20 sm:pb-28">
         <Container>
-          <div className="relative overflow-hidden rounded-2xl bg-surface-inverse px-6 py-14 text-center sm:px-12">
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-[#0b0d12] px-6 py-14 text-center sm:px-12">
             <div aria-hidden className="hero-backdrop absolute inset-0 opacity-80" />
             <div className="relative">
-              <h2 className="text-3xl font-semibold tracking-[-0.025em] text-fg-inverse text-balance sm:text-4xl">
+              <h2 className="text-3xl font-semibold tracking-[-0.025em] text-white text-balance sm:text-4xl">
                 Ready when you are.
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-fg-inverse/75">
+              <p className="mx-auto mt-4 max-w-lg text-white/75">
                 Create an account, add your wallet, and buy Bitcoin in Stripe’s secure checkout.
               </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                <ButtonLink href="/auth/register" size="lg" className="bg-brand text-brand-fg hover:bg-brand-hover">
+                <ButtonLink href="/auth/register" size="lg" variant="onDark">
                   Create account
                 </ButtonLink>
-                <ButtonLink
-                  href="#buy"
-                  size="lg"
-                  variant="ghost"
-                  className="text-fg-inverse hover:bg-white/10 hover:text-fg-inverse dark:hover:bg-black/10"
-                >
+                <ButtonLink href="#buy" size="lg" variant="onDarkOutline">
                   Buy Bitcoin
                 </ButtonLink>
               </div>

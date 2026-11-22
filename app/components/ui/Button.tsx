@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes, ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { Spinner } from './Spinner';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger' | 'inverse';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger' | 'inverse' | 'onDark' | 'onDarkOutline';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<ButtonVariant, string> = {
@@ -13,6 +13,9 @@ const VARIANTS: Record<ButtonVariant, string> = {
   ghost: 'text-fg-muted hover:bg-surface-2 hover:text-fg',
   danger: 'bg-danger text-white hover:opacity-90',
   inverse: 'bg-surface-inverse text-fg-inverse hover:opacity-90',
+  // For always-dark bands (closing CTA, auth aside), in both themes.
+  onDark: 'bg-white text-[#0b0d12] shadow-xs hover:bg-white/90',
+  onDarkOutline: 'border border-white/25 text-white hover:bg-white/10',
 };
 
 // Every size keeps a touch target of at least 40px (44px at md and lg).
