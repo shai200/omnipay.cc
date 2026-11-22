@@ -158,3 +158,10 @@ export function buildCheckoutPayload(values: CheckoutFormValues, dob: Dob | null
 export function profileFormIsEmpty(values: ProfileFormValues): boolean {
   return PROFILE_FIELDS.every((field) => values[field].trim() === '');
 }
+
+// Anything the browser may send to PUT /api/profile.
+export type ProfileUpdate = Partial<CheckoutPayload> & {
+  reminder_weekly?: boolean | null;
+  reminder_monthly?: boolean | null;
+  reminder_price_drop?: boolean | null;
+};

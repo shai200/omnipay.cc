@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
 import type { PublicProfile } from '@/lib/profile';
+import type { ProfileUpdate } from '@/lib/profile-form';
 
 export type AuthUser = {
   uid: string;
@@ -25,11 +26,11 @@ interface AuthContextType {
   // has been read once. Consumers can rely on `profile` being final when
   // this is false.
   loading: boolean;
-  signUp: (email: string, password: string, profile: PublicProfile | null) => Promise<void>;
+  signUp: (email: string, password: string, profile: ProfileUpdate | null) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: (callbackURL?: string) => Promise<void>;
   signOutUser: () => Promise<void>;
-  updateProfile: (profile: PublicProfile) => Promise<void>;
+  updateProfile: (profile: ProfileUpdate) => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -50,7 +51,7 @@ async function readProfile(): Promise<PublicProfile | null> {
   return body.profile ?? null;
 }
 
-async function writeProfile(profileData: PublicProfile): Promise<
+async function writeProfile(profileData: ProfileUpdate): Promise<
   { ok: true; profile: PublicProfile | null } | { ok: false; error: string | undefined }
 > {
   const response = await fetch('/api/profile', {
@@ -109,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const profile = profileReady ? loaded.profile : null;
   const loading = isPending || (sessionUserId != null && !profileReady);
 
-  const signUp = useCallback(async (email: string, password: string, profileData: PublicProfile | null) => {
+  const signUp = useCallback(async (email: string, password: string, profileData: ProfileUpdate | null) => {
     const name = [profileData?.first_name, profileData?.last_name].filter(Boolean).join(' ') || 'Account';
     const result = await authClient.signUp.email({ email, password, name });
     if (result.error) {
@@ -148,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoaded(null);
   }, []);
 
-  const updateProfile = useCallback(async (profileData: PublicProfile) => {
+  const updateProfile = useCallback(async (profileData: ProfileUpdate) => {
     const request = ++requestRef.current;
     const saved = await writeProfile(profileData);
     if (!saved.ok) {
