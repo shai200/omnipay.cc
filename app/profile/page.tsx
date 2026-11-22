@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { dobEligibility } from '@/lib/age';
+import { profileFormToPayload, walletAddressError } from '@/lib/profile-form';
 
 const initialForm = {
   email: '',
@@ -57,9 +58,6 @@ export default function CheckoutSettingsPage() {
         source_amount: profile.source_amount || '100',
       });
       setProfileLoaded(true);
-    } else if (user?.email) {
-      setForm((prev) => ({ ...prev, email: user.email || '' }));
-      setProfileLoaded(true);
     }
   }, [profile, user]);
 
@@ -69,61 +67,19 @@ export default function CheckoutSettingsPage() {
     }
   }, [loading, user, router]);
 
-  const payload = useMemo(() => {
-    const walletAddresses: { [key: string]: string } = {};
-    if (form.wallet_address_ethereum) walletAddresses.ethereum = form.wallet_address_ethereum;
-    if (form.wallet_address_bitcoin) walletAddresses.bitcoin = form.wallet_address_bitcoin;
-
-    return {
-      email: form.email || undefined,
-      first_name: form.first_name || undefined,
-      last_name: form.last_name || undefined,
-      dob: {
-        day: form.dob_day ? Number(form.dob_day) : undefined,
-        month: form.dob_month ? Number(form.dob_month) : undefined,
-        year: form.dob_year ? Number(form.dob_year) : undefined,
-      },
-      address: {
-        country: form.address_country || undefined,
-        line1: form.address_line1 || undefined,
-        line2: form.address_line2 || undefined,
-        city: form.address_city || undefined,
-        state: form.address_state || undefined,
-        postal_code: form.address_postal_code || undefined,
-      },
-      wallet_addresses: Object.keys(walletAddresses).length > 0 ? walletAddresses : undefined,
-      lock_wallet_address: form.lock_wallet_address,
-      source_currency: form.source_currency || undefined,
-      source_amount: form.source_amount || undefined,
-    };
-  }, [form]);
+  // Sends cleared fields as empty strings so the server clears them.
+  const payload = useMemo(() => profileFormToPayload(form), [form]);
 
   const validateEthAddress = (address: string): boolean => {
-    if (!address) {
-      setEthAddressError('');
-      return true;
-    }
-    const ethRegex = /^0x[a-fA-F0-9]{40}$/;
-    if (!ethRegex.test(address)) {
-      setEthAddressError('Invalid Ethereum address format');
-      return false;
-    }
-    setEthAddressError('');
-    return true;
+    const error = walletAddressError('ethereum', address);
+    setEthAddressError(error ?? '');
+    return !error;
   };
 
   const validateBtcAddress = (address: string): boolean => {
-    if (!address) {
-      setBtcAddressError('');
-      return true;
-    }
-    const btcRegex = /^((bc1[0-9A-Za-z]{32,64})|([13][a-km-zA-HJ-NP-Z1-9]{25,34}))$/;
-    if (!btcRegex.test(address)) {
-      setBtcAddressError('Invalid Bitcoin address format');
-      return false;
-    }
-    setBtcAddressError('');
-    return true;
+    const error = walletAddressError('bitcoin', address);
+    setBtcAddressError(error ?? '');
+    return !error;
   };
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +102,13 @@ export default function CheckoutSettingsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
+
+    const btcOk = validateBtcAddress(form.wallet_address_bitcoin);
+    const ethOk = validateEthAddress(form.wallet_address_ethereum);
+    if (!btcOk || !ethOk) {
+      setMessage('Fix the wallet address before saving.');
+      return;
+    }
     setSaving(true);
 
     if (form.dob_year && form.dob_month && form.dob_day) {
