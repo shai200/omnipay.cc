@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
 import type { PublicProfile } from '@/lib/profile';
 
@@ -9,13 +9,25 @@ export type AuthUser = {
   email: string | null;
 };
 
+// Thrown by signUp when the account exists but the profile write failed.
+// The caller must not try to create the account a second time.
+export class ProfileSaveError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProfileSaveError';
+  }
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   profile: PublicProfile | null;
+  // True until the session is known and, for a signed-in user, the profile
+  // has been read once. Consumers can rely on `profile` being final when
+  // this is false.
   loading: boolean;
-  signUp: (email: string, password: string, profile: PublicProfile) => Promise<void>;
+  signUp: (email: string, password: string, profile: PublicProfile | null) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (callbackURL?: string) => Promise<void>;
   signOutUser: () => Promise<void>;
   updateProfile: (profile: PublicProfile) => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -29,7 +41,7 @@ function authError(message: string | undefined, fallback: string): Error {
 }
 
 async function readProfile(): Promise<PublicProfile | null> {
-  const response = await fetch('/api/profile', { credentials: 'same-origin' });
+  const response = await fetch('/api/profile', { credentials: 'same-origin', cache: 'no-store' });
   if (response.status === 401) return null;
   if (!response.ok) {
     throw new Error('Unable to load profile.');
@@ -38,110 +50,129 @@ async function readProfile(): Promise<PublicProfile | null> {
   return body.profile ?? null;
 }
 
+async function writeProfile(profileData: PublicProfile): Promise<
+  { ok: true; profile: PublicProfile | null } | { ok: false; error: string | undefined }
+> {
+  const response = await fetch('/api/profile', {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(profileData),
+  });
+  const body = await response.json().catch(() => ({})) as { error?: string; profile?: PublicProfile };
+  if (!response.ok) return { ok: false, error: body.error };
+  return { ok: true, profile: body.profile ?? null };
+}
+
+type LoadedProfile = { userId: string; profile: PublicProfile | null };
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data, isPending } = authClient.useSession();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const sessionUserId = data?.user?.id ?? null;
+  const sessionEmail = data?.user?.email ?? null;
+
+  const [loaded, setLoaded] = useState<LoadedProfile | null>(null);
+  // Counts profile reads and writes. A read that finishes after a newer
+  // write must not replace what that write stored.
+  const requestRef = useRef(0);
+  const userIdRef = useRef<string | null>(sessionUserId);
+  useEffect(() => {
+    userIdRef.current = sessionUserId;
+  }, [sessionUserId]);
 
   useEffect(() => {
+    if (!sessionUserId) return;
     let cancelled = false;
+    const request = ++requestRef.current;
 
-    async function load() {
-      if (isPending) return;
-      const sessionUser = data?.user;
-      if (!sessionUser) {
-        if (!cancelled) {
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-        }
-        return;
-      }
+    readProfile()
+      .catch(() => null)
+      .then((nextProfile) => {
+        if (cancelled) return;
+        setLoaded((previous) => {
+          const superseded = requestRef.current !== request;
+          if (superseded && previous?.userId === sessionUserId) return previous;
+          return { userId: sessionUserId, profile: nextProfile };
+        });
+      });
 
-      if (!cancelled) {
-        setUser({ uid: sessionUser.id, email: sessionUser.email ?? null });
-      }
-
-      try {
-        const nextProfile = await readProfile();
-        if (!cancelled) setProfile(nextProfile);
-      } catch {
-        if (!cancelled) setProfile(null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void load();
     return () => {
       cancelled = true;
     };
-  }, [isPending, data?.user]);
+  }, [sessionUserId]);
 
-  const signUp = async (email: string, password: string, profileData: PublicProfile) => {
-    const name = [profileData.first_name, profileData.last_name].filter(Boolean).join(' ') || 'Account';
+  const user = useMemo<AuthUser | null>(
+    () => (sessionUserId ? { uid: sessionUserId, email: sessionEmail } : null),
+    [sessionUserId, sessionEmail],
+  );
+  const profileReady = sessionUserId != null && loaded?.userId === sessionUserId;
+  const profile = profileReady ? loaded.profile : null;
+  const loading = isPending || (sessionUserId != null && !profileReady);
+
+  const signUp = useCallback(async (email: string, password: string, profileData: PublicProfile | null) => {
+    const name = [profileData?.first_name, profileData?.last_name].filter(Boolean).join(' ') || 'Account';
     const result = await authClient.signUp.email({ email, password, name });
     if (result.error) {
       throw authError(result.error.message, 'Unable to create an account.');
     }
+    if (!profileData) return;
 
-    const response = await fetch('/api/profile', {
-      method: 'PUT',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(profileData),
-    });
-    const body = await response.json().catch(() => ({})) as { error?: string; profile?: PublicProfile };
-    if (!response.ok) {
-      throw new Error(body.error || 'Account created, but the profile could not be saved.');
+    const request = ++requestRef.current;
+    const saved = await writeProfile(profileData);
+    if (!saved.ok) {
+      throw new ProfileSaveError(saved.error || 'Account created, but the profile could not be saved.');
     }
-    setUser({ uid: result.data?.user.id ?? '', email });
-    setProfile(body.profile ?? null);
-  };
+    const userId = result.data?.user.id;
+    if (userId && requestRef.current === request) {
+      setLoaded({ userId, profile: saved.profile });
+    }
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const result = await authClient.signIn.email({ email, password });
     if (result.error) {
       throw authError(result.error.message, 'Invalid email or password.');
     }
-  };
+  }, []);
 
-  const signInWithGoogle = async () => {
-    const result = await authClient.signIn.social({ provider: 'google', callbackURL: '/' });
+  const signInWithGoogle = useCallback(async (callbackURL: string = '/') => {
+    const result = await authClient.signIn.social({ provider: 'google', callbackURL });
     if (result.error) {
       throw authError(result.error.message, 'Google sign-in failed.');
     }
-  };
+  }, []);
 
-  const signOutUser = async () => {
+  const signOutUser = useCallback(async () => {
+    requestRef.current += 1;
     await authClient.signOut();
-    setUser(null);
-    setProfile(null);
-  };
+    setLoaded(null);
+  }, []);
 
-  const updateProfile = async (profileData: PublicProfile) => {
-    const response = await fetch('/api/profile', {
-      method: 'PUT',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(profileData),
-    });
-    const body = await response.json().catch(() => ({})) as { error?: string; profile?: PublicProfile };
-    if (!response.ok) {
-      throw new Error(body.error || 'Failed to update.');
+  const updateProfile = useCallback(async (profileData: PublicProfile) => {
+    const request = ++requestRef.current;
+    const saved = await writeProfile(profileData);
+    if (!saved.ok) {
+      throw new Error(saved.error || 'Failed to update.');
     }
-    setProfile(body.profile ?? null);
-  };
+    const userId = userIdRef.current;
+    if (userId && requestRef.current === request) {
+      setLoaded({ userId, profile: saved.profile });
+    }
+  }, []);
 
-  const refreshProfile = async () => {
-    if (!user) return;
-    setProfile(await readProfile());
-  };
+  const refreshProfile = useCallback(async () => {
+    const userId = userIdRef.current;
+    if (!userId) return;
+    const request = ++requestRef.current;
+    const nextProfile = await readProfile();
+    if (requestRef.current === request) {
+      setLoaded({ userId, profile: nextProfile });
+    }
+  }, []);
 
   const value = useMemo(
     () => ({ user, profile, loading, signUp, signIn, signInWithGoogle, signOutUser, updateProfile, refreshProfile }),
-    [user, profile, loading],
+    [user, profile, loading, signUp, signIn, signInWithGoogle, signOutUser, updateProfile, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
