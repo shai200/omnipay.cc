@@ -95,11 +95,11 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     setSubmitting(true);
 
     try {
+      // The auth client redirects the browser to Google. Pushing a route here
+      // raced that redirect and could cancel it.
       await signInWithGoogle();
-      router.push('/');
     } catch (err: any) {
       setError(err?.message || 'Google sign-in failed');
-    } finally {
       setSubmitting(false);
     }
   };
