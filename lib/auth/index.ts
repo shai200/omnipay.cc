@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { nextCookies } from 'better-auth/next-js';
 import { eq } from 'drizzle-orm';
+import { googleCredentials } from '@/lib/auth/google';
 import { hashPassword, verifyStoredPassword } from '@/lib/auth/password';
 import { getDb } from '@/lib/db/client';
 import { account, authSession, user, verification } from '@/lib/db/schema';
@@ -21,13 +22,6 @@ function appOrigin(): string {
   return process.env.BETTER_AUTH_URL?.trim() || process.env.APP_ORIGIN?.trim() || 'http://localhost:3000';
 }
 
-function googleProvider(): { clientId: string; clientSecret: string } | undefined {
-  const clientId = process.env.GOOGLE_CLIENT_ID?.trim() ?? '';
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim() ?? '';
-  if (!clientId || !clientSecret) return undefined;
-  return { clientId, clientSecret };
-}
-
 let authInstance: ReturnType<typeof buildAuth> | undefined;
 
 export function resetAuthForTests(): void {
@@ -36,7 +30,7 @@ export function resetAuthForTests(): void {
 
 function buildAuth() {
   const origin = appOrigin();
-  const google = googleProvider();
+  const google = googleCredentials();
   const db = getDb();
 
   return betterAuth({

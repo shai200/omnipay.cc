@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -9,41 +9,48 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-const defaultContextValue: ThemeContextType = {
-  theme: 'light',
-  toggleTheme: () => {},
-};
+const STORAGE_KEY = 'theme';
+const CHANGE_EVENT = 'omnipurchase:theme';
 
-const ThemeContext = createContext<ThemeContextType>(defaultContextValue);
+const ThemeContext = createContext<ThemeContextType>({ theme: 'light', toggleTheme: () => {} });
+
+// Runs in <head> before first paint so a saved dark theme does not flash
+// light. Light stays the default when nothing is saved (the system
+// preference is intentionally not consulted, as before).
+export const themeInitScript = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
+
+function readTheme(): Theme {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+function subscribe(onChange: () => void): () => void {
+  window.addEventListener(CHANGE_EVENT, onChange);
+  window.addEventListener('storage', onChange);
+  return () => {
+    window.removeEventListener(CHANGE_EVENT, onChange);
+    window.removeEventListener('storage', onChange);
+  };
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
+  // The document attribute is the source of truth. The server snapshot is
+  // 'light'; React re-reads the real value right after hydration.
+  const theme = useSyncExternalStore<Theme>(subscribe, readTheme, () => 'light');
 
-  useEffect(() => {
-    // Get saved theme, default to light (ignore system preference)
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    const initialTheme = savedTheme || 'light';
-    
-    setTheme(initialTheme);
-    document.documentElement.setAttribute('data-theme', initialTheme);
-    setMounted(true);
+  const toggleTheme = useCallback(() => {
+    const next: Theme = readTheme() === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Private mode or blocked storage: the choice lasts for this page only.
+    }
+    window.dispatchEvent(new Event(CHANGE_EVENT));
   }, []);
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-  };
+  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
 
-  const value = { theme, toggleTheme };
-
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

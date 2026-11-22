@@ -1,21 +1,27 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClientProviders } from "./contexts/ClientProviders";
+import { themeInitScript } from "./contexts/ThemeContext";
 import { ServiceWorkerRegister } from "./components/ServiceWorkerRegister";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "OmniPurchase - Fiat to Crypto Gateway",
+  title: {
+    default: "OmniPurchase - Fiat to Crypto Gateway",
+    template: "%s · OmniPurchase",
+  },
   description: "Your secure gateway from Fiat to Crypto. Buy cryptocurrency instantly with Stripe.",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -26,17 +32,25 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  viewport: "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover",
   icons: {
     icon: "/icons/icon-192x192.png",
     apple: "/icons/icon-192x192.png",
   },
   other: {
-    'Content-Security-Policy': 'upgrade-insecure-requests',
     'mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'black-translucent',
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f7fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#090c15" },
+  ],
 };
 
 export default function RootLayout({
@@ -45,10 +59,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    // data-theme is set by the inline script before hydration.
+    <html lang="en" data-theme="light" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <a href="#main" className="skip-link">Skip to main content</a>
         <ServiceWorkerRegister />
         <ClientProviders>
           {children}

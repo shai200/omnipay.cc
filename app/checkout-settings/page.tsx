@@ -1,12 +1,24 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../contexts/AuthContext';
-import { dobEligibility } from '@/lib/age';
+import Link from 'next/link';
+import { useEffect, useId, useState, type ChangeEvent, type FormEvent } from 'react';
+import { AccountPage, PageLoading } from '../components/PageShell';
+import { ProfileFields } from '../components/ProfileFields';
+import { Alert } from '../components/ui/Alert';
+import { TextField } from '../components/ui/Field';
+import { ArrowRightIcon, BellIcon } from '../components/ui/icons';
+import { useRequireAuth } from '../hooks';
+import {
+  buildCheckoutPayload,
+  countryFieldError,
+  readDobFields,
+  sourceAmountFieldError,
+  walletFieldError,
+  type CheckoutFormValues,
+} from '@/lib/profile-form';
+import type { PublicProfile } from '@/lib/profile';
 
-const initialForm = {
-  email: '',
+const initialForm: CheckoutFormValues = {
   first_name: '',
   last_name: '',
   dob_day: '',
@@ -25,513 +37,260 @@ const initialForm = {
   source_amount: '100',
 };
 
-export default function CheckoutSettingsPage() {
-  const router = useRouter();
-  const { user, profile, loading, updateProfile, refreshProfile, signOutUser } = useAuth();
-  const [form, setForm] = useState(initialForm);
-  const [message, setMessage] = useState('');
+function formFromProfile(profile: PublicProfile): CheckoutFormValues {
+  return {
+    first_name: profile.first_name || '',
+    last_name: profile.last_name || '',
+    dob_day: profile.dob?.day?.toString() || '',
+    dob_month: profile.dob?.month?.toString() || '',
+    dob_year: profile.dob?.year?.toString() || '',
+    address_country: profile.address?.country || '',
+    address_line1: profile.address?.line1 || '',
+    address_line2: profile.address?.line2 || '',
+    address_city: profile.address?.city || '',
+    address_state: profile.address?.state || '',
+    address_postal_code: profile.address?.postal_code || '',
+    wallet_address_ethereum: profile.wallet_addresses?.ethereum || '',
+    wallet_address_bitcoin: profile.wallet_addresses?.bitcoin || '',
+    lock_wallet_address: profile.lock_wallet_address === true,
+    source_currency: profile.source_currency || 'usd',
+    source_amount: profile.source_amount || '100',
+  };
+}
+
+type Errors = { dob: string; country: string; bitcoin: string; ethereum: string; amount: string };
+const NO_ERRORS: Errors = { dob: '', country: '', bitcoin: '', ethereum: '', amount: '' };
+
+function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className="card p-5 sm:p-7">
+      <h2 id={id} className="text-lg font-semibold tracking-tight">{title}</h2>
+      {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+      <div className="mt-6">{children}</div>
+    </section>
+  );
+}
+
+function CheckoutSettingsForm({
+  email,
+  initial,
+  onSave,
+}: {
+  email: string;
+  initial: CheckoutFormValues;
+  onSave: (values: ReturnType<typeof buildCheckoutPayload>) => Promise<void>;
+}) {
+  const [form, setForm] = useState(initial);
+  const [errors, setErrors] = useState<Errors>(NO_ERRORS);
+  const [status, setStatus] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [profileLoaded, setProfileLoaded] = useState(false);
-  const [ethAddressError, setEthAddressError] = useState('');
-  const [btcAddressError, setBtcAddressError] = useState('');
+  const currencyId = useId();
+  const lockId = useId();
 
-  useEffect(() => {
-    if (profile) {
-      setForm({
-        email: profile.email || user?.email || '',
-        first_name: profile.first_name || '',
-        last_name: profile.last_name || '',
-        dob_day: profile.dob?.day?.toString() || '',
-        dob_month: profile.dob?.month?.toString() || '',
-        dob_year: profile.dob?.year?.toString() || '',
-        address_country: profile.address?.country || '',
-        address_line1: profile.address?.line1 || '',
-        address_line2: profile.address?.line2 || '',
-        address_city: profile.address?.city || '',
-        address_state: profile.address?.state || '',
-        address_postal_code: profile.address?.postal_code || '',
-        wallet_address_ethereum: profile.wallet_addresses?.ethereum || '',
-        wallet_address_bitcoin: profile.wallet_addresses?.bitcoin || '',
-        lock_wallet_address: profile.lock_wallet_address === true,
-        source_currency: profile.source_currency || 'usd',
-        source_amount: profile.source_amount || '100',
-      });
-      setProfileLoaded(true);
-    } else if (user?.email) {
-      setForm((prev) => ({ ...prev, email: user.email || '' }));
-      setProfileLoaded(true);
-    }
-  }, [profile, user]);
+  const onChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = event.target;
+    setForm((previous) => ({ ...previous, [name]: type === 'checkbox' ? checked : value }));
+    setStatus(null);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth');
-    }
-  }, [loading, user, router]);
-
-  const payload = useMemo(() => {
-    const walletAddresses: { [key: string]: string } = {};
-    if (form.wallet_address_ethereum) walletAddresses.ethereum = form.wallet_address_ethereum;
-    if (form.wallet_address_bitcoin) walletAddresses.bitcoin = form.wallet_address_bitcoin;
-
-    return {
-      email: form.email || undefined,
-      first_name: form.first_name || undefined,
-      last_name: form.last_name || undefined,
-      dob: {
-        day: form.dob_day ? Number(form.dob_day) : undefined,
-        month: form.dob_month ? Number(form.dob_month) : undefined,
-        year: form.dob_year ? Number(form.dob_year) : undefined,
-      },
-      address: {
-        country: form.address_country || undefined,
-        line1: form.address_line1 || undefined,
-        line2: form.address_line2 || undefined,
-        city: form.address_city || undefined,
-        state: form.address_state || undefined,
-        postal_code: form.address_postal_code || undefined,
-      },
-      wallet_addresses: Object.keys(walletAddresses).length > 0 ? walletAddresses : undefined,
-      lock_wallet_address: form.lock_wallet_address,
-      source_currency: form.source_currency || undefined,
-      source_amount: form.source_amount || undefined,
-    };
-  }, [form]);
-
-  const validateEthAddress = (address: string): boolean => {
-    if (!address) {
-      setEthAddressError('');
-      return true;
-    }
-    const ethRegex = /^0x[a-fA-F0-9]{40}$/;
-    if (!ethRegex.test(address)) {
-      setEthAddressError('Invalid Ethereum address format');
-      return false;
-    }
-    setEthAddressError('');
-    return true;
-  };
-
-  const validateBtcAddress = (address: string): boolean => {
-    if (!address) {
-      setBtcAddressError('');
-      return true;
-    }
-    const btcRegex = /^((bc1[0-9A-Za-z]{32,64})|([13][a-km-zA-HJ-NP-Z1-9]{25,34}))$/;
-    if (!btcRegex.test(address)) {
-      setBtcAddressError('Invalid Bitcoin address format');
-      return false;
-    }
-    setBtcAddressError('');
-    return true;
-  };
-
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    
     if (name === 'wallet_address_ethereum') {
-      validateEthAddress(value);
+      setErrors((previous) => ({ ...previous, ethereum: walletFieldError('ethereum', value) }));
+    } else if (name === 'wallet_address_bitcoin') {
+      setErrors((previous) => ({ ...previous, bitcoin: walletFieldError('bitcoin', value) }));
+    } else if (name === 'address_country') {
+      setErrors((previous) => ({ ...previous, country: '' }));
+    } else if (name === 'source_amount') {
+      setErrors((previous) => ({ ...previous, amount: '' }));
+    } else if (name.startsWith('dob_')) {
+      setErrors((previous) => ({ ...previous, dob: '' }));
     }
-    
-    if (name === 'wallet_address_bitcoin') {
-      validateBtcAddress(value);
-    }
-    
-    setForm((prev) => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
-    }));
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage('');
+  const handleSave = async (event: FormEvent) => {
+    event.preventDefault();
+    setStatus(null);
+
+    const dob = readDobFields(form);
+    const nextErrors: Errors = {
+      dob: dob.ok ? '' : dob.error,
+      country: countryFieldError(form.address_country),
+      bitcoin: walletFieldError('bitcoin', form.wallet_address_bitcoin),
+      ethereum: walletFieldError('ethereum', form.wallet_address_ethereum),
+      amount: sourceAmountFieldError(form.source_amount),
+    };
+    setErrors(nextErrors);
+    if (!dob.ok || Object.values(nextErrors).some(Boolean)) {
+      setStatus({ tone: 'danger', text: 'Please fix the highlighted fields, then save again.' });
+      return;
+    }
+
     setSaving(true);
-
-    if (form.dob_year && form.dob_month && form.dob_day) {
-      const eligibility = dobEligibility({
-        year: form.dob_year,
-        month: form.dob_month,
-        day: form.dob_day,
-      });
-      if (!eligibility.ok) {
-        setMessage(eligibility.error);
-        setSaving(false);
-        return;
-      }
-    }
-
     try {
-      await updateProfile(payload);
-      console.log('Profile saved with payload:', payload);
-      // Don't need to refresh - the form already has the correct values
-      setMessage('Checkout settings updated successfully.');
-      setSaving(false);
-    } catch (err: any) {
-      console.error('Save error:', err);
-      setMessage(err?.message || 'Failed to update.');
+      await onSave(buildCheckoutPayload(form, dob.dob));
+      setStatus({ tone: 'success', text: 'Checkout settings updated successfully.' });
+    } catch (err: unknown) {
+      setStatus({ tone: 'danger', text: err instanceof Error && err.message ? err.message : 'Failed to update.' });
+    } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>
+  return (
+    <form onSubmit={handleSave} className="space-y-6" noValidate>
+      <Section title="Personal details" description={`Signed in as ${email}. These details are pre-filled at checkout.`}>
+        <ProfileFields
+          values={form}
+          onChange={onChange}
+          disabled={saving}
+          dobError={errors.dob}
+          countryError={errors.country}
+        />
+      </Section>
+
+      <Section title="Onramp Settings" description="Where your crypto is sent, and the amount checkout starts with.">
+        <div className="space-y-5">
+          <TextField
+            label="Bitcoin Wallet Address"
+            name="wallet_address_bitcoin"
+            type="text"
+            mono
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={120}
+            placeholder="bc1..."
+            value={form.wallet_address_bitcoin}
+            onChange={onChange}
+            disabled={saving}
+            error={errors.bitcoin}
+            hint="Used for purchases on the home page. Double-check it: blockchain transactions cannot be reversed."
+          />
+          <TextField
+            label="Ethereum Wallet Address"
+            name="wallet_address_ethereum"
+            type="text"
+            mono
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={120}
+            placeholder="0x..."
+            value={form.wallet_address_ethereum}
+            onChange={onChange}
+            disabled={saving}
+            error={errors.ethereum}
+          />
+
+          <label className="choice" htmlFor={lockId}>
+            <input
+              type="checkbox"
+              id={lockId}
+              name="lock_wallet_address"
+              checked={form.lock_wallet_address}
+              onChange={onChange}
+              disabled={saving}
+            />
+            <span className="text-sm">
+              Lock this wallet address (this prevents you from being able to change this address when you buy
+              crypto. To make it editable during checkout, uncheck this box)
+            </span>
+          </label>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label" htmlFor={currencyId}>Default Currency</label>
+              <select
+                id={currencyId}
+                name="source_currency"
+                value={form.source_currency}
+                onChange={(event) => {
+                  setForm((previous) => ({ ...previous, source_currency: event.target.value }));
+                  setStatus(null);
+                }}
+                disabled={saving}
+                className="input"
+              >
+                <option value="usd">USD</option>
+                <option value="eur">EUR</option>
+              </select>
+            </div>
+            <TextField
+              label="Default Amount"
+              name="source_amount"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              maxLength={16}
+              value={form.source_amount}
+              onChange={onChange}
+              disabled={saving}
+              error={errors.amount}
+            />
+          </div>
+        </div>
+      </Section>
+
+      {status ? <Alert tone={status.tone}>{status.text}</Alert> : null}
+
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Link href="/" className="btn btn-ghost">Back to Home</Link>
+        <button type="submit" disabled={saving} className="btn btn-primary btn-lg sm:min-w-[12rem]">
+          {saving ? (
+            <>
+              <span className="spinner" aria-hidden="true" /> Saving...
+            </>
+          ) : (
+            'Save changes'
+          )}
+        </button>
       </div>
+    </form>
+  );
+}
+
+export default function CheckoutSettingsPage() {
+  const { user, profile, loading, updateProfile } = useRequireAuth('/checkout-settings');
+
+  useEffect(() => {
+    document.title = 'Checkout Settings · OmniPurchase';
+  }, []);
+
+  if (loading || !user) {
+    return (
+      <AccountPage title="Checkout Settings">
+        <PageLoading />
+      </AccountPage>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
-      <div className="container mx-auto px-4 py-12">
-        <div
-          className="max-w-2xl mx-auto rounded-2xl border p-8"
-          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>
-              Checkout Settings
-            </h1>
-            <button
-              type="button"
-              onClick={() => window.location.href = '/'}
-              className="text-sm px-4 py-2 rounded-lg transition-colors"
-              style={{ 
-                color: 'var(--accent)',
-                backgroundColor: 'transparent',
-                border: '1px solid var(--accent)'
-              }}
-            >
-              ← Back to Home
-            </button>
-          </div>
+    <AccountPage
+      title="Checkout Settings"
+      description="Fill these in once so checkout is quicker next time. You can change them whenever you like."
+    >
+      <Link
+        href="/reminders"
+        className="card card-interactive mb-6 flex items-center justify-between gap-4 p-5"
+      >
+        <span className="flex items-center gap-4">
+          <span className="icon-tile"><BellIcon /></span>
+          <span>
+            <span className="block font-semibold tracking-tight">Crypto Purchase Reminders</span>
+            <span className="block text-sm text-muted">Choose a weekly or monthly email reminder.</span>
+          </span>
+        </span>
+        <ArrowRightIcon className="shrink-0 text-muted" />
+      </Link>
 
-          {/* Crypto Purchase Reminders Button - Top Priority */}
-          <div className="mb-8">
-            <button
-              type="button"
-              onClick={() => router.push('/reminders')}
-              className="w-full rounded-lg px-4 py-3 text-white font-bold transition-all hover:scale-105 flex items-center justify-center gap-2"
-              style={{ backgroundColor: '#dc2626' }}
-            >
-              🔔 Crypto Purchase Reminders (IMPORTANT)
-            </button>
-            <p className="text-xs text-center mt-2" style={{ color: 'var(--text-secondary)' }}>
-              Set up regular reminders to build your wealth habit — this is the most critical step!
-            </p>
-          </div>
-
-          {/* Profile Info Explainer */}
-          <div className="mb-8 p-5 rounded-xl" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '2px solid #22c55e' }}>
-            <h2 className="text-lg font-bold mb-3" style={{ color: '#22c55e' }}>
-              ⚡ Speed up your crypto purchases
-            </h2>
-            <div className="space-y-3 text-sm" style={{ color: 'var(--foreground)' }}>
-              <p className="font-semibold" style={{ color: '#22c55e' }}>
-                💡 Fill out these details once, then enjoy lightning-fast checkouts for your weekly or monthly purchases.
-              </p>
-              <p>
-                Your profile information is stored here so you can <strong>buy crypto in seconds</strong>. No more re-entering your name, address, or payment details every single time.
-              </p>
-              <p>
-                <strong>Build wealth through frequent purchases.</strong> The best way to invest in crypto is through consistent, small purchases over time — not waiting for the "perfect" price.
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  First name
-                </label>
-                <input
-                  name="first_name"
-                  type="text"
-                  value={form.first_name}
-                  onChange={onChange}
-                  disabled={!profileLoaded || saving}
-                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Last name
-                </label>
-                <input
-                  name="last_name"
-                  type="text"
-                  value={form.last_name}
-                  onChange={onChange}
-                  disabled={!profileLoaded || saving}
-                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  DOB Day
-                </label>
-                <input
-                  name="dob_day"
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={form.dob_day}
-                  onChange={onChange}
-                  disabled={!profileLoaded || saving}
-                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  DOB Month
-                </label>
-                <input
-                  name="dob_month"
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={form.dob_month}
-                  onChange={onChange}
-                  disabled={!profileLoaded || saving}
-                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  DOB Year
-                </label>
-                <input
-                  name="dob_year"
-                  type="number"
-                  min="1900"
-                  max="2100"
-                  value={form.dob_year}
-                  onChange={onChange}
-                  disabled={!profileLoaded || saving}
-                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Country (2-letter code)
-              </label>
-              <input
-                name="address_country"
-                type="text"
-                value={form.address_country}
-                onChange={onChange}
-                disabled={!profileLoaded || saving}
-                className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Address Line 1
-              </label>
-              <input
-                name="address_line1"
-                type="text"
-                value={form.address_line1}
-                onChange={onChange}
-                disabled={!profileLoaded || saving}
-                className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                Address Line 2
-              </label>
-              <input
-                name="address_line2"
-                type="text"
-                value={form.address_line2}
-                onChange={onChange}
-                disabled={!profileLoaded || saving}
-                className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  City
-                </label>
-                <input
-                  name="address_city"
-                  type="text"
-                  value={form.address_city}
-                  onChange={onChange}
-                  disabled={!profileLoaded || saving}
-                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  State
-                </label>
-                <input
-                  name="address_state"
-                  type="text"
-                  value={form.address_state}
-                  onChange={onChange}
-                  disabled={!profileLoaded || saving}
-                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                  Postal code
-                </label>
-                <input
-                  name="address_postal_code"
-                  type="text"
-                  value={form.address_postal_code}
-                  onChange={onChange}
-                  disabled={!profileLoaded || saving}
-                  className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                />
-              </div>
-            </div>
-
-            {/* Onramp Settings Section */}
-            <div className="border-t pt-6 mt-6" style={{ borderColor: 'var(--card-border)' }}>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>
-                Onramp Settings
-              </h3>
-              
-              <div className="space-y-4">
-                {/* Wallet Addresses */}
-                <div>
-                  <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Ethereum Wallet Address
-                  </label>
-                  <input
-                    name="wallet_address_ethereum"
-                    type="text"
-                    value={form.wallet_address_ethereum}
-                    onChange={onChange}
-                    disabled={!profileLoaded || saving}
-                    className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                    placeholder="0x..."
-                  />
-                  {ethAddressError && (
-                    <p className="text-sm mt-1" style={{ color: '#ef4444' }}>
-                      {ethAddressError}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Bitcoin Wallet Address
-                  </label>
-                  <input
-                    name="wallet_address_bitcoin"
-                    type="text"
-                    value={form.wallet_address_bitcoin}
-                    onChange={onChange}
-                    disabled={!profileLoaded || saving}
-                    className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                    placeholder="bc1..."
-                  />
-                  {btcAddressError && (
-                    <p className="text-sm mt-1" style={{ color: '#ef4444' }}>
-                      {btcAddressError}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="lock_wallet_address"
-                    name="lock_wallet_address"
-                    checked={form.lock_wallet_address}
-                    onChange={onChange}
-                    disabled={!profileLoaded || saving}
-                    className="w-4 h-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <label htmlFor="lock_wallet_address" className="text-sm" style={{ color: 'var(--foreground)' }}>
-                    Lock this wallet address (this prevents you from being able to change this address when you buy crypto. To make it editable during checkout, uncheck this box)
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                      Default Currency
-                    </label>
-                    <select
-                      name="source_currency"
-                      value={form.source_currency}
-                      onChange={(e) => setForm(prev => ({ ...prev, source_currency: e.target.value }))}
-                      disabled={!profileLoaded || saving}
-                      className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                    >
-                      <option value="usd">USD</option>
-                      <option value="eur">EUR</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>
-                      Default Amount
-                    </label>
-                    <input
-                      name="source_amount"
-                      type="number"
-                      min="1"
-                      value={form.source_amount}
-                      onChange={onChange}
-                      disabled={!profileLoaded || saving}
-                      className="w-full rounded-lg border px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ backgroundColor: 'var(--background)', borderColor: 'var(--card-border)' }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {message && (
-              <div className="rounded-lg border p-3 text-sm" style={{ borderColor: 'var(--card-border)', color: 'var(--text-secondary)' }}>
-                {message}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={!profileLoaded || saving}
-              className="w-full rounded-lg px-4 py-2 text-white font-semibold disabled:opacity-50"
-              style={{ backgroundColor: 'var(--accent)' }}
-            >
-              {saving ? 'Saving...' : 'Save changes'}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+      {/* Keyed by user so the form is rebuilt from the right profile after an account switch. */}
+      <CheckoutSettingsForm
+        key={user.uid}
+        email={profile?.email || user.email || ''}
+        initial={profile ? formFromProfile(profile) : initialForm}
+        onSave={updateProfile}
+      />
+    </AccountPage>
   );
 }

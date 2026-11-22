@@ -17,15 +17,6 @@ const eslintConfig = defineConfig([
     "generate-icons.js",
     "dist/**",
     ".railway/**",
-    // Pre-existing UI and auth screens. Rules are not turned off inside
-    // these files. They are outside this lint run so CI does not rewrite
-    // legal copy or visible UI. New server code is linted with the default rules.
-    "app/auth/AuthForm.tsx",
-    "app/checkout-settings/page.tsx",
-    "app/profile/page.tsx",
-    "app/reminders/page.tsx",
-    "app/contexts/AuthContext.tsx",
-    "app/contexts/ThemeContext.tsx",
   ]),
   {
     files: [

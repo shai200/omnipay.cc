@@ -1,11 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { loadStripeOnramp, type OnrampSession, type OnrampSessionResult } from '@stripe/crypto';
+import { loadStripeOnramp, type OnrampSession } from '@stripe/crypto';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-
-type OnrampSnapshot = OnrampSessionResult;
+import { Alert } from './ui/Alert';
 
 interface OnrampWidgetProps {
   walletAddress?: string;
@@ -13,6 +13,19 @@ interface OnrampWidgetProps {
   sourceCurrency?: string;
   destinationCurrency?: string;
   destinationNetwork?: string;
+}
+
+type WidgetError = { message: string; needsDob: boolean };
+
+// Returned by the API when the profile has no usable date of birth. The
+// 18+ check itself stays on the server; this only decides which help to show.
+const DOB_REQUIRED = 'A valid date of birth is required.';
+const UNAVAILABLE = 'Crypto purchases are currently unavailable. Please try again later.';
+
+type AppearanceCapable = { setAppearance: (appearance: { theme: 'light' | 'dark' }) => void };
+
+function canSetAppearance(session: unknown): session is AppearanceCapable {
+  return typeof (session as Partial<AppearanceCapable> | null)?.setAppearance === 'function';
 }
 
 export default function OnrampWidget({
@@ -27,29 +40,31 @@ export default function OnrampWidget({
   const onrampRef = useRef<HTMLDivElement>(null);
   const onrampSessionRef = useRef<OnrampSession | null>(null);
   const themeRef = useRef(theme);
-  const userRef = useRef(user);
-  themeRef.current = theme;
-  userRef.current = user;
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<WidgetError | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
+
+  const userId = user?.uid ?? null;
+
+  // Keep the embedded Stripe UI in step with the site theme without
+  // creating a new session.
+  useEffect(() => {
+    themeRef.current = theme;
+    const session = onrampSessionRef.current;
+    if (canSetAppearance(session)) {
+      try {
+        session.setAppearance({ theme });
+      } catch {
+        // Older onramp builds: the theme applies on the next session.
+      }
+    }
+  }, [theme]);
 
   useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-
-    const activeUser = userRef.current;
-    if (!activeUser) {
-      setLoading(false);
-      return;
-    }
-
+    if (authLoading || !userId) return;
     const container = onrampRef.current;
-    if (!container) {
-      setLoading(false);
-      return;
-    }
+    if (!container) return;
 
     let cancelled = false;
 
@@ -77,21 +92,23 @@ export default function OnrampWidget({
         if (cancelled) return;
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMessage = errorData.error || 'Failed to create onramp session';
+          const errorData = await response.json().catch(() => ({})) as { error?: unknown };
+          const errorMessage = typeof errorData.error === 'string' && errorData.error
+            ? errorData.error
+            : 'Failed to create onramp session';
 
           if (errorMessage.includes('Crypto onramp is not enabled') || errorMessage.includes('currently unavailable')) {
-            throw new Error('Crypto purchases are currently unavailable. Please try again later.');
+            throw new Error(UNAVAILABLE);
           }
 
           throw new Error(errorMessage);
         }
 
-        const { clientSecret } = await response.json();
+        const { clientSecret } = await response.json() as { clientSecret: string };
 
         const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
         if (!publishableKey) {
-          throw new Error('Stripe publishable key not found');
+          throw new Error(UNAVAILABLE);
         }
 
         const stripeOnramp = await loadStripeOnramp(publishableKey);
@@ -110,107 +127,95 @@ export default function OnrampWidget({
         });
 
         onrampSessionRef.current = onrampSession;
-
-        onrampSession.addEventListener('onramp_session_updated', (event) => {
-          const session = event.payload.session as OnrampSnapshot;
-          const status = session.status;
-          const sessionId = session.id;
-
-          console.log('Onramp session updated', { sessionId, status });
-
-          if (status === 'fulfillment_complete') {
-            console.log('Crypto purchase completed!');
-          } else if (status === 'rejected') {
-            console.log('Transaction rejected');
-          } else if (status === 'requires_payment') {
-            console.log('Customer ready to pay - cart active');
-          } else if (status === 'fulfillment_processing') {
-            console.log('Payment successful, processing crypto delivery');
-          } else if (status === 'initialized') {
-            console.log('Session initialized');
-          }
-        });
-
         onrampSession.mount(container);
-        console.log('Onramp widget mounted');
 
         if (!cancelled) {
           setLoading(false);
         }
       } catch (err: unknown) {
-        console.error('Error initializing onramp:', err);
         if (!cancelled) {
           const message = err instanceof Error ? err.message : 'Failed to initialize onramp';
-          setError(message);
+          setError({ message, needsDob: message === DOB_REQUIRED });
           setLoading(false);
         }
       }
     };
 
-    initializeOnramp();
+    void initializeOnramp();
 
     return () => {
       cancelled = true;
-      const currentSession = onrampSessionRef.current;
-      if (currentSession && 'unmount' in currentSession && typeof currentSession.unmount === 'function') {
+      const currentSession = onrampSessionRef.current as (OnrampSession & { unmount?: () => void }) | null;
+      onrampSessionRef.current = null;
+      if (currentSession && typeof currentSession.unmount === 'function') {
         try {
           currentSession.unmount();
-        } catch (unmountError: unknown) {
-          console.log('Error unmounting onramp session:', unmountError);
+        } catch {
+          // The container is cleared below either way.
         }
       }
       container.innerHTML = '';
     };
-  }, [authLoading, user?.uid, walletAddress, sourceAmount, sourceCurrency, destinationCurrency, destinationNetwork]);
+  }, [authLoading, userId, walletAddress, sourceAmount, sourceCurrency, destinationCurrency, destinationNetwork, attempt]);
 
   if (!authLoading && !user) {
     return (
-      <div className="px-8 pb-4 text-center" data-testid="onramp-sign-in">
-        <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
+      <div className="text-center" data-testid="onramp-sign-in">
+        <p className="mb-4 text-muted">
           Sign in to buy crypto and send it to your wallet.
         </p>
         <div className="flex items-center justify-center gap-3">
-          <a
-            href="/auth/register"
-            className="px-4 py-2 rounded-lg text-sm font-semibold"
-            style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}
-          >
-            Register
-          </a>
-          <a
-            href="/auth/login"
-            className="px-4 py-2 rounded-lg text-sm font-semibold"
-            style={{ backgroundColor: 'var(--card-border)', color: 'var(--foreground)' }}
-          >
-            Sign in
-          </a>
+          <Link href="/auth/register" className="btn btn-primary">Register</Link>
+          <Link href="/auth/login" className="btn btn-secondary">Sign in</Link>
         </div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-        <p className="text-red-800">Error: {error}</p>
-      </div>
-    );
-  }
+  const busy = authLoading || loading;
 
   return (
     <div className="w-full">
-      {(authLoading || loading) && (
-        <div className="flex items-center justify-center p-8">
-          <div style={{ color: 'var(--text-secondary)' }}>Loading onramp widget...</div>
+      {error ? (
+        error.needsDob ? (
+          <Alert tone="info">
+            <p className="font-semibold">Add your date of birth to continue</p>
+            <p className="mt-1 text-muted">
+              You must be at least 18 years old to use this service, so we need your date of birth before
+              checkout can start.
+            </p>
+            <Link href="/checkout-settings" className="btn btn-primary btn-sm mt-3">
+              Open Checkout Settings
+            </Link>
+          </Alert>
+        ) : (
+          <Alert tone="danger">
+            <p>{error.message}</p>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm mt-3"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              Try again
+            </button>
+          </Alert>
+        )
+      ) : null}
+
+      {busy && !error ? (
+        <div className="space-y-3" role="status" aria-label="Loading secure checkout">
+          <div className="skeleton h-12 w-full" />
+          <div className="skeleton h-12 w-full" />
+          <div className="skeleton h-24 w-full" />
+          <div className="skeleton h-12 w-full" />
+          <p className="pt-1 text-center text-sm text-muted">Loading secure checkout…</p>
         </div>
-      )}
+      ) : null}
+
+      {/* Stripe mounts its iframe here. It stays rendered (never display:none) while loading so the iframe can size itself. */}
       <div
         ref={onrampRef}
-        className="min-h-[600px] rounded-lg p-4"
-        style={{
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--card-border)'
-        }}
+        className={error ? 'hidden' : busy ? '' : 'min-h-[560px] overflow-hidden rounded-xl'}
         data-onramp-container
       />
     </div>
