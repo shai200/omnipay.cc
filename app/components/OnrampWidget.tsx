@@ -4,12 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { loadStripeOnramp, type OnrampSession, type OnrampSessionResult } from '@stripe/crypto';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { checkoutRequestBody } from '@/lib/checkout-request';
 import { Alert } from './ui/Alert';
 import { Button, ButtonLink } from './ui/Button';
 import { Spinner } from './ui/Spinner';
 import { IconLock } from './ui/icons';
-
-type OnrampSnapshot = OnrampSessionResult;
 
 interface OnrampWidgetProps {
   walletAddress?: string;
@@ -19,6 +18,8 @@ interface OnrampWidgetProps {
   destinationCurrency?: string;
   destinationNetwork?: string;
 }
+
+type OnrampSnapshot = OnrampSessionResult;
 
 const UNAVAILABLE = 'Crypto purchases are currently unavailable. Please try again later.';
 const DOB_REQUIRED = 'A valid date of birth is required.';
@@ -39,13 +40,24 @@ export default function OnrampWidget({
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const uid = user?.uid;
+  // Null until auth (including the profile) has settled. Each POST creates a
+  // Stripe onramp session, so the effect below runs only when this changes.
+  const requestBody = checkoutRequestBody({
+    authLoading,
+    uid,
+    walletAddress,
+    sourceAmount,
+    sourceCurrency,
+    destinationCurrency,
+    destinationNetwork,
+  });
 
   useEffect(() => {
     themeRef.current = theme;
   }, [theme]);
 
   useEffect(() => {
-    if (authLoading || !uid) return;
+    if (!requestBody) return;
     const container = onrampRef.current;
     if (!container) return;
 
@@ -61,13 +73,7 @@ export default function OnrampWidget({
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            walletAddress,
-            sourceAmount,
-            sourceCurrency,
-            destinationCurrency,
-            destinationNetwork,
-          }),
+          body: requestBody,
         });
 
         if (cancelled) return;
@@ -132,7 +138,7 @@ export default function OnrampWidget({
       }
       container.innerHTML = '';
     };
-  }, [authLoading, uid, walletAddress, sourceAmount, sourceCurrency, destinationCurrency, destinationNetwork, attempt]);
+  }, [uid, requestBody, attempt]);
 
   if (authLoading) {
     return <WidgetSkeleton />;

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
+import { deriveAuthState, ProfileRequests, settleProfileRead, type LoadedProfile } from '@/lib/auth/profile-sync';
 import { parseProfilePatch, type PublicProfile } from '@/lib/profile';
 
 export type AuthUser = {
@@ -62,48 +63,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const sessionUserId = data?.user?.id ?? null;
   const sessionEmail = data?.user?.email ?? null;
 
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [profileError, setProfileError] = useState<string | null>(null);
-  // The uid whose profile is in `profile`. While it differs from the session
-  // uid the profile is still loading, so pages must not treat it as empty.
-  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<LoadedProfile | null>(null);
+  // Orders profile reads and writes. Without it, the read started when
+  // sign-up creates the session could finish after the sign-up profile write
+  // and replace the saved profile (wallet, amount) with the empty one. The
+  // buy widget then created a Stripe onramp session with defaults and a
+  // second one once the real profile came back.
+  const [requests] = useState(() => new ProfileRequests());
+  const userIdRef = useRef<string | null>(sessionUserId);
+  useEffect(() => {
+    userIdRef.current = sessionUserId;
+  }, [sessionUserId]);
 
   useEffect(() => {
-    if (isPending) return;
-    let cancelled = false;
-
     // Signed out: nothing to load. The values below are derived from the
     // session uid, so stale profile state is never exposed.
-    if (!sessionUserId) return;
+    if (isPending || !sessionUserId) return;
+    const token = requests.begin();
+    let cancelled = false;
 
     readProfile()
-      .then((nextProfile) => {
+      .then(
+        (profile) => ({ userId: sessionUserId, profile, error: null }),
+        () => ({ userId: sessionUserId, profile: null, error: PROFILE_LOAD_ERROR }),
+      )
+      .then((next: LoadedProfile) => {
         if (cancelled) return;
-        setProfile(nextProfile);
-        setProfileError(null);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setProfile(null);
-        setProfileError(PROFILE_LOAD_ERROR);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadedFor(sessionUserId);
+        setLoaded((previous) => settleProfileRead(previous, next, !requests.isLatest(token)));
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isPending, sessionUserId]);
+  }, [isPending, sessionUserId, requests]);
 
   const user = useMemo<AuthUser | null>(
     () => (sessionUserId ? { uid: sessionUserId, email: sessionEmail } : null),
     [sessionUserId, sessionEmail],
   );
-  const loading = isPending || (sessionUserId !== null && loadedFor !== sessionUserId);
-  const current = sessionUserId !== null && loadedFor === sessionUserId;
-  const visibleProfile = current ? profile : null;
-  const visibleProfileError = current ? profileError : null;
+  const { profile, profileError, loading } = deriveAuthState({ isPending, sessionUserId, loaded });
 
   const signUp = useCallback(async (email: string, password: string, profileData: PublicProfile) => {
     // Validate the profile (including the 18+ date-of-birth rule) before the
@@ -120,11 +118,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw authError(result.error.message, 'Unable to create an account.');
     }
 
+    const token = requests.begin();
     const saved = await writeProfile(profileData, 'Account created, but the profile could not be saved.');
-    setProfile(saved);
-    setProfileError(null);
-    if (result.data?.user.id) setLoadedFor(result.data.user.id);
-  }, []);
+    const userId = result.data?.user.id;
+    if (userId && requests.isLatest(token)) {
+      setLoaded({ userId, profile: saved, error: null });
+    }
+  }, [requests]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const result = await authClient.signIn.email({ email, password });
@@ -141,35 +141,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOutUser = useCallback(async () => {
+    requests.invalidate();
     await authClient.signOut();
-    setProfile(null);
-    setProfileError(null);
-    setLoadedFor(null);
-  }, []);
+    setLoaded(null);
+  }, [requests]);
 
   const updateProfile = useCallback(async (profileData: PublicProfile) => {
+    const token = requests.begin();
     const saved = await writeProfile(profileData, 'Failed to update.');
-    setProfile(saved);
-    setProfileError(null);
-  }, []);
+    const userId = userIdRef.current;
+    if (userId && requests.isLatest(token)) {
+      setLoaded({ userId, profile: saved, error: null });
+    }
+  }, [requests]);
 
   const refreshProfile = useCallback(async () => {
-    if (!sessionUserId) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
+    const token = requests.begin();
     try {
-      setProfile(await readProfile());
-      setProfileError(null);
+      const next = await readProfile();
+      if (requests.isLatest(token)) setLoaded({ userId, profile: next, error: null });
     } catch (error) {
-      setProfileError(PROFILE_LOAD_ERROR);
+      if (requests.isLatest(token)) {
+        setLoaded((previous) => ({
+          userId,
+          profile: previous?.userId === userId ? previous.profile : null,
+          error: PROFILE_LOAD_ERROR,
+        }));
+      }
       throw error;
     }
-  }, [sessionUserId]);
+  }, [requests]);
 
   const value = useMemo(
     () => ({
       user,
-      profile: visibleProfile,
+      profile,
       loading,
-      profileError: visibleProfileError,
+      profileError,
       signUp,
       signIn,
       signInWithGoogle,
@@ -177,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProfile,
       refreshProfile,
     }),
-    [user, visibleProfile, loading, visibleProfileError, signUp, signIn, signInWithGoogle, signOutUser, updateProfile, refreshProfile],
+    [user, profile, loading, profileError, signUp, signIn, signInWithGoogle, signOutUser, updateProfile, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
