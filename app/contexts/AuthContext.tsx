@@ -72,12 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isPending) return;
     let cancelled = false;
 
-    if (!sessionUserId) {
-      setProfile(null);
-      setProfileError(null);
-      setLoadedFor(null);
-      return;
-    }
+    // Signed out: nothing to load. The values below are derived from the
+    // session uid, so stale profile state is never exposed.
+    if (!sessionUserId) return;
 
     readProfile()
       .then((nextProfile) => {
@@ -104,6 +101,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [sessionUserId, sessionEmail],
   );
   const loading = isPending || (sessionUserId !== null && loadedFor !== sessionUserId);
+  const current = sessionUserId !== null && loadedFor === sessionUserId;
+  const visibleProfile = current ? profile : null;
+  const visibleProfileError = current ? profileError : null;
 
   const signUp = useCallback(async (email: string, password: string, profileData: PublicProfile) => {
     // Validate the profile (including the 18+ date-of-birth rule) before the
@@ -167,9 +167,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       user,
-      profile,
+      profile: visibleProfile,
       loading,
-      profileError,
+      profileError: visibleProfileError,
       signUp,
       signIn,
       signInWithGoogle,
@@ -177,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProfile,
       refreshProfile,
     }),
-    [user, profile, loading, profileError, signUp, signIn, signInWithGoogle, signOutUser, updateProfile, refreshProfile],
+    [user, visibleProfile, loading, visibleProfileError, signUp, signIn, signInWithGoogle, signOutUser, updateProfile, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
