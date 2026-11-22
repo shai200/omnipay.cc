@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { loadStripeOnramp, type OnrampSession, type OnrampSessionResult } from '@stripe/crypto';
+import { loadStripeOnramp, type OnrampSession } from '@stripe/crypto';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { checkoutRequestBody } from '@/lib/checkout-request';
@@ -18,8 +18,6 @@ interface OnrampWidgetProps {
   destinationCurrency?: string;
   destinationNetwork?: string;
 }
-
-type OnrampSnapshot = OnrampSessionResult;
 
 const UNAVAILABLE = 'Crypto purchases are currently unavailable. Please try again later.';
 const DOB_REQUIRED = 'A valid date of birth is required.';
@@ -106,11 +104,8 @@ export default function OnrampWidget({
         });
         onrampSessionRef.current = onrampSession;
 
-        // Display only. Purchase status is recorded from the signed Stripe webhook.
-        onrampSession.addEventListener('onramp_session_updated', (event) => {
-          const session = event.payload.session as OnrampSnapshot;
-          console.log('Onramp session updated', { sessionId: session.id, status: session.status });
-        });
+        // Purchase status is recorded from the signed Stripe webhook, so the
+        // widget's own session events are not used (or logged) here.
 
         onrampSession.mount(container);
         if (!cancelled) setLoading(false);
