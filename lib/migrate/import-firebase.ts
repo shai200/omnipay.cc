@@ -119,8 +119,8 @@ export async function importFirebaseSnapshot(db: AppDatabase, snapshot: Firebase
     const profile = profileDocs.get(authUser.uid) ?? {};
     const createdAt = timestamp(authUser.createdAt) ?? timestamp(profile.createdAt) ?? new Date();
     const name = text(authUser.displayName, 200)
-      ?? [text(profile.first_name, 100), text(profile.last_name, 100)].filter(Boolean).join(' ')
-      ?? 'Account';
+      // join() returns '' (never null), so `??` never reached 'Account'.
+      ?? ([text(profile.first_name, 100), text(profile.last_name, 100)].filter(Boolean).join(' ') || 'Account');
 
     await db.insert(user).values({
       id: authUser.uid,
@@ -182,6 +182,14 @@ export async function importFirebaseSnapshot(db: AppDatabase, snapshot: Firebase
       createdAt,
       updatedAt: timestamp(doc.data.updatedAt) ?? createdAt,
     }).onConflictDoNothing();
+    // The insert is skipped when the email already belongs to another id.
+    // Writing the profile then broke the foreign key and stopped the import
+    // part-way, so only continue when a user row with this id exists.
+    const [existingUser] = await db.select({ id: user.id }).from(user).where(eq(user.id, doc.id)).limit(1);
+    if (!existingUser) {
+      counts.skippedUsers += 1;
+      continue;
+    }
     importedUsers.add(doc.id);
     await upsertProfile(db, doc.id, doc.data, createdAt, completedUserIds.has(doc.id));
     counts.users += 1;
@@ -351,7 +359,7 @@ async function upsertSession(db: AppDatabase, doc: FirestoreDocExport, users: Se
     verifiedCompletionEventId: existing?.verifiedCompletionEventId ?? marker,
     transactionDetails: sanitizeTransactionDetails(data.transactionDetails),
     statusHistory: keepComplete ? existing?.statusHistory ?? [] : history(data.statusHistory),
-    abandonmentEmailCount: numberOrNull(data.abandonmentEmailCount) ?? existing?.abandonmentEmailCount ?? 0,
+    abandonmentEmailCount: importedAbandonmentCount(data, existing?.abandonmentEmailCount),
     lastAbandonmentEmailSentAt: timestamp(data.lastAbandonmentEmailSent) ?? existing?.lastAbandonmentEmailSentAt ?? null,
     legacy: leftover(data, new Set([
       'sessionId', 'userId', 'status', 'lastStatus', 'statusEventCreated', 'statusEventId',
@@ -371,6 +379,14 @@ async function upsertSession(db: AppDatabase, doc: FirestoreDocExport, users: Se
     await db.update(onrampSessions).set(values).where(eq(onrampSessions.id, doc.id));
   }
   return Boolean(requestedUser) && !userId;
+}
+
+// The legacy function only set `abandonmentEmailSent: true`. Dropping it left
+// the count at 0, which the email job treats as "first email due now", so
+// those customers would have been emailed about the same cart again.
+function importedAbandonmentCount(data: Record<string, unknown>, existing: number | undefined): number {
+  const count = numberOrNull(data.abandonmentEmailCount) ?? existing ?? 0;
+  return data.abandonmentEmailSent === true ? Math.max(count, 1) : count;
 }
 
 function numberOrNull(value: unknown): number | null {
