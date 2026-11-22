@@ -9,6 +9,8 @@ const FULFILLMENT_COMPLETE = 'fulfillment_complete';
 const REQUIRES_PAYMENT = 'requires_payment';
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
+const WEEKLY_MIN_GAP_MS = 6 * DAY_MS;
+const MONTHLY_MIN_GAP_MS = 27 * DAY_MS;
 
 export type Mailer = {
   send(message: OutboundEmail): Promise<void>;
@@ -372,9 +374,13 @@ async function sendReminderEmails(
       continue;
     }
     if (row.lastSent) {
-      const days = Math.floor((now.getTime() - row.lastSent.getTime()) / DAY_MS);
-      const wait = frequency === 'weekly' ? 7 : 30;
-      if (days < wait) {
+      // Sends only happen in the 17:00 UTC hour of a Monday or the 1st, so this
+      // gap only has to stop a second send in the same window. A full 7 or 30
+      // days skipped a week when last week's run was a few minutes later, and
+      // skipped every March because February is shorter than 30 days.
+      const elapsed = now.getTime() - row.lastSent.getTime();
+      const wait = frequency === 'weekly' ? WEEKLY_MIN_GAP_MS : MONTHLY_MIN_GAP_MS;
+      if (elapsed < wait) {
         report.skipped += 1;
         continue;
       }

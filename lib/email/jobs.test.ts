@@ -160,6 +160,29 @@ describe('email jobs', () => {
     expect(next.sent.map((message) => message.to)).toEqual(['monthly@example.com']);
   });
 
+  it('sends the next weekly reminder even when last week ran a few minutes later', async () => {
+    const db = await seedUser('weekly-drift', { weekly: true });
+    await db
+      .update(profiles)
+      .set({ lastReminderSentAt: new Date(Date.UTC(2026, 10, 9, 17, 30, 0)) })
+      .where(eq(profiles.userId, 'weekly-drift'));
+    const outbound = mailer();
+    expect((await runEmailJobs(db, outbound.client, NOW)).reminderSent).toBe(1);
+    expect((await runEmailJobs(db, outbound.client, NOW)).reminderSent).toBe(0);
+  });
+
+  it('sends the March monthly reminder after a February send', async () => {
+    const db = await seedUser('monthly-feb', { monthly: true });
+    await db
+      .update(profiles)
+      .set({ lastReminderSentAt: new Date(Date.UTC(2027, 1, 1, 17, 2, 0)) })
+      .where(eq(profiles.userId, 'monthly-feb'));
+    const outbound = mailer();
+    const march = new Date(Date.UTC(2027, 2, 1, 17, 0, 0));
+    expect((await runEmailJobs(db, outbound.client, march)).reminderSent).toBe(1);
+    expect(outbound.sent.map((message) => message.to)).toEqual(['monthly-feb@example.com']);
+  });
+
   it('rolls the claim back when sending fails', async () => {
     const db = await seedUser('welcome-user');
     await db.update(profiles).set({ welcomeEmailSentAt: null }).where(eq(profiles.userId, 'welcome-user'));
