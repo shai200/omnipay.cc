@@ -322,6 +322,19 @@ async function sendAbandonedCartEmails(
   }
 }
 
+// Sends only happen in the Monday / first-of-month 17:00 UTC hour, so this
+// check exists to stop a second send inside the same period. It must not
+// require a full 7 x 24h or 30 x 24h gap: the hourly cron does not start at
+// the same millisecond each run, and months are 28 to 31 days long. A full-gap
+// rule skipped every other weekly send and every send after a short month.
+const WEEKLY_MIN_GAP_MS = 6 * DAY_MS;
+const MONTHLY_MIN_GAP_MS = 27 * DAY_MS;
+
+export function reminderIsDue(frequency: 'weekly' | 'monthly', lastSent: Date, now: Date): boolean {
+  const gap = now.getTime() - lastSent.getTime();
+  return gap >= (frequency === 'weekly' ? WEEKLY_MIN_GAP_MS : MONTHLY_MIN_GAP_MS);
+}
+
 async function sendReminderEmails(
   db: AppDatabase,
   mailer: Mailer,
@@ -371,13 +384,9 @@ async function sendReminderEmails(
       report.skipped += 1;
       continue;
     }
-    if (row.lastSent) {
-      const days = Math.floor((now.getTime() - row.lastSent.getTime()) / DAY_MS);
-      const wait = frequency === 'weekly' ? 7 : 30;
-      if (days < wait) {
-        report.skipped += 1;
-        continue;
-      }
+    if (row.lastSent && !reminderIsDue(frequency, row.lastSent, now)) {
+      report.skipped += 1;
+      continue;
     }
 
     const claimed = await db

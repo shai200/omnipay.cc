@@ -160,6 +160,32 @@ describe('email jobs', () => {
     expect(next.sent.map((message) => message.to)).toEqual(['monthly@example.com']);
   });
 
+  it('sends the next weekly reminder when the cron starts slightly earlier than last week', async () => {
+    const db = await seedUser('weekly', { weekly: true });
+    const outbound = mailer();
+    const lastMonday = new Date(Date.UTC(2026, 10, 9, 17, 0, 42));
+    expect((await runEmailJobs(db, outbound.client, lastMonday)).reminderSent).toBe(1);
+
+    // Same hour, a second run must not send again.
+    const sameHour = new Date(Date.UTC(2026, 10, 9, 17, 30, 0));
+    expect((await runEmailJobs(db, outbound.client, sameHour)).reminderSent).toBe(0);
+
+    // One week later, 40 seconds earlier in the hour than the previous send.
+    const thisMonday = new Date(Date.UTC(2026, 10, 16, 17, 0, 2));
+    expect((await runEmailJobs(db, outbound.client, thisMonday)).reminderSent).toBe(1);
+    expect(outbound.sent).toHaveLength(2);
+  });
+
+  it('sends the monthly reminder after a 28-day month', async () => {
+    const db = await seedUser('monthly', { monthly: true });
+    const outbound = mailer();
+    const february = new Date(Date.UTC(2027, 1, 1, 17, 0, 30));
+    expect((await runEmailJobs(db, outbound.client, february)).reminderSent).toBe(1);
+    const march = new Date(Date.UTC(2027, 2, 1, 17, 0, 5));
+    expect((await runEmailJobs(db, outbound.client, march)).reminderSent).toBe(1);
+    expect(outbound.sent).toHaveLength(2);
+  });
+
   it('rolls the claim back when sending fails', async () => {
     const db = await seedUser('welcome-user');
     await db.update(profiles).set({ welcomeEmailSentAt: null }).where(eq(profiles.userId, 'welcome-user'));
